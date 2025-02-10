@@ -28,15 +28,20 @@ const Auth = () => {
         });
         if (error) throw error;
         toast({
-          title: "Success!",
-          description: "Please check your email to verify your account.",
+          title: "Account created!",
+          description: "Check your email for the verification link.",
         });
+        // Don't navigate yet for sign up since they need to verify email
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in.",
+        });
         navigate("/library");
       }
     } catch (error: any) {
