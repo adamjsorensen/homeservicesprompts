@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Plus, Building2, Library } from "lucide-react";
+import { Search, Plus, Building2, Library, Home } from "lucide-react";
 
 export const Navigation = () => {
   const navigate = useNavigate();
@@ -13,11 +13,24 @@ export const Navigation = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="container flex items-center justify-between h-16">
         <div className="flex items-center space-x-8">
-          <h1 className="text-xl font-semibold">Promptopia</h1>
+          <h1 
+            onClick={() => navigate("/")} 
+            className="text-xl font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            Promptopia
+          </h1>
           <div className="hidden md:flex items-center space-x-6">
             <Button
               variant={isActive("/") ? "secondary" : "ghost"}
               onClick={() => navigate("/")}
+              className="flex items-center gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Home
+            </Button>
+            <Button
+              variant={isActive("/library") ? "secondary" : "ghost"}
+              onClick={() => navigate("/library")}
               className="flex items-center gap-2"
             >
               <Library className="w-4 h-4" />
