@@ -54,12 +54,14 @@ serve(async (req) => {
       finalPrompt += "\n\nBusiness Context:\n" + JSON.stringify(profiles.business_profile, null, 2);
     }
 
-    // Generate content using OpenAI
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Generate content using OpenRouter
+    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('OpenAI (OpenRouter)')}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://zdspjopumyunfkkqoabx.supabase.co',
+        'X-Title': 'Lovable Prompt Generator',
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
@@ -70,12 +72,14 @@ serve(async (req) => {
       }),
     });
 
-    if (!openAIResponse.ok) {
-      throw new Error(`OpenAI API error: ${await openAIResponse.text()}`);
+    if (!openRouterResponse.ok) {
+      const errorText = await openRouterResponse.text();
+      console.error('OpenRouter API error:', errorText);
+      throw new Error(`OpenRouter API error: ${errorText}`);
     }
 
-    const openAIData = await openAIResponse.json();
-    const generatedContent = openAIData.choices[0].message.content;
+    const openRouterData = await openRouterResponse.json();
+    const generatedContent = openRouterData.choices[0].message.content;
 
     // Save the generated content
     const { error: saveError } = await supabaseClient
