@@ -13,6 +13,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import { GeneratedContent } from "./pages/GeneratedContent";
+import { SavedGenerations } from "./pages/SavedGenerations";
+import { SavedGeneration } from "./pages/SavedGeneration";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +57,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <GeneratedContent />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/saved-generations"
+              element={
+                <ProtectedRoute>
+                  <SavedGenerations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/saved-generations/:slug"
+              element={
+                <ProtectedRoute>
+                  <SavedGeneration />
                 </ProtectedRoute>
               }
             />
