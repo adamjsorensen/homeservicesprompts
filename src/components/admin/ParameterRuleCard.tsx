@@ -16,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ParameterRuleCardProps {
   rule: any;
@@ -26,6 +28,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   const { toast } = useToast();
   const { getTweaksForParameter } = usePromptParameters();
   const parameterTweaks = getTweaksForParameter(rule.parameter_id);
+  const [selectedTweaks, setSelectedTweaks] = useState<string[]>([]);
 
   const {
     attributes,
@@ -38,6 +41,28 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  useEffect(() => {
+    loadSelectedTweaks();
+  }, [rule.id]);
+
+  const loadSelectedTweaks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("prompt_parameter_allowed_tweaks")
+        .select("tweak_id")
+        .eq("rule_id", rule.id);
+
+      if (error) throw error;
+      setSelectedTweaks(data.map(item => item.tweak_id));
+    } catch (error) {
+      console.error("Error loading selected tweaks:", error);
+      toast({
+        variant: "destructive",
+        description: "Failed to load selected tweaks",
+      });
+    }
   };
 
   const handleDelete = async () => {
@@ -94,6 +119,39 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
     }
   };
 
+  const handleTweaksChange = async (tweakIds: string[]) => {
+    try {
+      // Delete existing allowed tweaks
+      await supabase
+        .from("prompt_parameter_allowed_tweaks")
+        .delete()
+        .eq("rule_id", rule.id);
+
+      // Insert new allowed tweaks
+      if (tweakIds.length > 0) {
+        const { error } = await supabase
+          .from("prompt_parameter_allowed_tweaks")
+          .insert(
+            tweakIds.map(tweakId => ({
+              rule_id: rule.id,
+              tweak_id: tweakId,
+            }))
+          );
+
+        if (error) throw error;
+      }
+
+      setSelectedTweaks(tweakIds);
+      onUpdate();
+    } catch (error) {
+      console.error("Error updating allowed tweaks:", error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update allowed tweaks",
+      });
+    }
+  };
+
   return (
     <Card 
       ref={setNodeRef} 
@@ -146,16 +204,26 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
 
         <div className="space-y-2">
           <Label>Allowed Tweaks</Label>
-          <Select>
+          <Select
+            value={selectedTweaks.join(",")}
+            onValueChange={(value) => handleTweaksChange(value.split(",").filter(Boolean))}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select tweaks to allow" />
             </SelectTrigger>
             <SelectContent>
-              {parameterTweaks.map((tweak) => (
-                <SelectItem key={tweak.id} value={tweak.id}>
-                  {tweak.name}
-                </SelectItem>
-              ))}
+              <ScrollArea className="h-[200px]">
+                {parameterTweaks.map((tweak) => (
+                  <SelectItem key={tweak.id} value={tweak.id}>
+                    <div className="space-y-1">
+                      <div>{tweak.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {tweak.sub_prompt}
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </ScrollArea>
             </SelectContent>
           </Select>
         </div>
