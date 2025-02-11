@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Plus, Building2, Library, Home, LogOut, PaintBucket, Settings2 } from "lucide-react";
+import { Search, Plus, Building2, Library, Home, LogOut, PaintBucket, Settings2, FileText } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -66,6 +66,14 @@ export const Navigation = () => {
                 >
                   <Building2 className="w-4 h-4" />
                   Business
+                </Button>
+                <Button
+                  variant={isActive("/saved-generations") ? "secondary" : "ghost"}
+                  onClick={() => navigate("/saved-generations")}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Saved Content
                 </Button>
                 {isAdmin && (
                   <Button
