@@ -30,7 +30,7 @@ const promptSchema = z.object({
   category: z.string().min(1, "Category is required"),
   prompt: z.string().min(1, "Prompt content is required"),
   tags: z.string().transform((str) => 
-    str ? str.split(",").map((tag) => tag.trim()) : []
+    str ? str.split(",").map((tag) => tag.trim()).filter(Boolean) : []
   ),
 });
 
@@ -58,10 +58,9 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
 
   const onSubmit = async (data: PromptFormValues) => {
     try {
-      const user = await supabase.auth.getUser();
-      const userId = user.data.user?.id;
-
-      if (!userId) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
         throw new Error("User not authenticated");
       }
 
@@ -71,7 +70,7 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
         category: data.category,
         prompt: data.prompt,
         tags: data.tags,
-        created_by: userId
+        created_by: user.id
       });
 
       if (error) throw error;
