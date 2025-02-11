@@ -22,6 +22,7 @@ interface Tweak {
 }
 
 interface AllowedTweak {
+  id: string;
   tweak: Tweak;
 }
 
@@ -68,7 +69,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
 
   // Initialize selected tweaks from allowed_tweaks
   useEffect(() => {
-    if (rule.allowed_tweaks) {
+    if (rule.allowed_tweaks && Array.isArray(rule.allowed_tweaks)) {
       const selectedTweakIds = rule.allowed_tweaks
         .filter(at => at.tweak && at.tweak.id)
         .map(at => at.tweak.id);
@@ -266,43 +267,40 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
                     : `${selectedTweaks.length} selected`}
               </Button>
             </PopoverTrigger>
-            {!isLoading && open && availableTweaks.length > 0 && (
-              <PopoverContent className="w-[300px] p-0">
-                <Command>
-                  <CommandInput placeholder="Search tweaks..." className="h-9" />
-                  <CommandEmpty>No tweaks found.</CommandEmpty>
-                  <CommandGroup>
-                    <ScrollArea className="h-[200px]">
-                      {availableTweaks.map((tweak) => (
-                        <CommandItem
-                          key={tweak.id}
-                          onSelect={() => handleTweaksChange(tweak.id)}
+            <PopoverContent className="w-[300px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search tweaks..." className="h-9" />
+                <CommandEmpty>No tweaks found.</CommandEmpty>
+                <CommandGroup>
+                  <ScrollArea className="h-[200px]">
+                    {availableTweaks.map((tweak) => (
+                      <CommandItem
+                        key={tweak.id}
+                        onSelect={() => handleTweaksChange(tweak.id)}
+                        className="flex items-center gap-2 px-2"
+                      >
+                        <div
+                          className={cn(
+                            "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            selectedTweaks.includes(tweak.id)
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}
                         >
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={cn(
-                                "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                selectedTweaks.includes(tweak.id)
-                                  ? "bg-primary text-primary-foreground"
-                                  : "opacity-50 [&_svg]:invisible"
-                              )}
-                            >
-                              <Check className={cn("h-4 w-4")} />
-                            </div>
-                            <div className="flex flex-col">
-                              <span>{tweak.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {tweak.sub_prompt}
-                              </span>
-                            </div>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </ScrollArea>
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            )}
+                          <Check className={cn("h-4 w-4")} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span>{tweak.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {tweak.sub_prompt}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </ScrollArea>
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
           </Popover>
           {selectedTweaks.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
