@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Layout } from "@/components/layout/Layout";
-import { Copy, ArrowLeft, Save, Undo } from "lucide-react";
+import { Copy, ArrowLeft, Undo } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LocationState {
@@ -26,14 +26,43 @@ export function GeneratedContent() {
   const navigate = useNavigate();
   const { generatedContent: initialContent, promptTitle } = 
     (location.state as LocationState) || { generatedContent: "", promptTitle: "" };
-  
-  const [content, setContent] = useState(initialContent);
-  const [isEditing, setIsEditing] = useState(false);
-  const [originalContent] = useState(initialContent);
+
+  useEffect(() => {
+    const saveGeneratedContent = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("User not authenticated");
+
+        console.log("Saving generated content...");
+        const { error } = await supabase.from("saved_generations").insert({
+          content: initialContent,
+          user_id: user.id,
+          title: promptTitle,
+        });
+
+        if (error) throw error;
+
+        console.log("Content saved successfully");
+        toast({
+          description: "Content saved automatically",
+        });
+      } catch (error) {
+        console.error("Error saving content:", error);
+        toast({
+          variant: "destructive",
+          description: "Failed to save content automatically",
+        });
+      }
+    };
+
+    if (initialContent && promptTitle) {
+      saveGeneratedContent();
+    }
+  }, [initialContent, promptTitle]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      await navigator.clipboard.writeText(initialContent);
       toast({
         description: "Content copied to clipboard",
       });
@@ -43,39 +72,6 @@ export function GeneratedContent() {
         description: "Failed to copy content",
       });
     }
-  };
-
-  const handleSave = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
-
-      const { error } = await supabase.from("saved_generations").insert({
-        content: content,
-        user_id: user.id,
-        title: promptTitle,
-      });
-
-      if (error) throw error;
-
-      toast({
-        description: "Content saved successfully",
-      });
-      setIsEditing(false);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        description: "Failed to save content",
-      });
-    }
-  };
-
-  const handleRevert = () => {
-    setContent(originalContent);
-    setIsEditing(false);
-    toast({
-      description: "Content reverted to original",
-    });
   };
 
   return (
@@ -94,55 +90,22 @@ export function GeneratedContent() {
           <CardHeader>
             <CardTitle>Generated Content: {promptTitle}</CardTitle>
             <CardDescription>
-              Review, edit, and save your generated content
+              Review your generated content
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {isEditing ? (
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="min-h-[200px]"
-              />
-            ) : (
-              <div className="prose max-w-none">
-                <p className="whitespace-pre-wrap">{content}</p>
-              </div>
-            )}
+            <div className="prose max-w-none">
+              <p className="whitespace-pre-wrap">{initialContent}</p>
+            </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                {isEditing ? "Preview" : "Edit"}
-              </Button>
-              {isEditing && (
-                <Button
-                  variant="outline"
-                  onClick={handleRevert}
-                >
-                  <Undo className="mr-2 h-4 w-4" />
-                  Revert
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={handleCopy}
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy
-              </Button>
-              {isEditing && (
-                <Button onClick={handleSave}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </Button>
-              )}
-            </div>
+          <CardFooter className="flex justify-end">
+            <Button
+              variant="outline"
+              onClick={handleCopy}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy
+            </Button>
           </CardFooter>
         </Card>
       </div>
