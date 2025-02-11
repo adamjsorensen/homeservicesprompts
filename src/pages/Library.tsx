@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Filter, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Filter, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,6 +81,7 @@ const Library = () => {
   const [filter, setFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const { data: prompts = [], isLoading, error } = useQuery({
@@ -122,6 +123,10 @@ const Library = () => {
         description: "Failed to delete prompt. Please try again.",
       });
     }
+  };
+
+  const toggleCard = (id: string) => {
+    setExpandedCardId(expandedCardId === id ? null : id);
   };
 
   const filteredPrompts = prompts.filter((prompt) => {
@@ -186,10 +191,16 @@ const Library = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrompts.map((prompt) => (
-            <Card key={prompt.id} className="group">
+            <Card 
+              key={prompt.id} 
+              className={`group cursor-pointer transition-all duration-200 ${
+                expandedCardId === prompt.id ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => toggleCard(prompt.id)}
+            >
               <CardHeader className="space-y-1">
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="text-xl">{prompt.title}</CardTitle>
                     <CardDescription className="mt-2">
                       {prompt.description}
@@ -199,7 +210,10 @@ const Library = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => copyToClipboard(prompt.prompt)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyToClipboard(prompt.prompt);
+                      }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Copy className="w-4 h-4" />
@@ -208,7 +222,10 @@ const Library = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setDeletePromptId(prompt.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletePromptId(prompt.id);
+                        }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -216,10 +233,24 @@ const Library = () => {
                     )}
                   </div>
                 </div>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-muted-foreground">
+                    {prompt.category}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      expandedCardId === prompt.id ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
+              <CardContent
+                className={`grid transition-all duration-200 ${
+                  expandedCardId === prompt.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                     {prompt.prompt}
                   </p>
                 </div>
