@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,12 +34,17 @@ export function CustomPromptWizard({
 }: CustomPromptWizardProps) {
   const [currentParameterIndex, setCurrentParameterIndex] = useState(0);
   const [selectedTweaks, setSelectedTweaks] = useState<Record<string, string>>({});
-  const { parameters, getTweaksForParameter, isLoading } = usePromptParameters();
+  const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters();
 
   if (!basePrompt) return null;
 
   const currentParameter = parameters[currentParameterIndex];
-  const tweaks = currentParameter ? getTweaksForParameter(currentParameter.id) : [];
+  const parameterTweaks = currentParameter ? getTweaksForParameter(currentParameter.id) : [];
+  
+  // Find the selected tweak object to display its sub_prompt
+  const selectedTweak = tweaks.find(
+    (tweak) => tweak.id === selectedTweaks[currentParameter?.id]
+  );
 
   const handleTweakSelect = (tweakId: string) => {
     setSelectedTweaks(prev => ({
@@ -122,18 +128,26 @@ export function CustomPromptWizard({
                   {currentParameter.description}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <RadioGroup
                   value={selectedTweaks[currentParameter.id]}
                   onValueChange={handleTweakSelect}
                 >
-                  {tweaks.map((tweak) => (
+                  {parameterTweaks.map((tweak) => (
                     <div key={tweak.id} className="flex items-center space-x-2">
                       <RadioGroupItem value={tweak.id} id={tweak.id} />
                       <Label htmlFor={tweak.id}>{tweak.name}</Label>
                     </div>
                   ))}
                 </RadioGroup>
+
+                {selectedTweak && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedTweak.sub_prompt}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
