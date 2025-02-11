@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { usePrompts } from "@/hooks/usePrompts";
-import { Edit, Plus, Trash } from "lucide-react";
+import { ChevronDown, ChevronUp, Edit, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 import { PromptDialog } from "./PromptDialog";
 import { useToast } from "@/components/ui/use-toast";
@@ -25,12 +25,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 export function PromptsAdmin() {
   const { prompts } = usePrompts();
   const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
+  const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -60,6 +62,10 @@ export function PromptsAdmin() {
     }
   };
 
+  const toggleExpand = (promptId: string) => {
+    setExpandedPromptId(expandedPromptId === promptId ? null : promptId);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -82,37 +88,59 @@ export function PromptsAdmin() {
             <TableHead>Title</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead className="w-24">Actions</TableHead>
+            <TableHead className="w-[200px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {prompts.map((prompt) => (
-            <TableRow key={prompt.id}>
-              <TableCell>{prompt.title}</TableCell>
-              <TableCell>{prompt.category}</TableCell>
-              <TableCell>{prompt.description}</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setSelectedPrompt(prompt);
-                      setIsDialogOpen(true);
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeletePromptId(prompt.id)}
-                  >
-                    <Trash className="w-4 h-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
+            <>
+              <TableRow key={prompt.id}>
+                <TableCell>{prompt.title}</TableCell>
+                <TableCell>{prompt.category}</TableCell>
+                <TableCell>{prompt.description}</TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleExpand(prompt.id)}
+                    >
+                      {expandedPromptId === prompt.id ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedPrompt(prompt);
+                        setIsDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeletePromptId(prompt.id)}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+              {expandedPromptId === prompt.id && (
+                <TableRow>
+                  <TableCell colSpan={4} className="bg-muted/50">
+                    <div className="p-4 whitespace-pre-wrap">
+                      {prompt.prompt}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </>
           ))}
         </TableBody>
       </Table>
