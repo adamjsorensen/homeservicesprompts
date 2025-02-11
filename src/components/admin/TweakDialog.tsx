@@ -62,7 +62,11 @@ export function TweakDialog({ tweak, open, onOpenChange }: TweakDialogProps) {
       if (tweak?.id) {
         const { error } = await supabase
           .from("parameter_tweaks")
-          .update(data)
+          .update({
+            name: data.name,
+            parameter_id: data.parameter_id,
+            sub_prompt: data.sub_prompt,
+          })
           .eq("id", tweak.id);
 
         if (error) throw error;
@@ -73,7 +77,11 @@ export function TweakDialog({ tweak, open, onOpenChange }: TweakDialogProps) {
       } else {
         const { error } = await supabase
           .from("parameter_tweaks")
-          .insert(data);
+          .insert({
+            name: data.name,
+            parameter_id: data.parameter_id,
+            sub_prompt: data.sub_prompt,
+          });
 
         if (error) throw error;
 

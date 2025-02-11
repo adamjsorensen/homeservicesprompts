@@ -30,18 +30,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-const parameterSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  type: z.string().min(1, "Type is required"),
-});
-
-interface ParameterDialogProps {
-  parameter: any;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
 const PARAMETER_TYPES = [
   "tone_and_style",
   "audience_specificity",
@@ -54,6 +42,18 @@ const PARAMETER_TYPES = [
   "constraints",
   "iteration_feedback",
 ] as const;
+
+const parameterSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  type: z.enum(PARAMETER_TYPES),
+});
+
+interface ParameterDialogProps {
+  parameter: any;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
 export function ParameterDialog({
   parameter,
@@ -68,7 +68,7 @@ export function ParameterDialog({
     defaultValues: {
       name: parameter?.name ?? "",
       description: parameter?.description ?? "",
-      type: parameter?.type ?? "",
+      type: parameter?.type ?? PARAMETER_TYPES[0],
     },
   });
 
@@ -77,7 +77,11 @@ export function ParameterDialog({
       if (parameter?.id) {
         const { error } = await supabase
           .from("prompt_parameters")
-          .update(data)
+          .update({
+            name: data.name,
+            description: data.description,
+            type: data.type,
+          })
           .eq("id", parameter.id);
 
         if (error) throw error;
@@ -86,9 +90,11 @@ export function ParameterDialog({
           description: "Parameter updated successfully",
         });
       } else {
-        const { error } = await supabase
-          .from("prompt_parameters")
-          .insert(data);
+        const { error } = await supabase.from("prompt_parameters").insert({
+          name: data.name,
+          description: data.description,
+          type: data.type,
+        });
 
         if (error) throw error;
 

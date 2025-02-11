@@ -66,7 +66,10 @@ export function PromptDialog({ prompt, open, onOpenChange }: PromptDialogProps) 
         const { error } = await supabase
           .from("prompts")
           .update({
-            ...data,
+            title: data.title,
+            description: data.description,
+            category: data.category,
+            prompt: data.prompt,
             updated_at: new Date().toISOString(),
           })
           .eq("id", prompt.id);
@@ -78,8 +81,12 @@ export function PromptDialog({ prompt, open, onOpenChange }: PromptDialogProps) 
         });
       } else {
         const { error } = await supabase.from("prompts").insert({
-          ...data,
+          title: data.title,
+          description: data.description,
+          category: data.category,
+          prompt: data.prompt,
           created_by: user.id,
+          tags: [],
         });
 
         if (error) throw error;
