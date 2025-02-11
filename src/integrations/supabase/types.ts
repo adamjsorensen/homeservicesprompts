@@ -136,6 +136,38 @@ export type Database = {
           },
         ]
       }
+      prompt_generations: {
+        Row: {
+          created_at: string
+          created_by: string
+          custom_prompt_id: string
+          generated_content: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          custom_prompt_id: string
+          generated_content: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          custom_prompt_id?: string
+          generated_content?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_generations_custom_prompt_id_fkey"
+            columns: ["custom_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "custom_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_parameters: {
         Row: {
           created_at: string
