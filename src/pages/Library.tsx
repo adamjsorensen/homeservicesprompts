@@ -20,10 +20,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PromptCard } from "@/components/prompts/PromptCard";
 import { PromptFilters } from "@/components/prompts/PromptFilters";
 import { usePrompts, type Prompt } from "@/hooks/usePrompts";
 import { CustomPromptWizard } from "@/components/prompts/CustomPromptWizard";
+import { PromptTable } from "@/components/prompts/PromptTable";
 
 const Library = () => {
   const [filter, setFilter] = useState("all");
@@ -40,8 +40,8 @@ const Library = () => {
     setIsWizardOpen(true);
   };
 
-  const copyToClipboard = async (text: string) => {
-    await navigator.clipboard.writeText(text);
+  const copyToClipboard = async (prompt: Prompt) => {
+    await navigator.clipboard.writeText(prompt.prompt);
     toast({
       description: "Prompt copied to clipboard",
     });
@@ -113,18 +113,13 @@ const Library = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredPrompts.map((prompt) => (
-            <PromptCard
-              key={prompt.id}
-              prompt={prompt}
-              isAdmin={isAdmin}
-              onCustomize={() => handleCustomizePrompt(prompt)}
-              onCopy={() => copyToClipboard(prompt.prompt)}
-              onDelete={() => setDeletePromptId(prompt.id)}
-            />
-          ))}
-        </div>
+        <PromptTable
+          prompts={filteredPrompts}
+          isAdmin={isAdmin}
+          onCustomize={handleCustomizePrompt}
+          onCopy={copyToClipboard}
+          onDelete={(prompt) => setDeletePromptId(prompt.id)}
+        />
       </div>
 
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
