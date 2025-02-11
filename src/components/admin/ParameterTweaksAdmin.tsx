@@ -100,15 +100,15 @@ export function ParameterTweaksAdmin() {
 
       <div className="flex gap-4 mb-4">
         <div className="w-1/3">
-          <Select value={selectedType || ""} onValueChange={(value) => {
-            setSelectedType(value || null);
+          <Select value={selectedType || "all_types"} onValueChange={(value) => {
+            setSelectedType(value === "all_types" ? null : value);
             setSelectedParameter(null);
           }}>
             <SelectTrigger>
               <SelectValue placeholder="Filter by parameter type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all_types">All Types</SelectItem>
               {PARAMETER_TYPES.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -120,15 +120,15 @@ export function ParameterTweaksAdmin() {
 
         <div className="w-1/3">
           <Select 
-            value={selectedParameter || ""} 
-            onValueChange={(value) => setSelectedParameter(value || null)}
+            value={selectedParameter || "all_parameters"} 
+            onValueChange={(value) => setSelectedParameter(value === "all_parameters" ? null : value)}
             disabled={!selectedType}
           >
             <SelectTrigger>
               <SelectValue placeholder="Filter by parameter" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Parameters</SelectItem>
+              <SelectItem value="all_parameters">All Parameters</SelectItem>
               {filteredParameters.map((param) => (
                 <SelectItem key={param.id} value={param.id}>
                   {param.name}
@@ -203,3 +203,4 @@ export function ParameterTweaksAdmin() {
     </div>
   );
 }
+
