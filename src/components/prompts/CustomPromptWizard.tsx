@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { LoadingCard } from "./LoadingCard";
 
 interface CustomPromptWizardProps {
   basePrompt: Prompt | null;
@@ -143,7 +144,7 @@ export function CustomPromptWizard({
         </DialogHeader>
         
         <div className="space-y-4">
-          {currentParameter && (
+          {currentParameter && !isGenerating && !generatedContent && (
             <Card>
               <CardHeader>
                 <CardTitle>{currentParameter.name}</CardTitle>
@@ -175,8 +176,12 @@ export function CustomPromptWizard({
             </Card>
           )}
 
-          {generatedContent && (
-            <Card>
+          {isGenerating && (
+            <LoadingCard />
+          )}
+
+          {generatedContent && !isGenerating && (
+            <Card className="animate-fade-in">
               <CardHeader>
                 <CardTitle>Generated Content</CardTitle>
               </CardHeader>
@@ -190,14 +195,14 @@ export function CustomPromptWizard({
             <Button
               variant="outline"
               onClick={handlePrevious}
-              disabled={currentParameterIndex === 0}
+              disabled={currentParameterIndex === 0 || isGenerating}
             >
               Previous
             </Button>
             {currentParameterIndex < parameters.length - 1 ? (
               <Button
                 onClick={handleNext}
-                disabled={!selectedTweaks[currentParameter?.id]}
+                disabled={!selectedTweaks[currentParameter?.id] || isGenerating}
               >
                 Next
                 <ChevronRight className="ml-2 h-4 w-4" />
