@@ -70,7 +70,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   useEffect(() => {
     if (rule.allowed_tweaks) {
       const selectedTweakIds = rule.allowed_tweaks
-        .filter(at => at.tweak && at.tweak.id) // Ensure tweak exists and has an id
+        .filter(at => at.tweak && at.tweak.id)
         .map(at => at.tweak.id);
       setSelectedTweaks(selectedTweakIds);
     }
