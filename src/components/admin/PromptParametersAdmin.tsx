@@ -34,6 +34,11 @@ export function PromptParametersAdmin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const handleEdit = (parameter: any) => {
+    setSelectedParameter(parameter);
+    setIsDialogOpen(true);
+  };
+
   const handleDelete = async () => {
     if (!deleteParameterId) return;
 
@@ -95,10 +100,7 @@ export function PromptParametersAdmin() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
-                      setSelectedParameter(parameter);
-                      setIsDialogOpen(true);
-                    }}
+                    onClick={() => handleEdit(parameter)}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>

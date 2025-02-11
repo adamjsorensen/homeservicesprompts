@@ -34,6 +34,11 @@ export function ParameterTweaksAdmin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const handleEdit = (tweak: any) => {
+    setSelectedTweak(tweak);
+    setIsDialogOpen(true);
+  };
+
   const handleDelete = async () => {
     if (!deleteTweakId) return;
 
@@ -100,10 +105,7 @@ export function ParameterTweaksAdmin() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
-                      setSelectedTweak(tweak);
-                      setIsDialogOpen(true);
-                    }}
+                    onClick={() => handleEdit(tweak)}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>

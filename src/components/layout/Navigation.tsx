@@ -1,16 +1,18 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Plus, Building2, Library, Home, LogOut, PaintBucket } from "lucide-react";
+import { Search, Plus, Building2, Library, Home, LogOut, PaintBucket, Settings2 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { usePrompts } from "@/hooks/usePrompts";
 
 export const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isAdmin } = usePrompts();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -65,6 +67,16 @@ export const Navigation = () => {
                   <Building2 className="w-4 h-4" />
                   Business
                 </Button>
+                {isAdmin && (
+                  <Button
+                    variant={isActive("/admin") ? "secondary" : "ghost"}
+                    onClick={() => navigate("/admin")}
+                    className="flex items-center gap-2"
+                  >
+                    <Settings2 className="w-4 h-4" />
+                    Admin
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -100,4 +112,4 @@ export const Navigation = () => {
       </div>
     </nav>
   );
-};
+}
