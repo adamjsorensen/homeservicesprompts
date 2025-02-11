@@ -13,22 +13,46 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Eye, FileText } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export function SavedGenerations() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const { data: generations, isLoading } = useQuery({
+  const { data: generations, isLoading, error } = useQuery({
     queryKey: ["saved-generations"],
     queryFn: async () => {
+      console.log("Fetching saved generations...");
       const { data, error } = await supabase
         .from("saved_generations")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching saved generations:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load saved content. Please try again.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+
+      console.log("Fetched generations:", data);
       return data;
     },
   });
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Error loading saved content</h1>
+          <p className="text-red-500">Something went wrong. Please try refreshing the page.</p>
+        </div>
+      </Layout>
+    );
+  }
 
   if (isLoading) {
     return (
