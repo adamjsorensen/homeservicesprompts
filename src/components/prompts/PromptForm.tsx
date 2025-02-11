@@ -52,7 +52,7 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
       description: "",
       category: "",
       prompt: "",
-      tags: "",
+      tags: "", // This is correct as the schema transforms it to string[]
     },
   });
 
