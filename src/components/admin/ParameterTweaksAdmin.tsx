@@ -25,13 +25,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { PARAMETER_TYPES } from "@/constants/parameterTypes";
 
 export function ParameterTweaksAdmin() {
@@ -100,42 +93,41 @@ export function ParameterTweaksAdmin() {
 
       <div className="flex gap-4 mb-4">
         <div className="w-1/3">
-          <Select value={selectedType || "all_types"} onValueChange={(value) => {
-            setSelectedType(value === "all_types" ? null : value);
-            setSelectedParameter(null);
-          }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by parameter type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_types">All Types</SelectItem>
-              {PARAMETER_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <select
+            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
+            value={selectedType || "all_types"}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedType(value === "all_types" ? null : value);
+              setSelectedParameter(null);
+            }}
+          >
+            <option value="all_types">All Types</option>
+            {PARAMETER_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="w-1/3">
-          <Select 
-            value={selectedParameter || "all_parameters"} 
-            onValueChange={(value) => setSelectedParameter(value === "all_parameters" ? null : value)}
+          <select
+            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2"
+            value={selectedParameter || "all_parameters"}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedParameter(value === "all_parameters" ? null : value);
+            }}
             disabled={!selectedType}
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by parameter" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all_parameters">All Parameters</SelectItem>
-              {filteredParameters.map((param) => (
-                <SelectItem key={param.id} value={param.id}>
-                  {param.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="all_parameters">All Parameters</option>
+            {filteredParameters.map((param) => (
+              <option key={param.id} value={param.id}>
+                {param.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -203,4 +195,3 @@ export function ParameterTweaksAdmin() {
     </div>
   );
 }
-
