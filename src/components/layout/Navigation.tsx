@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Plus, Building2, Library, Home, LogOut } from "lucide-react";
+import { Search, Plus, Building2, Library, Home, LogOut, PaintBucket } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -31,12 +31,13 @@ export const Navigation = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="container flex items-center justify-between h-16">
         <div className="flex items-center space-x-8">
-          <h1 
+          <div 
             onClick={() => navigate("/")} 
-            className="text-xl font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
           >
-            Promptopia
-          </h1>
+            <PaintBucket className="w-6 h-6 text-primary" />
+            <h1 className="text-xl font-semibold">ProPaint AI</h1>
+          </div>
           <div className="hidden md:flex items-center space-x-6">
             <Button
               variant={isActive("/") ? "secondary" : "ghost"}
