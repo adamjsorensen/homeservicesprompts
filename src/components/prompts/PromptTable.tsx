@@ -8,14 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Copy, Trash2, Wand2 } from "lucide-react";
+import { Trash2, Wand2 } from "lucide-react";
 import { type Prompt } from "@/hooks/usePrompts";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface PromptTableProps {
   prompts: Prompt[];
@@ -39,8 +33,8 @@ export const PromptTable = ({
           <TableRow>
             <TableHead>Title</TableHead>
             <TableHead>Category</TableHead>
-            <TableHead className="max-w-[300px]">Description</TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead className="w-[150px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -48,39 +42,19 @@ export const PromptTable = ({
             <TableRow key={prompt.id}>
               <TableCell className="font-medium">{prompt.title}</TableCell>
               <TableCell>{prompt.category}</TableCell>
-              <TableCell className="max-w-[300px]">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="truncate cursor-help">
-                        {prompt.description}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs whitespace-normal">
-                        {prompt.description}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              <TableCell className="whitespace-pre-wrap">
+                {prompt.description}
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <Button
                     variant="default"
                     size="sm"
                     onClick={() => onCustomize(prompt)}
                     className="h-8 bg-purple-600 hover:bg-purple-700 text-white transition-colors"
                   >
-                    <Wand2 className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onCopy(prompt)}
-                    className="h-8 border-blue-200 hover:border-blue-300 transition-colors"
-                  >
-                    <Copy className="w-3 h-3" />
+                    <Wand2 className="w-3 h-3 mr-2" />
+                    Customize
                   </Button>
                   {isAdmin && (
                     <Button
