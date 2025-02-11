@@ -1,26 +1,8 @@
 
 import { Layout } from "@/components/layout/Layout";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ChevronDown, Copy, Filter, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -38,44 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface Prompt {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  prompt: string;
-}
-
-const fetchPrompts = async () => {
-  const { data, error } = await supabase
-    .from("prompts")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-};
-
-const checkAdminRole = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data, error } = await supabase.rpc('has_role', {
-    user_id: user.id,
-    role: 'admin'
-  });
-
-  if (error) {
-    console.error('Error checking admin role:', error);
-    return false;
-  }
-
-  return data;
-};
+import { PromptCard } from "@/components/prompts/PromptCard";
+import { PromptFilters } from "@/components/prompts/PromptFilters";
+import { usePrompts } from "@/hooks/usePrompts";
 
 const Library = () => {
   const [filter, setFilter] = useState("all");
@@ -84,15 +31,7 @@ const Library = () => {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const { data: prompts = [], isLoading, error } = useQuery({
-    queryKey: ["prompts"],
-    queryFn: fetchPrompts,
-  });
-
-  const { data: isAdmin = false } = useQuery({
-    queryKey: ["isAdmin"],
-    queryFn: checkAdminRole,
-  });
+  const { prompts, isLoading, error, isAdmin } = usePrompts();
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -164,98 +103,24 @@ const Library = () => {
               Manage and organize your AI prompts
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Input
-              placeholder="Search prompts..."
-              className="w-[200px] md:w-[300px]"
-            />
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Prompt
-            </Button>
-          </div>
+          <PromptFilters
+            filter={filter}
+            onFilterChange={setFilter}
+            onCreateClick={() => setIsCreateDialogOpen(true)}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrompts.map((prompt) => (
-            <Card 
-              key={prompt.id} 
-              className={`group cursor-pointer transition-all duration-200 ${
-                expandedCardId === prompt.id ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => toggleCard(prompt.id)}
-            >
-              <CardHeader className="space-y-1">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-xl">{prompt.title}</CardTitle>
-                    <CardDescription className="mt-2">
-                      {prompt.description}
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyToClipboard(prompt.prompt);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletePromptId(prompt.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-sm text-muted-foreground">
-                    {prompt.category}
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      expandedCardId === prompt.id ? 'rotate-180' : ''
-                    }`}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent
-                className={`grid transition-all duration-200 ${
-                  expandedCardId === prompt.id ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-                }`}
-              >
-                <div className="overflow-hidden">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {prompt.prompt}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <PromptCard
+              key={prompt.id}
+              prompt={prompt}
+              isAdmin={isAdmin}
+              isExpanded={expandedCardId === prompt.id}
+              onToggle={() => toggleCard(prompt.id)}
+              onCopy={() => copyToClipboard(prompt.prompt)}
+              onDelete={() => setDeletePromptId(prompt.id)}
+            />
           ))}
         </div>
       </div>
