@@ -9,6 +9,70 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      custom_prompts: {
+        Row: {
+          base_prompt_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          base_prompt_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          base_prompt_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_prompts_base_prompt_id_fkey"
+            columns: ["base_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parameter_tweaks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parameter_id: string | null
+          sub_prompt: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parameter_id?: string | null
+          sub_prompt: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parameter_id?: string | null
+          sub_prompt?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parameter_tweaks_parameter_id_fkey"
+            columns: ["parameter_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_parameters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           brand_voice: string | null
@@ -33,6 +97,66 @@ export type Database = {
           industry?: string | null
           target_audience?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      prompt_customizations: {
+        Row: {
+          created_at: string
+          custom_prompt_id: string | null
+          id: string
+          parameter_tweak_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          custom_prompt_id?: string | null
+          id?: string
+          parameter_tweak_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          custom_prompt_id?: string | null
+          id?: string
+          parameter_tweak_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_customizations_custom_prompt_id_fkey"
+            columns: ["custom_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "custom_prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_customizations_parameter_tweak_id_fkey"
+            columns: ["parameter_tweak_id"]
+            isOneToOne: false
+            referencedRelation: "parameter_tweaks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_parameters: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          type: Database["public"]["Enums"]["prompt_parameter_type"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          type: Database["public"]["Enums"]["prompt_parameter_type"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          type?: Database["public"]["Enums"]["prompt_parameter_type"]
         }
         Relationships: []
       }
@@ -110,6 +234,17 @@ export type Database = {
       }
     }
     Enums: {
+      prompt_parameter_type:
+        | "tone_and_style"
+        | "audience_specificity"
+        | "purpose_and_intent"
+        | "content_details"
+        | "output_format"
+        | "length_and_depth"
+        | "call_to_action"
+        | "customization_branding"
+        | "constraints"
+        | "iteration_feedback"
       user_role: "admin" | "user"
     }
     CompositeTypes: {
