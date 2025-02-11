@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CustomPromptWizardProps {
   basePrompt: Prompt | null;
@@ -34,14 +35,16 @@ export function CustomPromptWizard({
 }: CustomPromptWizardProps) {
   const [currentParameterIndex, setCurrentParameterIndex] = useState(0);
   const [selectedTweaks, setSelectedTweaks] = useState<Record<string, string>>({});
+  const [generatedContent, setGeneratedContent] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters();
+  const { toast } = useToast();
 
   if (!basePrompt) return null;
 
   const currentParameter = parameters[currentParameterIndex];
   const parameterTweaks = currentParameter ? getTweaksForParameter(currentParameter.id) : [];
   
-  // Find the selected tweak object to display its sub_prompt
   const selectedTweak = tweaks.find(
     (tweak) => tweak.id === selectedTweaks[currentParameter?.id]
   );
@@ -67,6 +70,7 @@ export function CustomPromptWizard({
 
   const handleSave = async () => {
     try {
+      setIsGenerating(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
@@ -94,9 +98,28 @@ export function CustomPromptWizard({
 
       if (customizationsError) throw customizationsError;
 
-      onClose();
+      // Generate content using the edge function
+      const { data: generatedData, error: generateError } = await supabase.functions
+        .invoke('generate-prompt-content', {
+          body: { customPromptId: customPrompt.id, userId: user.id }
+        });
+
+      if (generateError) throw generateError;
+
+      setGeneratedContent(generatedData.generatedContent);
+      toast({
+        title: "Success",
+        description: "Custom prompt created and content generated successfully!",
+      });
     } catch (error) {
       console.error("Error saving custom prompt:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save custom prompt and generate content.",
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -152,6 +175,17 @@ export function CustomPromptWizard({
             </Card>
           )}
 
+          {generatedContent && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Generated Content</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap">{generatedContent}</p>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-between pt-4">
             <Button
               variant="outline"
@@ -171,9 +205,9 @@ export function CustomPromptWizard({
             ) : (
               <Button
                 onClick={handleSave}
-                disabled={!selectedTweaks[currentParameter?.id]}
+                disabled={!selectedTweaks[currentParameter?.id] || isGenerating}
               >
-                Save Custom Prompt
+                {isGenerating ? "Generating..." : "Generate Content"}
               </Button>
             )}
           </div>
