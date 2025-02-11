@@ -94,4 +94,76 @@ export function TweakDialog({ tweak, open, onOpenChange }: TweakDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpen
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {tweak?.id ? "Edit Tweak" : "Create Tweak"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="parameter_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Parameter</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a parameter" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {parameters.map((parameter) => (
+                        <SelectItem key={parameter.id} value={parameter.id}>
+                          {parameter.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sub_prompt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sub Prompt</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit">Save</Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
