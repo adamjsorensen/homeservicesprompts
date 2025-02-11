@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,12 +42,14 @@ export function CustomPromptWizard({
   const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters();
   const { toast } = useToast();
   const [rules, setRules] = useState<any[]>([]);
+  const [isLoadingRules, setIsLoadingRules] = useState(true);
 
   if (!basePrompt) return null;
 
   // Load parameter rules for the prompt
   const loadRules = async () => {
     try {
+      setIsLoadingRules(true);
       const { data, error } = await supabase
         .from("prompt_parameter_rules")
         .select(`
@@ -59,6 +60,8 @@ export function CustomPromptWizard({
         .order("order");
 
       if (error) throw error;
+      
+      console.log("Loaded rules:", data);
       setRules(data || []);
     } catch (error) {
       console.error("Error loading rules:", error);
@@ -66,10 +69,17 @@ export function CustomPromptWizard({
         variant: "destructive",
         description: "Failed to load parameter rules",
       });
+    } finally {
+      setIsLoadingRules(false);
     }
   };
 
-  // Get current rule
+  useEffect(() => {
+    if (basePrompt && isOpen) {
+      loadRules();
+    }
+  }, [basePrompt, isOpen]);
+
   const currentRule = rules[currentParameterIndex];
   const currentParameter = currentRule?.parameter;
   const parameterTweaks = currentParameter ? getTweaksForParameter(currentParameter.id) : [];
@@ -164,13 +174,16 @@ export function CustomPromptWizard({
     }
   };
 
-  if (isLoading || !currentRule) {
+  if (isLoading || isLoadingRules || !currentRule) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Loading...</DialogTitle>
+            <DialogTitle>Loading parameters...</DialogTitle>
           </DialogHeader>
+          <div className="flex items-center justify-center p-6">
+            <LoadingCard />
+          </div>
         </DialogContent>
       </Dialog>
     );
