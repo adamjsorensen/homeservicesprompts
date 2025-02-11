@@ -377,6 +377,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_parameter_rules_with_tweaks: {
+        Args: {
+          prompt_id_param: string
+        }
+        Returns: {
+          id: string
+          prompt_id: string
+          parameter_id: string
+          order: number
+          is_active: boolean
+          is_required: boolean
+          parameter_name: string
+          parameter_type: Database["public"]["Enums"]["prompt_parameter_type"]
+          parameter_description: string
+          allowed_tweaks: Json
+        }[]
+      }
       has_role: {
         Args: {
           user_id: string

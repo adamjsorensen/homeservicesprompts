@@ -21,11 +21,6 @@ interface Tweak {
   sub_prompt: string;
 }
 
-interface AllowedTweak {
-  id: string;
-  tweak: Tweak;
-}
-
 interface Parameter {
   id: string;
   name: string;
@@ -37,7 +32,7 @@ interface ParameterRule {
   id: string;
   parameter_id: string;
   parameter: Parameter;
-  allowed_tweaks: AllowedTweak[];
+  allowed_tweaks: Tweak[];
   is_active: boolean;
   is_required: boolean;
 }
@@ -70,9 +65,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   // Initialize selected tweaks from allowed_tweaks
   useEffect(() => {
     if (rule.allowed_tweaks && Array.isArray(rule.allowed_tweaks)) {
-      const selectedTweakIds = rule.allowed_tweaks
-        .filter(at => at.tweak && at.tweak.id)
-        .map(at => at.tweak.id);
+      const selectedTweakIds = rule.allowed_tweaks.map(tweak => tweak.id);
       setSelectedTweaks(selectedTweakIds);
     }
   }, [rule.allowed_tweaks]);
