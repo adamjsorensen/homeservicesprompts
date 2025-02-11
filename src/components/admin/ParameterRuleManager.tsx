@@ -48,7 +48,12 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
         .from("prompt_parameter_rules")
         .select(`
           *,
-          parameter:parameter_id(name, type, description),
+          parameter:parameter_id(
+            id,
+            name,
+            type,
+            description
+          ),
           allowed_tweaks:prompt_parameter_allowed_tweaks(
             tweak:tweak_id(*)
           )
@@ -105,6 +110,10 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
       }
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="space-y-4">

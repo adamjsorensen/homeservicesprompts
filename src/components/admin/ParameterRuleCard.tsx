@@ -21,18 +21,22 @@ interface Tweak {
   sub_prompt: string;
 }
 
+interface AllowedTweak {
+  tweak: Tweak;
+}
+
+interface Parameter {
+  id: string;
+  name: string;
+  type: string;
+  description: string | null;
+}
+
 interface ParameterRule {
   id: string;
-  parameter_id: string;  // Add this
-  parameter: {
-    id: string;        // Add this
-    name: string;
-    type: string;
-    description: string | null;
-  };
-  allowed_tweaks: {
-    tweak: Tweak;
-  }[];
+  parameter_id: string;
+  parameter: Parameter;
+  allowed_tweaks: AllowedTweak[];
   is_active: boolean;
   is_required: boolean;
 }
@@ -47,6 +51,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   const [selectedTweaks, setSelectedTweaks] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [availableTweaks, setAvailableTweaks] = useState<Tweak[]>([]);
 
   const {
     attributes,
@@ -61,27 +66,32 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
     transition,
   };
 
-  // Get all available tweaks for this parameter from the database
-  const [availableTweaks, setAvailableTweaks] = useState<Tweak[]>([]);
-
+  // Load available tweaks for this parameter
   useEffect(() => {
     const loadTweaks = async () => {
       try {
-        // Use parameter_id instead of trying to access through nested object
         const { data, error } = await supabase
           .from('parameter_tweaks')
           .select('*')
           .eq('parameter_id', rule.parameter_id);
 
         if (error) throw error;
-        setAvailableTweaks(data || []);
-        setIsLoading(false);
+        
+        if (data) {
+          setAvailableTweaks(data);
+          // Initialize selected tweaks from allowed_tweaks
+          if (rule.allowed_tweaks) {
+            const selectedTweakIds = rule.allowed_tweaks.map(at => at.tweak.id);
+            setSelectedTweaks(selectedTweakIds);
+          }
+        }
       } catch (error) {
         console.error('Error loading tweaks:', error);
         toast({
           variant: "destructive",
           description: "Failed to load tweaks",
         });
+      } finally {
         setIsLoading(false);
       }
     };
@@ -89,15 +99,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
     if (rule.parameter_id) {
       loadTweaks();
     }
-  }, [rule.parameter_id]);
-
-  // Initialize selected tweaks from allowed_tweaks
-  useEffect(() => {
-    if (rule.allowed_tweaks) {
-      const selectedTweakIds = rule.allowed_tweaks.map(at => at.tweak.id);
-      setSelectedTweaks(selectedTweakIds);
-    }
-  }, [rule.allowed_tweaks]);
+  }, [rule.parameter_id, rule.allowed_tweaks]);
 
   const handleDelete = async () => {
     try {
@@ -240,25 +242,25 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>Allowed Tweaks</Label>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className="w-full justify-between"
-                disabled={isLoading}
-              >
-                {isLoading 
-                  ? "Loading tweaks..."
-                  : selectedTweaks.length === 0 
-                    ? "Select tweaks..."
-                    : `${selectedTweaks.length} selected`}
-              </Button>
-            </PopoverTrigger>
-            {!isLoading && availableTweaks && (
+        {availableTweaks.length > 0 && (
+          <div className="space-y-2">
+            <Label>Allowed Tweaks</Label>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-between"
+                  disabled={isLoading}
+                >
+                  {isLoading 
+                    ? "Loading tweaks..."
+                    : selectedTweaks.length === 0 
+                      ? "Select tweaks..."
+                      : `${selectedTweaks.length} selected`}
+                </Button>
+              </PopoverTrigger>
               <PopoverContent className="w-[300px] p-0">
                 <Command>
                   <CommandInput placeholder="Search tweaks..." className="h-9" />
@@ -294,26 +296,26 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
                   </CommandGroup>
                 </Command>
               </PopoverContent>
+            </Popover>
+            {selectedTweaks.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {selectedTweaks.map((tweakId) => {
+                  const tweak = availableTweaks.find(t => t.id === tweakId);
+                  return tweak ? (
+                    <Badge
+                      key={tweakId}
+                      variant="secondary"
+                      className="cursor-pointer"
+                      onClick={() => handleTweaksChange(tweakId)}
+                    >
+                      {tweak.name}
+                    </Badge>
+                  ) : null;
+                })}
+              </div>
             )}
-          </Popover>
-          {selectedTweaks.length > 0 && availableTweaks && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {selectedTweaks.map((tweakId) => {
-                const tweak = availableTweaks.find(t => t.id === tweakId);
-                return tweak ? (
-                  <Badge
-                    key={tweakId}
-                    variant="secondary"
-                    className="cursor-pointer"
-                    onClick={() => handleTweaksChange(tweakId)}
-                  >
-                    {tweak.name}
-                  </Badge>
-                ) : null;
-              })}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
