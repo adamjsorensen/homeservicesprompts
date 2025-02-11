@@ -6,50 +6,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { Form } from "@/components/ui/form";
 import { PromptParameter } from "@/hooks/usePromptParameters";
-
-const PARAMETER_TYPES = [
-  "tone_and_style",
-  "audience_specificity",
-  "purpose_and_intent",
-  "content_details",
-  "output_format",
-  "length_and_depth",
-  "call_to_action",
-  "customization_branding",
-  "constraints",
-  "iteration_feedback",
-] as const;
-
-const parameterSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  type: z.enum(PARAMETER_TYPES),
-});
+import { useParameterForm } from "@/hooks/useParameterForm";
+import { ParameterFormFields } from "./ParameterFormFields";
 
 interface ParameterDialogProps {
   parameter: PromptParameter | null;
@@ -62,76 +22,7 @@ export function ParameterDialog({
   open,
   onOpenChange,
 }: ParameterDialogProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const form = useForm<z.infer<typeof parameterSchema>>({
-    resolver: zodResolver(parameterSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      type: PARAMETER_TYPES[0],
-    },
-  });
-
-  // Reset form with parameter data when dialog opens
-  useEffect(() => {
-    if (parameter && open) {
-      form.reset({
-        name: parameter.name,
-        description: parameter.description || "",
-        type: parameter.type as typeof PARAMETER_TYPES[number],
-      });
-    } else if (!parameter && open) {
-      form.reset({
-        name: "",
-        description: "",
-        type: PARAMETER_TYPES[0],
-      });
-    }
-  }, [parameter, open, form]);
-
-  const onSubmit = async (data: z.infer<typeof parameterSchema>) => {
-    try {
-      if (parameter?.id) {
-        const { error } = await supabase
-          .from("prompt_parameters")
-          .update({
-            name: data.name,
-            description: data.description,
-            type: data.type,
-          })
-          .eq("id", parameter.id);
-
-        if (error) throw error;
-
-        toast({
-          description: "Parameter updated successfully",
-        });
-      } else {
-        const { error } = await supabase.from("prompt_parameters").insert({
-          name: data.name,
-          description: data.description,
-          type: data.type,
-        });
-
-        if (error) throw error;
-
-        toast({
-          description: "Parameter created successfully",
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["prompt_parameters"] });
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error saving parameter:", error);
-      toast({
-        variant: "destructive",
-        description: "Failed to save parameter",
-      });
-    }
-  };
+  const { form, onSubmit } = useParameterForm(parameter, open, onOpenChange);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,61 +35,7 @@ export function ParameterDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {PARAMETER_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <ParameterFormFields form={form} />
 
             <div className="flex justify-end space-x-4">
               <Button
