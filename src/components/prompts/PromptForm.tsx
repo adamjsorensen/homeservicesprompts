@@ -7,6 +7,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,7 +53,7 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
       description: "",
       category: "",
       prompt: "",
-      tags: [] as unknown as string, // This matches the schema's input type
+      tags: "", // Changed to empty string to match input format
     },
   });
 
@@ -69,7 +70,7 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
         description: data.description,
         category: data.category,
         prompt: data.prompt,
-        tags: data.tags,
+        tags: data.tags, // Zod transformation ensures this is string[]
         created_by: user.id
       });
 
@@ -175,10 +176,13 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
               <FormLabel>Tags</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Enter tags separated by commas"
+                  placeholder="Enter tags separated by commas (e.g., marketing, sales, email)"
                   {...field}
                 />
               </FormControl>
+              <FormDescription>
+                Enter tags separated by commas to help categorize your prompt
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
