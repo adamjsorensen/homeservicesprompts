@@ -12,6 +12,7 @@ import Business from "./pages/Business";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import { GeneratedContent } from "./pages/GeneratedContent";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/generated-content"
+              element={
+                <ProtectedRoute>
+                  <GeneratedContent />
                 </ProtectedRoute>
               }
             />
