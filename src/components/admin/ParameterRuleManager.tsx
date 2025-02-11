@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -37,6 +37,10 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  useEffect(() => {
+    loadRules();
+  }, [promptId]);
 
   const loadRules = async () => {
     try {
@@ -80,7 +84,11 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
       try {
         const updates = rules.map((rule, index) => ({
           id: rule.id,
+          parameter_id: rule.parameter_id,
+          prompt_id: rule.prompt_id,
           order: index,
+          is_active: rule.is_active,
+          is_required: rule.is_required,
         }));
 
         const { error } = await supabase

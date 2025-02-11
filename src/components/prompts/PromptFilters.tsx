@@ -22,13 +22,13 @@ const fetchUniqueCategories = async () => {
   const { data, error } = await supabase
     .from('prompts')
     .select('category')
-    .select('category')
     .eq('is_default', true);
 
   if (error) throw error;
 
   // Get unique categories and sort them
-  const uniqueCategories = Array.from(new Set(data.map(item => item.category)))
+  const categories = data.map(item => item.category as string);
+  const uniqueCategories = Array.from(new Set(categories))
     .sort((a, b) => a.localeCompare(b));
 
   return uniqueCategories;
