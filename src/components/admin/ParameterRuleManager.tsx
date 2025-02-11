@@ -26,7 +26,7 @@ interface ParameterRuleManagerProps {
 }
 
 export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
-  const { parameters } = usePromptParameters();
+  const { parameters, isLoading: isLoadingParameters } = usePromptParameters();
   const { toast } = useToast();
   const [rules, setRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,11 +39,14 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
   );
 
   useEffect(() => {
-    loadRules();
+    if (promptId) {
+      loadRules();
+    }
   }, [promptId]);
 
   const loadRules = async () => {
     try {
+      console.log("Loading rules for prompt:", promptId);
       const { data, error } = await supabase
         .from("prompt_parameter_rules")
         .select(`
@@ -55,13 +58,20 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
             description
           ),
           allowed_tweaks:prompt_parameter_allowed_tweaks(
-            tweak:tweak_id(*)
+            id,
+            tweak:tweak_id(
+              id,
+              name,
+              sub_prompt
+            )
           )
         `)
         .eq("prompt_id", promptId)
         .order("order");
 
       if (error) throw error;
+      
+      console.log("Loaded rules:", data);
       setRules(data || []);
     } catch (error) {
       console.error("Error loading rules:", error);
@@ -89,8 +99,8 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
       try {
         const updates = rules.map((rule, index) => ({
           id: rule.id,
-          parameter_id: rule.parameter_id,
           prompt_id: rule.prompt_id,
+          parameter_id: rule.parameter_id,
           order: index,
           is_active: rule.is_active,
           is_required: rule.is_required,
@@ -111,7 +121,7 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
     }
   };
 
-  if (loading) {
+  if (loading || isLoadingParameters) {
     return <div>Loading...</div>;
   }
 
