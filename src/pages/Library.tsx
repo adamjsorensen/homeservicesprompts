@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Copy, Filter, Plus } from "lucide-react";
+import { Copy, Filter, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PromptForm } from "@/components/prompts/PromptForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Prompt {
   id: string;
@@ -50,9 +60,27 @@ const fetchPrompts = async () => {
   return data;
 };
 
+const checkAdminRole = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data, error } = await supabase.rpc('has_role', {
+    user_id: user.id,
+    role: 'admin'
+  });
+
+  if (error) {
+    console.error('Error checking admin role:', error);
+    return false;
+  }
+
+  return data;
+};
+
 const Library = () => {
   const [filter, setFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const { data: prompts = [], isLoading, error } = useQuery({
@@ -60,11 +88,40 @@ const Library = () => {
     queryFn: fetchPrompts,
   });
 
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["isAdmin"],
+    queryFn: checkAdminRole,
+  });
+
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
     toast({
       description: "Prompt copied to clipboard",
     });
+  };
+
+  const handleDeletePrompt = async () => {
+    if (!deletePromptId) return;
+
+    try {
+      const { error } = await supabase
+        .from("prompts")
+        .delete()
+        .eq("id", deletePromptId);
+
+      if (error) throw error;
+
+      toast({
+        description: "Prompt deleted successfully",
+      });
+      setDeletePromptId(null);
+    } catch (error) {
+      console.error("Error deleting prompt:", error);
+      toast({
+        variant: "destructive",
+        description: "Failed to delete prompt. Please try again.",
+      });
+    }
   };
 
   const filteredPrompts = prompts.filter((prompt) => {
@@ -138,14 +195,26 @@ const Library = () => {
                       {prompt.description}
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => copyToClipboard(prompt.prompt)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => copyToClipboard(prompt.prompt)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletePromptId(prompt.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -171,6 +240,23 @@ const Library = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletePromptId} onOpenChange={(open) => !open && setDeletePromptId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the prompt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePrompt} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
