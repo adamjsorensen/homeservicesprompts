@@ -46,14 +46,21 @@ export const usePromptParameters = () => {
     queryFn: fetchTweaks,
   });
 
-  const getTweaksForParameter = (parameterId: string) => {
+  const getTweaksForParameter = (parameterId: string | null) => {
+    if (!parameterId) return tweaks;
     return tweaks.filter(tweak => tweak.parameter_id === parameterId);
+  };
+
+  const getParametersByType = (type: string | null) => {
+    if (!type) return parameters;
+    return parameters.filter(param => param.type === type);
   };
 
   return {
     parameters,
     tweaks,
     getTweaksForParameter,
+    getParametersByType,
     isLoading: isLoadingParameters || isLoadingTweaks,
   };
 };
