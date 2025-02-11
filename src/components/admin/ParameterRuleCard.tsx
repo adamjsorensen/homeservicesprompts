@@ -2,22 +2,19 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GripVertical, Trash } from "lucide-react";
+import { GripVertical, Trash, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePromptParameters } from "@/hooks/usePromptParameters";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface ParameterRuleCardProps {
   rule: any;
@@ -29,6 +26,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   const { getTweaksForParameter } = usePromptParameters();
   const parameterTweaks = getTweaksForParameter(rule.parameter_id);
   const [selectedTweaks, setSelectedTweaks] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
 
   const {
     attributes,
@@ -119,8 +117,12 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
     }
   };
 
-  const handleTweaksChange = async (tweakIds: string[]) => {
+  const handleTweaksChange = async (tweakId: string) => {
     try {
+      const newSelectedTweaks = selectedTweaks.includes(tweakId)
+        ? selectedTweaks.filter(id => id !== tweakId)
+        : [...selectedTweaks, tweakId];
+
       // Delete existing allowed tweaks
       await supabase
         .from("prompt_parameter_allowed_tweaks")
@@ -128,11 +130,11 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
         .eq("rule_id", rule.id);
 
       // Insert new allowed tweaks
-      if (tweakIds.length > 0) {
+      if (newSelectedTweaks.length > 0) {
         const { error } = await supabase
           .from("prompt_parameter_allowed_tweaks")
           .insert(
-            tweakIds.map(tweakId => ({
+            newSelectedTweaks.map(tweakId => ({
               rule_id: rule.id,
               tweak_id: tweakId,
             }))
@@ -141,7 +143,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
         if (error) throw error;
       }
 
-      setSelectedTweaks(tweakIds);
+      setSelectedTweaks(newSelectedTweaks);
       onUpdate();
     } catch (error) {
       console.error("Error updating allowed tweaks:", error);
@@ -204,28 +206,72 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
 
         <div className="space-y-2">
           <Label>Allowed Tweaks</Label>
-          <Select
-            value={selectedTweaks.join(",")}
-            onValueChange={(value) => handleTweaksChange(value.split(",").filter(Boolean))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select tweaks to allow" />
-            </SelectTrigger>
-            <SelectContent>
-              <ScrollArea className="h-[200px]">
-                {parameterTweaks.map((tweak) => (
-                  <SelectItem key={tweak.id} value={tweak.id}>
-                    <div className="space-y-1">
-                      <div>{tweak.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {tweak.sub_prompt}
-                      </div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </ScrollArea>
-            </SelectContent>
-          </Select>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between"
+              >
+                {selectedTweaks.length === 0 
+                  ? "Select tweaks..."
+                  : `${selectedTweaks.length} selected`}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Search tweaks..." className="h-9" />
+                <CommandEmpty>No tweaks found.</CommandEmpty>
+                <CommandGroup>
+                  <ScrollArea className="h-[200px]">
+                    {parameterTweaks.map((tweak) => (
+                      <CommandItem
+                        key={tweak.id}
+                        onSelect={() => handleTweaksChange(tweak.id)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                              selectedTweaks.includes(tweak.id)
+                                ? "bg-primary text-primary-foreground"
+                                : "opacity-50 [&_svg]:invisible"
+                            )}
+                          >
+                            <Check className={cn("h-4 w-4")} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span>{tweak.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {tweak.sub_prompt}
+                            </span>
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </ScrollArea>
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {selectedTweaks.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {selectedTweaks.map((tweakId) => {
+                const tweak = parameterTweaks.find(t => t.id === tweakId);
+                return (
+                  <Badge
+                    key={tweakId}
+                    variant="secondary"
+                    className="cursor-pointer"
+                    onClick={() => handleTweaksChange(tweakId)}
+                  >
+                    {tweak?.name}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
