@@ -29,7 +29,9 @@ const promptSchema = z.object({
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
   prompt: z.string().min(1, "Prompt content is required"),
-  tags: z.string().transform((str) => str.split(",").map((tag) => tag.trim())),
+  tags: z.string().transform((str) => 
+    str ? str.split(",").map((tag) => tag.trim()) : []
+  ),
 });
 
 type PromptFormValues = z.infer<typeof promptSchema>;
@@ -56,9 +58,20 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
 
   const onSubmit = async (data: PromptFormValues) => {
     try {
+      const user = await supabase.auth.getUser();
+      const userId = user.data.user?.id;
+
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
       const { error } = await supabase.from("prompts").insert({
-        ...data,
-        created_by: (await supabase.auth.getUser()).data.user?.id,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        prompt: data.prompt,
+        tags: data.tags,
+        created_by: userId
       });
 
       if (error) throw error;
