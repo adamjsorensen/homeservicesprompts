@@ -69,8 +69,9 @@ export function PromptsAdmin() {
             setSelectedPrompt(null);
             setIsDialogOpen(true);
           }}
+          className="flex items-center gap-2"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4" />
           Add Prompt
         </Button>
       </div>
