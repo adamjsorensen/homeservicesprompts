@@ -23,10 +23,12 @@ interface ParameterRuleCardProps {
 
 export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   const { toast } = useToast();
-  const { getTweaksForParameter } = usePromptParameters();
-  const parameterTweaks = getTweaksForParameter(rule.parameter_id);
+  const { getTweaksForParameter, isLoading } = usePromptParameters();
   const [selectedTweaks, setSelectedTweaks] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+
+  // Ensure we have valid parameter_id and get tweaks
+  const parameterTweaks = rule.parameter_id ? getTweaksForParameter(rule.parameter_id) : [];
 
   const {
     attributes,
@@ -42,7 +44,9 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   };
 
   useEffect(() => {
-    loadSelectedTweaks();
+    if (rule.id) {
+      loadSelectedTweaks();
+    }
   }, [rule.id]);
 
   const loadSelectedTweaks = async () => {
@@ -53,7 +57,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
         .eq("rule_id", rule.id);
 
       if (error) throw error;
-      setSelectedTweaks(data.map(item => item.tweak_id));
+      setSelectedTweaks(data?.map(item => item.tweak_id) || []);
     } catch (error) {
       console.error("Error loading selected tweaks:", error);
       toast({
@@ -213,10 +217,13 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
                 role="combobox"
                 aria-expanded={open}
                 className="w-full justify-between"
+                disabled={isLoading}
               >
-                {selectedTweaks.length === 0 
-                  ? "Select tweaks..."
-                  : `${selectedTweaks.length} selected`}
+                {isLoading 
+                  ? "Loading tweaks..."
+                  : selectedTweaks.length === 0 
+                    ? "Select tweaks..."
+                    : `${selectedTweaks.length} selected`}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[300px] p-0">
@@ -225,7 +232,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
                 <CommandEmpty>No tweaks found.</CommandEmpty>
                 <CommandGroup>
                   <ScrollArea className="h-[200px]">
-                    {parameterTweaks.map((tweak) => (
+                    {(parameterTweaks || []).map((tweak) => (
                       <CommandItem
                         key={tweak.id}
                         onSelect={() => handleTweaksChange(tweak.id)}
@@ -258,17 +265,17 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
           {selectedTweaks.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {selectedTweaks.map((tweakId) => {
-                const tweak = parameterTweaks.find(t => t.id === tweakId);
-                return (
+                const tweak = parameterTweaks?.find(t => t.id === tweakId);
+                return tweak ? (
                   <Badge
                     key={tweakId}
                     variant="secondary"
                     className="cursor-pointer"
                     onClick={() => handleTweaksChange(tweakId)}
                   >
-                    {tweak?.name}
+                    {tweak.name}
                   </Badge>
-                );
+                ) : null;
               })}
             </div>
           )}
