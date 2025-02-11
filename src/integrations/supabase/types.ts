@@ -168,6 +168,96 @@ export type Database = {
           },
         ]
       }
+      prompt_parameter_allowed_tweaks: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          rule_id: string
+          tweak_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          rule_id: string
+          tweak_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          rule_id?: string
+          tweak_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_parameter_allowed_tweaks_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_parameter_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_parameter_allowed_tweaks_tweak_id_fkey"
+            columns: ["tweak_id"]
+            isOneToOne: false
+            referencedRelation: "parameter_tweaks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_parameter_rules: {
+        Row: {
+          conditions: Json | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          order: number
+          parameter_id: string
+          prompt_id: string
+          updated_at: string
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          order: number
+          parameter_id: string
+          prompt_id: string
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          order?: number
+          parameter_id?: string
+          prompt_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_parameter_rules_parameter_id_fkey"
+            columns: ["parameter_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_parameters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_parameter_rules_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_parameters: {
         Row: {
           created_at: string
