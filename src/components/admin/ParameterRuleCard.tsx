@@ -23,7 +23,9 @@ interface Tweak {
 
 interface ParameterRule {
   id: string;
+  parameter_id: string;  // Add this
   parameter: {
+    id: string;        // Add this
     name: string;
     type: string;
     description: string | null;
@@ -65,10 +67,11 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   useEffect(() => {
     const loadTweaks = async () => {
       try {
+        // Use parameter_id instead of trying to access through nested object
         const { data, error } = await supabase
           .from('parameter_tweaks')
           .select('*')
-          .eq('parameter_id', rule.parameter.id);
+          .eq('parameter_id', rule.parameter_id);
 
         if (error) throw error;
         setAvailableTweaks(data || []);
@@ -83,32 +86,18 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
       }
     };
 
-    loadTweaks();
-  }, [rule.parameter.id]);
+    if (rule.parameter_id) {
+      loadTweaks();
+    }
+  }, [rule.parameter_id]);
 
+  // Initialize selected tweaks from allowed_tweaks
   useEffect(() => {
-    if (rule.id) {
-      loadSelectedTweaks();
+    if (rule.allowed_tweaks) {
+      const selectedTweakIds = rule.allowed_tweaks.map(at => at.tweak.id);
+      setSelectedTweaks(selectedTweakIds);
     }
-  }, [rule.id]);
-
-  const loadSelectedTweaks = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("prompt_parameter_allowed_tweaks")
-        .select("tweak_id")
-        .eq("rule_id", rule.id);
-
-      if (error) throw error;
-      setSelectedTweaks(data?.map(item => item.tweak_id) || []);
-    } catch (error) {
-      console.error("Error loading selected tweaks:", error);
-      toast({
-        variant: "destructive",
-        description: "Failed to load selected tweaks",
-      });
-    }
-  };
+  }, [rule.allowed_tweaks]);
 
   const handleDelete = async () => {
     try {
