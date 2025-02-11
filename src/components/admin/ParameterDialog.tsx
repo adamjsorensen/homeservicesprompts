@@ -29,6 +29,8 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { PromptParameter } from "@/hooks/usePromptParameters";
 
 const PARAMETER_TYPES = [
   "tone_and_style",
@@ -50,7 +52,7 @@ const parameterSchema = z.object({
 });
 
 interface ParameterDialogProps {
-  parameter: any;
+  parameter: PromptParameter | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -66,11 +68,28 @@ export function ParameterDialog({
   const form = useForm<z.infer<typeof parameterSchema>>({
     resolver: zodResolver(parameterSchema),
     defaultValues: {
-      name: parameter?.name ?? "",
-      description: parameter?.description ?? "",
-      type: parameter?.type ?? PARAMETER_TYPES[0],
+      name: "",
+      description: "",
+      type: PARAMETER_TYPES[0],
     },
   });
+
+  // Reset form with parameter data when dialog opens
+  useEffect(() => {
+    if (parameter && open) {
+      form.reset({
+        name: parameter.name,
+        description: parameter.description || "",
+        type: parameter.type as typeof PARAMETER_TYPES[number],
+      });
+    } else if (!parameter && open) {
+      form.reset({
+        name: "",
+        description: "",
+        type: PARAMETER_TYPES[0],
+      });
+    }
+  }, [parameter, open, form]);
 
   const onSubmit = async (data: z.infer<typeof parameterSchema>) => {
     try {
@@ -161,7 +180,7 @@ export function ParameterDialog({
                   <FormLabel>Type</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
