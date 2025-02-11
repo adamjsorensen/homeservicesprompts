@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +18,7 @@ import { type Prompt } from "@/hooks/usePrompts";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CustomPromptWizardProps {
   basePrompt: Prompt | null;

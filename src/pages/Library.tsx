@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { PromptFilters } from "@/components/prompts/PromptFilters";
-import { usePrompts } from "@/hooks/usePrompts";
+import { usePrompts, type Prompt } from "@/hooks/usePrompts";
 import { CustomPromptWizard } from "@/components/prompts/CustomPromptWizard";
 
 const Library = () => {
