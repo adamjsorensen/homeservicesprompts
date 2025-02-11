@@ -66,9 +66,24 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
     transition,
   };
 
+  // Initialize selected tweaks from allowed_tweaks
+  useEffect(() => {
+    if (rule.allowed_tweaks) {
+      const selectedTweakIds = rule.allowed_tweaks
+        .filter(at => at.tweak && at.tweak.id) // Ensure tweak exists and has an id
+        .map(at => at.tweak.id);
+      setSelectedTweaks(selectedTweakIds);
+    }
+  }, [rule.allowed_tweaks]);
+
   // Load available tweaks for this parameter
   useEffect(() => {
     const loadTweaks = async () => {
+      if (!rule.parameter_id) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('parameter_tweaks')
@@ -77,14 +92,7 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
 
         if (error) throw error;
         
-        if (data) {
-          setAvailableTweaks(data);
-          // Initialize selected tweaks from allowed_tweaks
-          if (rule.allowed_tweaks) {
-            const selectedTweakIds = rule.allowed_tweaks.map(at => at.tweak.id);
-            setSelectedTweaks(selectedTweakIds);
-          }
-        }
+        setAvailableTweaks(data || []);
       } catch (error) {
         console.error('Error loading tweaks:', error);
         toast({
@@ -96,10 +104,8 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
       }
     };
 
-    if (rule.parameter_id) {
-      loadTweaks();
-    }
-  }, [rule.parameter_id, rule.allowed_tweaks]);
+    loadTweaks();
+  }, [rule.parameter_id]);
 
   const handleDelete = async () => {
     try {
@@ -242,25 +248,25 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
           </div>
         </div>
 
-        {availableTweaks.length > 0 && (
-          <div className="space-y-2">
-            <Label>Allowed Tweaks</Label>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full justify-between"
-                  disabled={isLoading}
-                >
-                  {isLoading 
-                    ? "Loading tweaks..."
-                    : selectedTweaks.length === 0 
-                      ? "Select tweaks..."
-                      : `${selectedTweaks.length} selected`}
-                </Button>
-              </PopoverTrigger>
+        <div className="space-y-2">
+          <Label>Allowed Tweaks</Label>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between"
+                disabled={isLoading}
+              >
+                {isLoading 
+                  ? "Loading tweaks..."
+                  : selectedTweaks.length === 0 
+                    ? "Select tweaks..."
+                    : `${selectedTweaks.length} selected`}
+              </Button>
+            </PopoverTrigger>
+            {!isLoading && open && availableTweaks.length > 0 && (
               <PopoverContent className="w-[300px] p-0">
                 <Command>
                   <CommandInput placeholder="Search tweaks..." className="h-9" />
@@ -296,26 +302,26 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
                   </CommandGroup>
                 </Command>
               </PopoverContent>
-            </Popover>
-            {selectedTweaks.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {selectedTweaks.map((tweakId) => {
-                  const tweak = availableTweaks.find(t => t.id === tweakId);
-                  return tweak ? (
-                    <Badge
-                      key={tweakId}
-                      variant="secondary"
-                      className="cursor-pointer"
-                      onClick={() => handleTweaksChange(tweakId)}
-                    >
-                      {tweak.name}
-                    </Badge>
-                  ) : null;
-                })}
-              </div>
             )}
-          </div>
-        )}
+          </Popover>
+          {selectedTweaks.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {selectedTweaks.map((tweakId) => {
+                const tweak = availableTweaks.find(t => t.id === tweakId);
+                return tweak ? (
+                  <Badge
+                    key={tweakId}
+                    variant="secondary"
+                    className="cursor-pointer"
+                    onClick={() => handleTweaksChange(tweakId)}
+                  >
+                    {tweak.name}
+                  </Badge>
+                ) : null;
+              })}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
