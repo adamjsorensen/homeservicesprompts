@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PromptForm } from "@/components/prompts/PromptForm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +26,7 @@ import { PromptTable } from "@/components/prompts/PromptTable";
 
 const Library = () => {
   const [filter, setFilter] = useState("all");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -72,8 +71,13 @@ const Library = () => {
   };
 
   const filteredPrompts = prompts.filter((prompt) => {
-    if (filter === "all") return true;
-    return prompt.category.toLowerCase() === filter.toLowerCase();
+    const matchesFilter = filter === "all" || prompt.category.toLowerCase() === filter.toLowerCase();
+    const matchesSearch = searchQuery === "" || 
+      prompt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prompt.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prompt.category.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
   });
 
   if (isLoading) {
@@ -108,8 +112,9 @@ const Library = () => {
           </div>
           <PromptFilters
             filter={filter}
+            searchQuery={searchQuery}
             onFilterChange={setFilter}
-            onCreateClick={() => setIsCreateDialogOpen(true)}
+            onSearchChange={setSearchQuery}
           />
         </div>
 
@@ -121,18 +126,6 @@ const Library = () => {
           onDelete={(prompt) => setDeletePromptId(prompt.id)}
         />
       </div>
-
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Create New Prompt</DialogTitle>
-          </DialogHeader>
-          <PromptForm
-            onSuccess={() => setIsCreateDialogOpen(false)}
-            onCancel={() => setIsCreateDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
 
       <CustomPromptWizard
         basePrompt={selectedPrompt}

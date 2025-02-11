@@ -1,5 +1,4 @@
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -8,18 +7,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, Plus } from "lucide-react";
+import { Filter, Search } from "lucide-react";
 
 interface PromptFiltersProps {
   filter: string;
+  searchQuery: string;
   onFilterChange: (value: string) => void;
-  onCreateClick: () => void;
+  onSearchChange: (value: string) => void;
 }
 
 export const PromptFilters = ({
   filter,
+  searchQuery,
   onFilterChange,
-  onCreateClick,
+  onSearchChange,
 }: PromptFiltersProps) => {
   return (
     <div className="flex items-center gap-4">
@@ -33,17 +34,20 @@ export const PromptFilters = ({
             <SelectItem value="all">All Categories</SelectItem>
             <SelectItem value="email">Email</SelectItem>
             <SelectItem value="marketing">Marketing</SelectItem>
+            <SelectItem value="social">Social Media</SelectItem>
+            <SelectItem value="content">Content</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      <Input
-        placeholder="Search prompts..."
-        className="w-[200px] md:w-[300px]"
-      />
-      <Button onClick={onCreateClick}>
-        <Plus className="w-4 h-4 mr-2" />
-        Create Prompt
-      </Button>
+      <div className="relative flex-1 max-w-sm">
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search prompts..."
+          className="pl-8"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
+      </div>
     </div>
   );
 };
