@@ -1,25 +1,14 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GripVertical, Trash, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useState, useEffect } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-
-interface Tweak {
-  id: string;
-  name: string;
-  sub_prompt: string;
-}
+import { GripVertical, Trash } from "lucide-react";
+import { usePromptParameters } from "@/hooks/usePromptParameters";
 
 interface Parameter {
   id: string;
@@ -28,26 +17,22 @@ interface Parameter {
   description: string | null;
 }
 
-interface ParameterRule {
+interface Rule {
   id: string;
   parameter_id: string;
   parameter: Parameter;
-  allowed_tweaks: Tweak[];
   is_active: boolean;
   is_required: boolean;
 }
 
 interface ParameterRuleCardProps {
-  rule: ParameterRule;
+  rule: Rule;
   onUpdate: () => void;
 }
 
 export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   const { toast } = useToast();
-  const [selectedTweaks, setSelectedTweaks] = useState<string[]>([]);
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [availableTweaks, setAvailableTweaks] = useState<Tweak[]>([]);
+  const { getTweaksForParameter } = usePromptParameters();
 
   const {
     attributes,
@@ -55,51 +40,33 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: rule.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
-  // Initialize selected tweaks from allowed_tweaks
-  useEffect(() => {
-    if (rule.allowed_tweaks && Array.isArray(rule.allowed_tweaks)) {
-      const selectedTweakIds = rule.allowed_tweaks.map(tweak => tweak.id);
-      setSelectedTweaks(selectedTweakIds);
+  const handleToggleChange = async (field: "is_active" | "is_required", value: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("prompt_parameter_rules")
+        .update({ [field]: value })
+        .eq("id", rule.id);
+
+      if (error) throw error;
+
+      onUpdate();
+    } catch (error) {
+      console.error("Error updating rule:", error);
+      toast({
+        variant: "destructive",
+        description: "Failed to update rule",
+      });
     }
-  }, [rule.allowed_tweaks]);
-
-  // Load available tweaks for this parameter
-  useEffect(() => {
-    const loadTweaks = async () => {
-      if (!rule.parameter_id) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('parameter_tweaks')
-          .select('*')
-          .eq('parameter_id', rule.parameter_id);
-
-        if (error) throw error;
-        
-        setAvailableTweaks(data || []);
-      } catch (error) {
-        console.error('Error loading tweaks:', error);
-        toast({
-          variant: "destructive",
-          description: "Failed to load tweaks",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTweaks();
-  }, [rule.parameter_id]);
+  };
 
   const handleDelete = async () => {
     try {
@@ -109,88 +76,18 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
         .eq("id", rule.id);
 
       if (error) throw error;
+
       onUpdate();
     } catch (error) {
       console.error("Error deleting rule:", error);
       toast({
         variant: "destructive",
-        description: "Failed to delete parameter rule",
+        description: "Failed to delete rule",
       });
     }
   };
 
-  const handleToggleActive = async (active: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("prompt_parameter_rules")
-        .update({ is_active: active })
-        .eq("id", rule.id);
-
-      if (error) throw error;
-      onUpdate();
-    } catch (error) {
-      console.error("Error updating rule:", error);
-      toast({
-        variant: "destructive",
-        description: "Failed to update parameter rule",
-      });
-    }
-  };
-
-  const handleToggleRequired = async (required: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("prompt_parameter_rules")
-        .update({ is_required: required })
-        .eq("id", rule.id);
-
-      if (error) throw error;
-      onUpdate();
-    } catch (error) {
-      console.error("Error updating rule:", error);
-      toast({
-        variant: "destructive",
-        description: "Failed to update parameter rule",
-      });
-    }
-  };
-
-  const handleTweaksChange = async (tweakId: string) => {
-    try {
-      const newSelectedTweaks = selectedTweaks.includes(tweakId)
-        ? selectedTweaks.filter(id => id !== tweakId)
-        : [...selectedTweaks, tweakId];
-
-      // Delete existing allowed tweaks
-      await supabase
-        .from("prompt_parameter_allowed_tweaks")
-        .delete()
-        .eq("rule_id", rule.id);
-
-      // Insert new allowed tweaks
-      if (newSelectedTweaks.length > 0) {
-        const { error } = await supabase
-          .from("prompt_parameter_allowed_tweaks")
-          .insert(
-            newSelectedTweaks.map(tweakId => ({
-              rule_id: rule.id,
-              tweak_id: tweakId,
-            }))
-          );
-
-        if (error) throw error;
-      }
-
-      setSelectedTweaks(newSelectedTweaks);
-      onUpdate();
-    } catch (error) {
-      console.error("Error updating allowed tweaks:", error);
-      toast({
-        variant: "destructive",
-        description: "Failed to update allowed tweaks",
-      });
-    }
-  };
+  const availableTweaks = getTweaksForParameter(rule.parameter_id);
 
   return (
     <Card 
@@ -198,122 +95,66 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
       style={style}
       className="relative border-2 hover:border-primary/50"
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded-md"
-            >
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </button>
-            <CardTitle className="text-base font-medium">
-              {rule.parameter?.name}
-            </CardTitle>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-destructive"
-            onClick={handleDelete}
+      <div className="p-4">
+        <div className="flex items-start gap-4">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded-md"
           >
-            <Trash className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id={`active-${rule.id}`}
-              checked={rule.is_active}
-              onCheckedChange={handleToggleActive}
-            />
-            <Label htmlFor={`active-${rule.id}`}>Active</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id={`required-${rule.id}`}
-              checked={rule.is_required}
-              onCheckedChange={handleToggleRequired}
-            />
-            <Label htmlFor={`required-${rule.id}`}>Required</Label>
-          </div>
-        </div>
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </button>
 
-        <div className="space-y-2">
-          <Label>Allowed Tweaks</Label>
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className="w-full justify-between"
-                disabled={isLoading}
-              >
-                {isLoading 
-                  ? "Loading tweaks..."
-                  : selectedTweaks.length === 0 
-                    ? "Select tweaks..."
-                    : `${selectedTweaks.length} selected`}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Search tweaks..." className="h-9" />
-                <CommandEmpty>No tweaks found.</CommandEmpty>
-                <CommandGroup>
-                  <ScrollArea className="h-[200px]">
-                    {availableTweaks.map((tweak) => (
-                      <CommandItem
-                        key={tweak.id}
-                        onSelect={() => handleTweaksChange(tweak.id)}
-                        className="flex items-center gap-2 px-2"
-                      >
-                        <div
-                          className={cn(
-                            "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                            selectedTweaks.includes(tweak.id)
-                              ? "bg-primary text-primary-foreground"
-                              : "opacity-50 [&_svg]:invisible"
-                          )}
-                        >
-                          <Check className={cn("h-4 w-4")} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span>{tweak.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {tweak.sub_prompt}
-                          </span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </ScrollArea>
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          {selectedTweaks.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {selectedTweaks.map((tweakId) => {
-                const tweak = availableTweaks.find(t => t.id === tweakId);
-                return tweak ? (
-                  <Badge
-                    key={tweakId}
-                    variant="secondary"
-                    className="cursor-pointer"
-                    onClick={() => handleTweaksChange(tweakId)}
-                  >
-                    {tweak.name}
-                  </Badge>
-                ) : null;
-              })}
+          <div className="flex-1 space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h4 className="font-medium">{rule.parameter.name}</h4>
+                <p className="text-sm text-muted-foreground">
+                  {rule.parameter.description}
+                </p>
+                {availableTweaks.length > 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {availableTweaks.length} tweak{availableTweaks.length === 1 ? '' : 's'} available
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id={`active-${rule.id}`}
+                    checked={rule.is_active}
+                    onCheckedChange={(checked) =>
+                      handleToggleChange("is_active", checked)
+                    }
+                  />
+                  <Label htmlFor={`active-${rule.id}`}>Active</Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id={`required-${rule.id}`}
+                    checked={rule.is_required}
+                    onCheckedChange={(checked) =>
+                      handleToggleChange("is_required", checked)
+                    }
+                  />
+                  <Label htmlFor={`required-${rule.id}`}>Required</Label>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive"
+                  onClick={handleDelete}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }

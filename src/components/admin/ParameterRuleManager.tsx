@@ -48,27 +48,23 @@ export function ParameterRuleManager({ promptId }: ParameterRuleManagerProps) {
     try {
       console.log("Loading rules for prompt:", promptId);
       const { data, error } = await supabase
-        .rpc('get_parameter_rules_with_tweaks', {
-          prompt_id_param: promptId
-        });
+        .from("prompt_parameter_rules")
+        .select(`
+          *,
+          parameter:prompt_parameters!prompt_parameter_rules_parameter_id_fkey(
+            id,
+            name,
+            type,
+            description
+          )
+        `)
+        .eq("prompt_id", promptId)
+        .order("order");
 
       if (error) throw error;
       
-      // Transform the data to match our component's expectations
-      const transformedData = data.map(rule => ({
-        ...rule,
-        parameter: {
-          id: rule.parameter_id,
-          name: rule.parameter_name,
-          type: rule.parameter_type,
-          description: rule.parameter_description
-        },
-        // Parse the JSONB array into a regular array
-        allowed_tweaks: rule.allowed_tweaks || []
-      }));
-      
-      console.log("Loaded rules:", transformedData);
-      setRules(transformedData || []);
+      console.log("Loaded rules:", data);
+      setRules(data || []);
     } catch (error) {
       console.error("Error loading rules:", error);
       toast({

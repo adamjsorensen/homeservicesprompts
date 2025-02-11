@@ -168,48 +168,8 @@ export type Database = {
           },
         ]
       }
-      prompt_parameter_allowed_tweaks: {
-        Row: {
-          created_at: string
-          id: string
-          is_default: boolean
-          rule_id: string
-          tweak_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_default?: boolean
-          rule_id: string
-          tweak_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_default?: boolean
-          rule_id?: string
-          tweak_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prompt_parameter_allowed_tweaks_rule_id_fkey"
-            columns: ["rule_id"]
-            isOneToOne: false
-            referencedRelation: "prompt_parameter_rules"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prompt_parameter_allowed_tweaks_tweak_id_fkey"
-            columns: ["tweak_id"]
-            isOneToOne: false
-            referencedRelation: "parameter_tweaks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       prompt_parameter_rules: {
         Row: {
-          conditions: Json | null
           created_at: string
           id: string
           is_active: boolean
@@ -220,7 +180,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          conditions?: Json | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -231,7 +190,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          conditions?: Json | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -377,23 +335,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_parameter_rules_with_tweaks: {
-        Args: {
-          prompt_id_param: string
-        }
-        Returns: {
-          id: string
-          prompt_id: string
-          parameter_id: string
-          order: number
-          is_active: boolean
-          is_required: boolean
-          parameter_name: string
-          parameter_type: Database["public"]["Enums"]["prompt_parameter_type"]
-          parameter_description: string
-          allowed_tweaks: Json
-        }[]
-      }
       has_role: {
         Args: {
           user_id: string
