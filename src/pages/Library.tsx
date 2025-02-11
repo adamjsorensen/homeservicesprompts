@@ -23,15 +23,22 @@ import {
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { PromptFilters } from "@/components/prompts/PromptFilters";
 import { usePrompts } from "@/hooks/usePrompts";
+import { CustomPromptWizard } from "@/components/prompts/CustomPromptWizard";
 
 const Library = () => {
   const [filter, setFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
-  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const { toast } = useToast();
   
   const { prompts, isLoading, error, isAdmin } = usePrompts();
+
+  const handleCustomizePrompt = (prompt: Prompt) => {
+    setSelectedPrompt(prompt);
+    setIsWizardOpen(true);
+  };
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -62,10 +69,6 @@ const Library = () => {
         description: "Failed to delete prompt. Please try again.",
       });
     }
-  };
-
-  const toggleCard = (id: string) => {
-    setExpandedCardId(expandedCardId === id ? null : id);
   };
 
   const filteredPrompts = prompts.filter((prompt) => {
@@ -100,7 +103,7 @@ const Library = () => {
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Prompt Library</h2>
             <p className="text-muted-foreground mt-2">
-              Manage and organize your AI prompts
+              Browse and customize AI prompts
             </p>
           </div>
           <PromptFilters
@@ -116,8 +119,7 @@ const Library = () => {
               key={prompt.id}
               prompt={prompt}
               isAdmin={isAdmin}
-              isExpanded={expandedCardId === prompt.id}
-              onToggle={() => toggleCard(prompt.id)}
+              onCustomize={() => handleCustomizePrompt(prompt)}
               onCopy={() => copyToClipboard(prompt.prompt)}
               onDelete={() => setDeletePromptId(prompt.id)}
             />
@@ -136,6 +138,15 @@ const Library = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <CustomPromptWizard
+        basePrompt={selectedPrompt}
+        isOpen={isWizardOpen}
+        onClose={() => {
+          setIsWizardOpen(false);
+          setSelectedPrompt(null);
+        }}
+      />
 
       <AlertDialog open={!!deletePromptId} onOpenChange={(open) => !open && setDeletePromptId(null)}>
         <AlertDialogContent>

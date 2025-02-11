@@ -7,14 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChevronDown, Copy, Trash2 } from "lucide-react";
+import { Copy, Trash2, Wand2 } from "lucide-react";
 import { type Prompt } from "@/hooks/usePrompts";
 
 interface PromptCardProps {
   prompt: Prompt;
   isAdmin: boolean;
-  isExpanded: boolean;
-  onToggle: () => void;
+  onCustomize: () => void;
   onCopy: () => void;
   onDelete: () => void;
 }
@@ -22,18 +21,12 @@ interface PromptCardProps {
 export const PromptCard = ({
   prompt,
   isAdmin,
-  isExpanded,
-  onToggle,
+  onCustomize,
   onCopy,
   onDelete,
 }: PromptCardProps) => {
   return (
-    <Card 
-      className={`group relative cursor-pointer transition-all duration-200 ${
-        isExpanded ? 'ring-2 ring-primary' : ''
-      }`}
-      onClick={onToggle}
-    >
+    <Card className="group relative">
       <CardHeader className="space-y-1">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -48,12 +41,24 @@ export const PromptCard = ({
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
+                onCustomize();
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              Customize
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
                 onCopy();
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+              className="border-blue-200 hover:border-blue-300 transition-colors"
             >
               <Copy className="w-4 h-4 mr-2" />
-              Copy Prompt
+              Copy
             </Button>
             {isAdmin && (
               <Button
@@ -63,7 +68,7 @@ export const PromptCard = ({
                   e.stopPropagation();
                   onDelete();
                 }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                className="text-destructive hover:text-destructive/90"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -74,23 +79,12 @@ export const PromptCard = ({
           <span className="text-sm text-muted-foreground">
             {prompt.category}
           </span>
-          <ChevronDown
-            className={`w-4 h-4 transition-transform ${
-              isExpanded ? 'rotate-180' : ''
-            }`}
-          />
         </div>
       </CardHeader>
-      <CardContent
-        className={`grid transition-all duration-200 ${
-          isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {prompt.prompt}
-          </p>
-        </div>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">
+          {prompt.prompt}
+        </p>
       </CardContent>
     </Card>
   );
