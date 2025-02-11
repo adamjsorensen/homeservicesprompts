@@ -42,17 +42,43 @@ export function CustomPromptWizard({
   const [isGenerating, setIsGenerating] = useState(false);
   const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters();
   const { toast } = useToast();
+  const [rules, setRules] = useState<any[]>([]);
 
   if (!basePrompt) return null;
 
-  const currentParameter = parameters[currentParameterIndex];
+  // Load parameter rules for the prompt
+  const loadRules = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("prompt_parameter_rules")
+        .select(`
+          *,
+          parameter:prompt_parameters(*)
+        `)
+        .eq("prompt_id", basePrompt.id)
+        .order("order");
+
+      if (error) throw error;
+      setRules(data || []);
+    } catch (error) {
+      console.error("Error loading rules:", error);
+      toast({
+        variant: "destructive",
+        description: "Failed to load parameter rules",
+      });
+    }
+  };
+
+  // Get current rule
+  const currentRule = rules[currentParameterIndex];
+  const currentParameter = currentRule?.parameter;
   const parameterTweaks = currentParameter ? getTweaksForParameter(currentParameter.id) : [];
   
   const selectedTweak = tweaks.find(
     (tweak) => tweak.id === selectedTweaks[currentParameter?.id]
   );
 
-  const progress = ((currentParameterIndex + 1) / parameters.length) * 100;
+  const progress = ((currentParameterIndex + 1) / rules.length) * 100;
 
   const handleTweakSelect = (tweakId: string) => {
     setSelectedTweaks(prev => ({
@@ -61,8 +87,14 @@ export function CustomPromptWizard({
     }));
   };
 
+  const handleSkip = () => {
+    if (currentParameterIndex < rules.length - 1) {
+      setCurrentParameterIndex(prev => prev + 1);
+    }
+  };
+
   const handleNext = () => {
-    if (currentParameterIndex < parameters.length - 1) {
+    if (currentParameterIndex < rules.length - 1) {
       setCurrentParameterIndex(prev => prev + 1);
     }
   };
@@ -90,16 +122,21 @@ export function CustomPromptWizard({
 
       if (customPromptError) throw customPromptError;
 
-      const customizations = Object.entries(selectedTweaks).map(([parameterId, tweakId]) => ({
-        custom_prompt_id: customPrompt.id,
-        parameter_tweak_id: tweakId,
-      }));
+      // Only include selected tweaks (skip those that were skipped)
+      const customizations = Object.entries(selectedTweaks)
+        .filter(([parameterId, tweakId]) => tweakId) // Filter out undefined/null tweaks
+        .map(([parameterId, tweakId]) => ({
+          custom_prompt_id: customPrompt.id,
+          parameter_tweak_id: tweakId,
+        }));
 
-      const { error: customizationsError } = await supabase
-        .from("prompt_customizations")
-        .insert(customizations);
+      if (customizations.length > 0) {
+        const { error: customizationsError } = await supabase
+          .from("prompt_customizations")
+          .insert(customizations);
 
-      if (customizationsError) throw customizationsError;
+        if (customizationsError) throw customizationsError;
+      }
 
       const { data: generatedData, error: generateError } = await supabase.functions
         .invoke('generate-prompt-content', {
@@ -127,7 +164,7 @@ export function CustomPromptWizard({
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !currentRule) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>
@@ -149,7 +186,7 @@ export function CustomPromptWizard({
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Step {currentParameterIndex + 1} of {parameters.length}</span>
+              <span>Step {currentParameterIndex + 1} of {rules.length}</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-2" />
@@ -199,22 +236,34 @@ export function CustomPromptWizard({
             >
               Previous
             </Button>
-            {currentParameterIndex < parameters.length - 1 ? (
-              <Button
-                onClick={handleNext}
-                disabled={!selectedTweaks[currentParameter?.id] || isGenerating}
-              >
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSave}
-                disabled={!selectedTweaks[currentParameter?.id] || isGenerating}
-              >
-                {isGenerating ? "Generating..." : "Generate Content"}
-              </Button>
-            )}
+
+            <div className="flex gap-2">
+              {!currentRule.is_required && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  disabled={isGenerating}
+                >
+                  Skip
+                </Button>
+              )}
+              {currentParameterIndex < rules.length - 1 ? (
+                <Button
+                  onClick={handleNext}
+                  disabled={!selectedTweaks[currentParameter?.id] && currentRule.is_required || isGenerating}
+                >
+                  Next
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSave}
+                  disabled={!selectedTweaks[currentParameter?.id] && currentRule.is_required || isGenerating}
+                >
+                  {isGenerating ? "Generating..." : "Generate Content"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
