@@ -29,7 +29,7 @@ export const PromptCard = ({
 }: PromptCardProps) => {
   return (
     <Card 
-      className={`group cursor-pointer transition-all duration-200 ${
+      className={`group relative cursor-pointer transition-all duration-200 ${
         isExpanded ? 'ring-2 ring-primary' : ''
       }`}
       onClick={onToggle}
@@ -44,15 +44,16 @@ export const PromptCard = ({
           </div>
           <div className="flex gap-2">
             <Button
-              variant="ghost"
-              size="icon"
+              variant="default"
+              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 onCopy();
               }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              className="bg-blue-600 hover:bg-blue-700 text-white transition-colors"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="w-4 h-4 mr-2" />
+              Copy Prompt
             </Button>
             {isAdmin && (
               <Button
