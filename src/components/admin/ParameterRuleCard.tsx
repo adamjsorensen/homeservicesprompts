@@ -226,46 +226,48 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
                     : `${selectedTweaks.length} selected`}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
-              <Command>
-                <CommandInput placeholder="Search tweaks..." className="h-9" />
-                <CommandEmpty>No tweaks found.</CommandEmpty>
-                <CommandGroup>
-                  <ScrollArea className="h-[200px]">
-                    {(parameterTweaks || []).map((tweak) => (
-                      <CommandItem
-                        key={tweak.id}
-                        onSelect={() => handleTweaksChange(tweak.id)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={cn(
-                              "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                              selectedTweaks.includes(tweak.id)
-                                ? "bg-primary text-primary-foreground"
-                                : "opacity-50 [&_svg]:invisible"
-                            )}
-                          >
-                            <Check className={cn("h-4 w-4")} />
+            {!isLoading && parameterTweaks && (
+              <PopoverContent className="w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search tweaks..." className="h-9" />
+                  <CommandEmpty>No tweaks found.</CommandEmpty>
+                  <CommandGroup>
+                    <ScrollArea className="h-[200px]">
+                      {parameterTweaks.map((tweak) => (
+                        <CommandItem
+                          key={tweak.id}
+                          onSelect={() => handleTweaksChange(tweak.id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={cn(
+                                "flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                selectedTweaks.includes(tweak.id)
+                                  ? "bg-primary text-primary-foreground"
+                                  : "opacity-50 [&_svg]:invisible"
+                              )}
+                            >
+                              <Check className={cn("h-4 w-4")} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span>{tweak.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {tweak.sub_prompt}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span>{tweak.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {tweak.sub_prompt}
-                            </span>
-                          </div>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </ScrollArea>
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
+                        </CommandItem>
+                      ))}
+                    </ScrollArea>
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            )}
           </Popover>
-          {selectedTweaks.length > 0 && (
+          {selectedTweaks.length > 0 && parameterTweaks && (
             <div className="flex flex-wrap gap-1 mt-2">
               {selectedTweaks.map((tweakId) => {
-                const tweak = parameterTweaks?.find(t => t.id === tweakId);
+                const tweak = parameterTweaks.find(t => t.id === tweakId);
                 return tweak ? (
                   <Badge
                     key={tweakId}
