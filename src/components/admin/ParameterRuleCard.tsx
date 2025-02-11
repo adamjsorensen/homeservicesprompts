@@ -8,7 +8,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { usePromptParameters } from "@/hooks/usePromptParameters";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,19 +15,36 @@ import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
+interface Tweak {
+  id: string;
+  name: string;
+  sub_prompt: string;
+}
+
+interface ParameterRule {
+  id: string;
+  parameter: {
+    name: string;
+    type: string;
+    description: string | null;
+  };
+  allowed_tweaks: {
+    tweak: Tweak;
+  }[];
+  is_active: boolean;
+  is_required: boolean;
+}
+
 interface ParameterRuleCardProps {
-  rule: any;
+  rule: ParameterRule;
   onUpdate: () => void;
 }
 
 export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
   const { toast } = useToast();
-  const { getTweaksForParameter, isLoading } = usePromptParameters();
   const [selectedTweaks, setSelectedTweaks] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
-
-  // Ensure we have valid parameter_id and get tweaks
-  const parameterTweaks = rule.parameter_id ? getTweaksForParameter(rule.parameter_id) : [];
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     attributes,
@@ -42,6 +58,33 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  // Get all available tweaks for this parameter from the database
+  const [availableTweaks, setAvailableTweaks] = useState<Tweak[]>([]);
+
+  useEffect(() => {
+    const loadTweaks = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('parameter_tweaks')
+          .select('*')
+          .eq('parameter_id', rule.parameter.id);
+
+        if (error) throw error;
+        setAvailableTweaks(data || []);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading tweaks:', error);
+        toast({
+          variant: "destructive",
+          description: "Failed to load tweaks",
+        });
+        setIsLoading(false);
+      }
+    };
+
+    loadTweaks();
+  }, [rule.parameter.id]);
 
   useEffect(() => {
     if (rule.id) {
@@ -226,14 +269,14 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
                     : `${selectedTweaks.length} selected`}
               </Button>
             </PopoverTrigger>
-            {!isLoading && parameterTweaks && (
+            {!isLoading && availableTweaks && (
               <PopoverContent className="w-[300px] p-0">
                 <Command>
                   <CommandInput placeholder="Search tweaks..." className="h-9" />
                   <CommandEmpty>No tweaks found.</CommandEmpty>
                   <CommandGroup>
                     <ScrollArea className="h-[200px]">
-                      {parameterTweaks.map((tweak) => (
+                      {availableTweaks.map((tweak) => (
                         <CommandItem
                           key={tweak.id}
                           onSelect={() => handleTweaksChange(tweak.id)}
@@ -264,10 +307,10 @@ export function ParameterRuleCard({ rule, onUpdate }: ParameterRuleCardProps) {
               </PopoverContent>
             )}
           </Popover>
-          {selectedTweaks.length > 0 && parameterTweaks && (
+          {selectedTweaks.length > 0 && availableTweaks && (
             <div className="flex flex-wrap gap-1 mt-2">
               {selectedTweaks.map((tweakId) => {
-                const tweak = parameterTweaks.find(t => t.id === tweakId);
+                const tweak = availableTweaks.find(t => t.id === tweakId);
                 return tweak ? (
                   <Badge
                     key={tweakId}
