@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,9 +35,9 @@ export function CustomPromptWizard({
   isOpen,
   onClose,
 }: CustomPromptWizardProps) {
+  const navigate = useNavigate();
   const [currentParameterIndex, setCurrentParameterIndex] = useState(0);
   const [selectedTweaks, setSelectedTweaks] = useState<Record<string, string>>({});
-  const [generatedContent, setGeneratedContent] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters();
   const { toast } = useToast();
@@ -107,10 +108,13 @@ export function CustomPromptWizard({
 
       if (generateError) throw generateError;
 
-      setGeneratedContent(generatedData.generatedContent);
-      toast({
-        title: "Success",
-        description: "Custom prompt created and content generated successfully!",
+      // Close the dialog and navigate to the generated content page
+      onClose();
+      navigate("/generated-content", {
+        state: {
+          generatedContent: generatedData.generatedContent,
+          promptTitle: basePrompt.title,
+        }
       });
     } catch (error) {
       console.error("Error saving custom prompt:", error);
@@ -144,7 +148,7 @@ export function CustomPromptWizard({
         </DialogHeader>
         
         <div className="space-y-4">
-          {currentParameter && !isGenerating && !generatedContent && (
+          {currentParameter && !isGenerating && (
             <Card>
               <CardHeader>
                 <CardTitle>{currentParameter.name}</CardTitle>
@@ -178,17 +182,6 @@ export function CustomPromptWizard({
 
           {isGenerating && (
             <LoadingCard />
-          )}
-
-          {generatedContent && !isGenerating && (
-            <Card className="animate-fade-in">
-              <CardHeader>
-                <CardTitle>Generated Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="whitespace-pre-wrap">{generatedContent}</p>
-              </CardContent>
-            </Card>
           )}
 
           <div className="flex justify-between pt-4">
