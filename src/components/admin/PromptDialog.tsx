@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ParameterRuleManager } from "./ParameterRuleManager";
+import { useEffect } from "react";
 
 const promptSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -52,12 +53,31 @@ export function PromptDialog({ prompt, open, onOpenChange }: PromptDialogProps) 
   const form = useForm<z.infer<typeof promptSchema>>({
     resolver: zodResolver(promptSchema),
     defaultValues: {
-      title: prompt?.title ?? "",
-      description: prompt?.description ?? "",
-      category: prompt?.category ?? "",
-      prompt: prompt?.prompt ?? "",
+      title: "",
+      description: "",
+      category: "",
+      prompt: "",
     },
   });
+
+  // Reset form with prompt data when prompt changes or dialog opens
+  useEffect(() => {
+    if (prompt && open) {
+      form.reset({
+        title: prompt.title,
+        description: prompt.description,
+        category: prompt.category,
+        prompt: prompt.prompt,
+      });
+    } else if (!prompt && open) {
+      form.reset({
+        title: "",
+        description: "",
+        category: "",
+        prompt: "",
+      });
+    }
+  }, [prompt, open, form]);
 
   const onSubmit = async (data: z.infer<typeof promptSchema>) => {
     try {
