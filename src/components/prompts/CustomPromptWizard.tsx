@@ -23,6 +23,7 @@ import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { LoadingCard } from "./LoadingCard";
+import { Progress } from "@/components/ui/progress";
 
 interface CustomPromptWizardProps {
   basePrompt: Prompt | null;
@@ -51,6 +52,8 @@ export function CustomPromptWizard({
     (tweak) => tweak.id === selectedTweaks[currentParameter?.id]
   );
 
+  const progress = ((currentParameterIndex + 1) / parameters.length) * 100;
+
   const handleTweakSelect = (tweakId: string) => {
     setSelectedTweaks(prev => ({
       ...prev,
@@ -76,7 +79,6 @@ export function CustomPromptWizard({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // Create custom prompt
       const { data: customPrompt, error: customPromptError } = await supabase
         .from("custom_prompts")
         .insert({
@@ -88,7 +90,6 @@ export function CustomPromptWizard({
 
       if (customPromptError) throw customPromptError;
 
-      // Create customizations
       const customizations = Object.entries(selectedTweaks).map(([parameterId, tweakId]) => ({
         custom_prompt_id: customPrompt.id,
         parameter_tweak_id: tweakId,
@@ -100,7 +101,6 @@ export function CustomPromptWizard({
 
       if (customizationsError) throw customizationsError;
 
-      // Generate content using the edge function
       const { data: generatedData, error: generateError } = await supabase.functions
         .invoke('generate-prompt-content', {
           body: { customPromptId: customPrompt.id, userId: user.id }
@@ -108,7 +108,6 @@ export function CustomPromptWizard({
 
       if (generateError) throw generateError;
 
-      // Close the dialog and navigate to the generated content page
       onClose();
       navigate("/generated-content", {
         state: {
@@ -148,6 +147,14 @@ export function CustomPromptWizard({
         </DialogHeader>
         
         <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Step {currentParameterIndex + 1} of {parameters.length}</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+
           {currentParameter && !isGenerating && (
             <Card>
               <CardHeader>
