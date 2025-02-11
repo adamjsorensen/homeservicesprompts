@@ -19,6 +19,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Copy, Filter } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Prompt {
   id: string;
@@ -29,32 +32,59 @@ interface Prompt {
   tags: string[];
 }
 
-const SAMPLE_PROMPTS: Prompt[] = [
-  {
-    id: "1",
-    title: "Client Onboarding Email",
-    description: "Welcome email template for new clients",
-    category: "Email",
-    prompt: "Write a warm welcome email for a new client who just signed up for our [service]. Include next steps and what they can expect.",
-    tags: ["email", "onboarding", "welcome"],
-  },
-  {
-    id: "2",
-    title: "Service Description",
-    description: "Professional service description for website",
-    category: "Marketing",
-    prompt: "Create a compelling service description for [service name] that highlights its unique benefits and appeals to [target audience].",
-    tags: ["marketing", "website", "copy"],
-  },
-];
+const fetchPrompts = async () => {
+  const { data, error } = await supabase
+    .from("prompts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+};
 
 const Library = () => {
-  const [prompts, setPrompts] = useState<Prompt[]>(SAMPLE_PROMPTS);
   const [filter, setFilter] = useState("all");
+  const { toast } = useToast();
+  
+  const { data: prompts = [], isLoading, error } = useQuery({
+    queryKey: ["prompts"],
+    queryFn: fetchPrompts,
+  });
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
+    toast({
+      description: "Prompt copied to clipboard",
+    });
   };
+
+  const filteredPrompts = prompts.filter((prompt) => {
+    if (filter === "all") return true;
+    return prompt.category.toLowerCase() === filter.toLowerCase();
+  });
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="space-y-8">
+          <div>Loading prompts...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="space-y-8">
+          <div>Error loading prompts. Please try again later.</div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -88,7 +118,7 @@ const Library = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {prompts.map((prompt) => (
+          {filteredPrompts.map((prompt) => (
             <Card key={prompt.id} className="group">
               <CardHeader className="space-y-1">
                 <div className="flex items-start justify-between">
