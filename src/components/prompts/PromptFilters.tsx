@@ -8,6 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PromptFiltersProps {
   filter: string;
@@ -16,12 +18,33 @@ interface PromptFiltersProps {
   onSearchChange: (value: string) => void;
 }
 
+const fetchUniqueCategories = async () => {
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('category')
+    .select('category')
+    .eq('is_default', true);
+
+  if (error) throw error;
+
+  // Get unique categories and sort them
+  const uniqueCategories = Array.from(new Set(data.map(item => item.category)))
+    .sort((a, b) => a.localeCompare(b));
+
+  return uniqueCategories;
+};
+
 export const PromptFilters = ({
   filter,
   searchQuery,
   onFilterChange,
   onSearchChange,
 }: PromptFiltersProps) => {
+  const { data: categories = [], isLoading } = useQuery({
+    queryKey: ["promptCategories"],
+    queryFn: fetchUniqueCategories,
+  });
+
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-2">
@@ -32,10 +55,11 @@ export const PromptFilters = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="email">Email</SelectItem>
-            <SelectItem value="marketing">Marketing</SelectItem>
-            <SelectItem value="social">Social Media</SelectItem>
-            <SelectItem value="content">Content</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category.toLowerCase()}>
+                {category}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
