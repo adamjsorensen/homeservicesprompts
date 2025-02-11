@@ -30,9 +30,6 @@ const promptSchema = z.object({
   description: z.string().min(1, "Description is required"),
   category: z.string().min(1, "Category is required"),
   prompt: z.string().min(1, "Prompt content is required"),
-  tags: z.string().transform((str) => 
-    str ? str.split(",").map((tag) => tag.trim()).filter(Boolean) : []
-  ),
 });
 
 type PromptFormValues = z.infer<typeof promptSchema>;
@@ -53,7 +50,6 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
       description: "",
       category: "",
       prompt: "",
-      tags: "", // Changed to empty string to match input format
     },
   });
 
@@ -70,7 +66,6 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
         description: data.description,
         category: data.category,
         prompt: data.prompt,
-        tags: data.tags, // Zod transformation ensures this is string[]
         created_by: user.id
       });
 
@@ -163,26 +158,6 @@ export function PromptForm({ onSuccess, onCancel }: PromptFormProps) {
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="tags"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tags</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Enter tags separated by commas (e.g., marketing, sales, email)"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Enter tags separated by commas to help categorize your prompt
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

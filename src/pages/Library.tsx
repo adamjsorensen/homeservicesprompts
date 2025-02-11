@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Copy, Filter, Plus } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -36,7 +35,6 @@ interface Prompt {
   description: string;
   category: string;
   prompt: string;
-  tags: string[];
 }
 
 const fetchPrompts = async () => {
@@ -155,13 +153,6 @@ const Library = () => {
                   <p className="text-sm text-muted-foreground">
                     {prompt.prompt}
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {prompt.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
               </CardContent>
             </Card>
