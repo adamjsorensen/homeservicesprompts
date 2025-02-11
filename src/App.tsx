@@ -11,6 +11,7 @@ import Library from "./pages/Library";
 import Business from "./pages/Business";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Business />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Admin />
                 </ProtectedRoute>
               }
             />
