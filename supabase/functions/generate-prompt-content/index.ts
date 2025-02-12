@@ -44,14 +44,17 @@ serve(async (req) => {
     }
 
     // Get business profile if available
-    const { data: profiles } = await supabaseClient
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('*')
+      .select('business_name, description, industry, target_audience, brand_voice, values')
       .eq('id', userId)
       .single();
 
-    if (profiles?.business_profile) {
-      finalPrompt += "\n\nBusiness Context:\n" + JSON.stringify(profiles.business_profile, null, 2);
+    if (profileError) {
+      console.error('Error fetching business profile:', profileError);
+    } else if (profile && Object.values(profile).some(value => value)) {
+      // Only add business context if at least one field has a value
+      finalPrompt += "\n\nBusiness Context:\n" + JSON.stringify(profile, null, 2);
     }
 
     // Generate content using OpenRouter
