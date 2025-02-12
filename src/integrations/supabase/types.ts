@@ -106,6 +106,35 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_additional_context: {
+        Row: {
+          context_text: string
+          created_at: string
+          custom_prompt_id: string
+          id: string
+        }
+        Insert: {
+          context_text: string
+          created_at?: string
+          custom_prompt_id: string
+          id?: string
+        }
+        Update: {
+          context_text?: string
+          created_at?: string
+          custom_prompt_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_additional_context_custom_prompt_id_fkey"
+            columns: ["custom_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "custom_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_customizations: {
         Row: {
           created_at: string

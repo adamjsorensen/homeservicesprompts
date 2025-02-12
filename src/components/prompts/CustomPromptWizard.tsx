@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { LoadingCard } from "./LoadingCard";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 
 interface CustomPromptWizardProps {
   basePrompt: Prompt | null;
@@ -40,10 +41,12 @@ export function CustomPromptWizard({
   const [currentParameterIndex, setCurrentParameterIndex] = useState(0);
   const [selectedTweaks, setSelectedTweaks] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [additionalContext, setAdditionalContext] = useState("");
   const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters();
   const { toast } = useToast();
   const [rules, setRules] = useState<any[]>([]);
   const [isLoadingRules, setIsLoadingRules] = useState(true);
+  const [showAdditionalContext, setShowAdditionalContext] = useState(false);
 
   // Load parameter rules for the prompt
   const loadRules = async () => {
@@ -76,13 +79,17 @@ export function CustomPromptWizard({
   useEffect(() => {
     if (basePrompt && isOpen) {
       loadRules();
+      setCurrentParameterIndex(0);
+      setSelectedTweaks({});
+      setAdditionalContext("");
+      setShowAdditionalContext(false);
     }
   }, [basePrompt, isOpen]);
 
   // We move this check after all hooks are defined
   if (!basePrompt) return null;
 
-  const currentRule = rules[currentParameterIndex];
+  const currentRule = !showAdditionalContext ? rules[currentParameterIndex] : null;
   const currentParameter = currentRule?.parameter;
   const parameterTweaks = currentParameter ? getTweaksForParameter(currentParameter.id) : [];
   
@@ -90,7 +97,8 @@ export function CustomPromptWizard({
     (tweak) => tweak.id === selectedTweaks[currentParameter?.id]
   );
 
-  const progress = ((currentParameterIndex + 1) / rules.length) * 100;
+  const totalSteps = rules.length + 1; // Add 1 for the additional context step
+  const progress = ((showAdditionalContext ? totalSteps : currentParameterIndex + 1) / totalSteps) * 100;
 
   const handleTweakSelect = (tweakId: string) => {
     setSelectedTweaks(prev => ({
@@ -102,17 +110,23 @@ export function CustomPromptWizard({
   const handleSkip = () => {
     if (currentParameterIndex < rules.length - 1) {
       setCurrentParameterIndex(prev => prev + 1);
+    } else {
+      setShowAdditionalContext(true);
     }
   };
 
   const handleNext = () => {
     if (currentParameterIndex < rules.length - 1) {
       setCurrentParameterIndex(prev => prev + 1);
+    } else if (!showAdditionalContext) {
+      setShowAdditionalContext(true);
     }
   };
 
   const handlePrevious = () => {
-    if (currentParameterIndex > 0) {
+    if (showAdditionalContext) {
+      setShowAdditionalContext(false);
+    } else if (currentParameterIndex > 0) {
       setCurrentParameterIndex(prev => prev - 1);
     }
   };
@@ -150,6 +164,18 @@ export function CustomPromptWizard({
         if (customizationsError) throw customizationsError;
       }
 
+      // Save additional context if provided
+      if (additionalContext.trim()) {
+        const { error: contextError } = await supabase
+          .from("prompt_additional_context")
+          .insert({
+            custom_prompt_id: customPrompt.id,
+            context_text: additionalContext.trim(),
+          });
+
+        if (contextError) throw contextError;
+      }
+
       const { data: generatedData, error: generateError } = await supabase.functions
         .invoke('generate-prompt-content', {
           body: { customPromptId: customPrompt.id, userId: user.id }
@@ -176,7 +202,7 @@ export function CustomPromptWizard({
     }
   };
 
-  if (isLoading || isLoadingRules || !currentRule) {
+  if (isLoading || isLoadingRules || (!showAdditionalContext && !currentRule)) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>
@@ -201,13 +227,13 @@ export function CustomPromptWizard({
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Step {currentParameterIndex + 1} of {rules.length}</span>
+              <span>Step {showAdditionalContext ? totalSteps : currentParameterIndex + 1} of {totalSteps}</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
 
-          {currentParameter && !isGenerating && (
+          {!showAdditionalContext && currentParameter && !isGenerating && (
             <Card>
               <CardHeader>
                 <CardTitle>{currentParameter.name}</CardTitle>
@@ -239,6 +265,25 @@ export function CustomPromptWizard({
             </Card>
           )}
 
+          {showAdditionalContext && !isGenerating && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Additional Context</CardTitle>
+                <CardDescription>
+                  Add any additional context or specific requirements for your prompt
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  placeholder="Enter any additional context or requirements..."
+                  value={additionalContext}
+                  onChange={(e) => setAdditionalContext(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </CardContent>
+            </Card>
+          )}
+
           {isGenerating && (
             <LoadingCard />
           )}
@@ -247,13 +292,13 @@ export function CustomPromptWizard({
             <Button
               variant="outline"
               onClick={handlePrevious}
-              disabled={currentParameterIndex === 0 || isGenerating}
+              disabled={currentParameterIndex === 0 && !showAdditionalContext || isGenerating}
             >
               Previous
             </Button>
 
             <div className="flex gap-2">
-              {!currentRule.is_required && (
+              {!showAdditionalContext && !currentRule.is_required && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -262,7 +307,7 @@ export function CustomPromptWizard({
                   Skip
                 </Button>
               )}
-              {currentParameterIndex < rules.length - 1 ? (
+              {(!showAdditionalContext && currentParameterIndex < rules.length - 1) ? (
                 <Button
                   onClick={handleNext}
                   disabled={!selectedTweaks[currentParameter?.id] && currentRule.is_required || isGenerating}
@@ -272,10 +317,11 @@ export function CustomPromptWizard({
                 </Button>
               ) : (
                 <Button
-                  onClick={handleSave}
-                  disabled={!selectedTweaks[currentParameter?.id] && currentRule.is_required || isGenerating}
+                  onClick={showAdditionalContext ? handleSave : handleNext}
+                  disabled={(!showAdditionalContext && !selectedTweaks[currentParameter?.id] && currentRule.is_required) || isGenerating}
                 >
-                  {isGenerating ? "Generating..." : "Generate Content"}
+                  {showAdditionalContext ? (isGenerating ? "Generating..." : "Generate Content") : "Next"}
+                  {!showAdditionalContext && <ChevronRight className="ml-2 h-4 w-4" />}
                 </Button>
               )}
             </div>

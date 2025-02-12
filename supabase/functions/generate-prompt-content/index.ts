@@ -37,10 +37,28 @@ serve(async (req) => {
 
     if (promptError) throw promptError;
 
+    // Fetch additional context if it exists
+    const { data: additionalContextData, error: contextError } = await supabaseClient
+      .from('prompt_additional_context')
+      .select('context_text')
+      .eq('custom_prompt_id', customPromptId)
+      .single();
+
+    if (contextError && contextError.code !== 'PGRST116') { // Ignore "no rows returned" error
+      throw contextError;
+    }
+
     // Construct the complete prompt
     let finalPrompt = customPrompt.base_prompt.prompt;
+    
+    // Add customizations
     for (const customization of customPrompt.customizations) {
       finalPrompt += "\n" + customization.parameter_tweak.sub_prompt;
+    }
+
+    // Add additional context if it exists
+    if (additionalContextData?.context_text) {
+      finalPrompt += "\n\nAdditional Context:\n" + additionalContextData.context_text;
     }
 
     // Get business profile if available
