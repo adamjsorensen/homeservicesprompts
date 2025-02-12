@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -44,8 +45,6 @@ export function CustomPromptWizard({
   const [rules, setRules] = useState<any[]>([]);
   const [isLoadingRules, setIsLoadingRules] = useState(true);
 
-  if (!basePrompt) return null;
-
   // Load parameter rules for the prompt
   const loadRules = async () => {
     try {
@@ -56,7 +55,7 @@ export function CustomPromptWizard({
           *,
           parameter:prompt_parameters(*)
         `)
-        .eq("prompt_id", basePrompt.id)
+        .eq("prompt_id", basePrompt?.id)
         .order("order");
 
       if (error) throw error;
@@ -79,6 +78,9 @@ export function CustomPromptWizard({
       loadRules();
     }
   }, [basePrompt, isOpen]);
+
+  // We move this check after all hooks are defined
+  if (!basePrompt) return null;
 
   const currentRule = rules[currentParameterIndex];
   const currentParameter = currentRule?.parameter;
