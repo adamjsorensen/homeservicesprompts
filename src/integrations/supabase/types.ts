@@ -77,26 +77,32 @@ export type Database = {
         Row: {
           brand_voice: string | null
           business_name: string | null
+          description: string | null
           id: string
           industry: string | null
           target_audience: string | null
           updated_at: string
+          values: string | null
         }
         Insert: {
           brand_voice?: string | null
           business_name?: string | null
+          description?: string | null
           id: string
           industry?: string | null
           target_audience?: string | null
           updated_at?: string
+          values?: string | null
         }
         Update: {
           brand_voice?: string | null
           business_name?: string | null
+          description?: string | null
           id?: string
           industry?: string | null
           target_audience?: string | null
           updated_at?: string
+          values?: string | null
         }
         Relationships: []
       }
