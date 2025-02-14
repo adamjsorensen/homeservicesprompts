@@ -25,10 +25,11 @@ export function PromptGenerationsAdmin() {
         .select(`
           *,
           custom_prompt:custom_prompts(
-            base_prompt:prompts(
-              title,
-              category
-            )
+            base_prompt:prompts(prompt),
+            customizations:prompt_customizations(
+              parameter_tweak:parameter_tweaks(sub_prompt)
+            ),
+            additional_context:prompt_additional_context(context_text)
           )
         `)
         .order("created_at", { ascending: false });
@@ -37,6 +38,24 @@ export function PromptGenerationsAdmin() {
       return data;
     },
   });
+
+  const constructFinalPrompt = (generation: any) => {
+    let finalPrompt = generation.custom_prompt?.base_prompt?.prompt || '';
+    
+    // Add customizations
+    if (generation.custom_prompt?.customizations) {
+      for (const customization of generation.custom_prompt.customizations) {
+        finalPrompt += "\n" + customization.parameter_tweak?.sub_prompt;
+      }
+    }
+
+    // Add additional context if it exists
+    if (generation.custom_prompt?.additional_context?.[0]?.context_text) {
+      finalPrompt += "\n\nAdditional Context:\n" + generation.custom_prompt.additional_context[0].context_text;
+    }
+
+    return finalPrompt;
+  };
 
   const toggleRow = (id: string) => {
     const newExpandedRows = new Set(expandedRows);
@@ -63,9 +82,8 @@ export function PromptGenerationsAdmin() {
           <TableRow>
             <TableHead>Generated At</TableHead>
             <TableHead>User ID</TableHead>
-            <TableHead>Base Prompt</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Content</TableHead>
+            <TableHead>Prompt</TableHead>
+            <TableHead>Generated Content</TableHead>
             <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -77,10 +95,9 @@ export function PromptGenerationsAdmin() {
               </TableCell>
               <TableCell>{generation.created_by}</TableCell>
               <TableCell>
-                {generation.custom_prompt?.base_prompt?.title || "Unknown"}
-              </TableCell>
-              <TableCell>
-                {generation.custom_prompt?.base_prompt?.category || "Unknown"}
+                {expandedRows.has(generation.id)
+                  ? constructFinalPrompt(generation)
+                  : constructFinalPrompt(generation).slice(0, 100) + "..."}
               </TableCell>
               <TableCell>
                 {expandedRows.has(generation.id)
