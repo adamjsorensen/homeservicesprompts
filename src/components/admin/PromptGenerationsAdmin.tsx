@@ -24,7 +24,6 @@ export function PromptGenerationsAdmin() {
         .from("prompt_generations")
         .select(`
           *,
-          user:created_by(email),
           custom_prompt:custom_prompts(
             base_prompt:prompts(
               title,
@@ -63,7 +62,7 @@ export function PromptGenerationsAdmin() {
         <TableHeader>
           <TableRow>
             <TableHead>Generated At</TableHead>
-            <TableHead>User</TableHead>
+            <TableHead>User ID</TableHead>
             <TableHead>Base Prompt</TableHead>
             <TableHead>Category</TableHead>
             <TableHead>Content</TableHead>
@@ -72,38 +71,36 @@ export function PromptGenerationsAdmin() {
         </TableHeader>
         <TableBody>
           {generations?.map((generation) => (
-            <>
-              <TableRow key={generation.id}>
-                <TableCell>
-                  {format(new Date(generation.created_at), "PPp")}
-                </TableCell>
-                <TableCell>{generation.user?.email || "Unknown"}</TableCell>
-                <TableCell>
-                  {generation.custom_prompt?.base_prompt?.title || "Unknown"}
-                </TableCell>
-                <TableCell>
-                  {generation.custom_prompt?.base_prompt?.category || "Unknown"}
-                </TableCell>
-                <TableCell>
-                  {expandedRows.has(generation.id)
-                    ? generation.generated_content
-                    : generation.generated_content.slice(0, 100) + "..."}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleRow(generation.id)}
-                  >
-                    {expandedRows.has(generation.id) ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            </>
+            <TableRow key={generation.id}>
+              <TableCell>
+                {format(new Date(generation.created_at), "PPp")}
+              </TableCell>
+              <TableCell>{generation.created_by}</TableCell>
+              <TableCell>
+                {generation.custom_prompt?.base_prompt?.title || "Unknown"}
+              </TableCell>
+              <TableCell>
+                {generation.custom_prompt?.base_prompt?.category || "Unknown"}
+              </TableCell>
+              <TableCell>
+                {expandedRows.has(generation.id)
+                  ? generation.generated_content
+                  : generation.generated_content.slice(0, 100) + "..."}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleRow(generation.id)}
+                >
+                  {expandedRows.has(generation.id) ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </TableCell>
+            </TableRow>
           ))}
         </TableBody>
       </Table>
