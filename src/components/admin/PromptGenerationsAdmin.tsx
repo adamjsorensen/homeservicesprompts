@@ -11,11 +11,18 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Maximize2 } from "lucide-react";
 import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function PromptGenerationsAdmin() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
 
   const { data: generations, isLoading } = useQuery({
     queryKey: ["prompt-generations"],
@@ -84,7 +91,7 @@ export function PromptGenerationsAdmin() {
             <TableHead>User ID</TableHead>
             <TableHead>Prompt</TableHead>
             <TableHead>Generated Content</TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
+            <TableHead className="w-[140px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -105,22 +112,42 @@ export function PromptGenerationsAdmin() {
                   : generation.generated_content.slice(0, 100) + "..."}
               </TableCell>
               <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => toggleRow(generation.id)}
-                >
-                  {expandedRows.has(generation.id) ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleRow(generation.id)}
+                  >
+                    {expandedRows.has(generation.id) ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedPrompt(constructFinalPrompt(generation))}
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <Dialog open={!!selectedPrompt} onOpenChange={() => setSelectedPrompt(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Full Prompt</DialogTitle>
+          </DialogHeader>
+          <div className="whitespace-pre-wrap font-mono text-sm">
+            {selectedPrompt}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
