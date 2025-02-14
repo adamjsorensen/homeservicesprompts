@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PromptParametersAdmin } from "@/components/admin/PromptParametersAdmin";
 import { ParameterTweaksAdmin } from "@/components/admin/ParameterTweaksAdmin";
 import { PromptsAdmin } from "@/components/admin/PromptsAdmin";
+import { PromptGenerationsAdmin } from "@/components/admin/PromptGenerationsAdmin";
 import { useNavigate } from "react-router-dom";
 import { usePrompts } from "@/hooks/usePrompts";
 import { useEffect } from "react";
@@ -41,6 +42,7 @@ const Admin = () => {
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
             <TabsTrigger value="parameters">Parameters</TabsTrigger>
             <TabsTrigger value="tweaks">Tweaks</TabsTrigger>
+            <TabsTrigger value="generations">Generations</TabsTrigger>
           </TabsList>
           <TabsContent value="prompts" className="space-y-4">
             <PromptsAdmin />
@@ -50,6 +52,9 @@ const Admin = () => {
           </TabsContent>
           <TabsContent value="tweaks" className="space-y-4">
             <ParameterTweaksAdmin />
+          </TabsContent>
+          <TabsContent value="generations" className="space-y-4">
+            <PromptGenerationsAdmin />
           </TabsContent>
         </Tabs>
       </div>
