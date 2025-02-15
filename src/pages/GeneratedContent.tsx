@@ -104,7 +104,7 @@ export function GeneratedContent() {
         },
       }),
     ],
-    content: initialContent,
+    content: '',
     editable: isEditing,
     editorProps: {
       attributes: {
@@ -153,6 +153,14 @@ export function GeneratedContent() {
     },
   });
 
+  // Update editable state when isEditing changes
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(isEditing);
+    }
+  }, [isEditing, editor]);
+
+  // Format and set initial content
   useEffect(() => {
     if (editor && initialContent) {
       const formattedContent = initialContent
@@ -252,13 +260,23 @@ export function GeneratedContent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const { error } = await supabase
+      // Find the saved generation by title and user_id
+      const { data: savedGeneration, error: findError } = await supabase
+        .from("saved_generations")
+        .select()
+        .eq('user_id', user.id)
+        .eq('title', promptTitle)
+        .single();
+
+      if (findError) throw findError;
+
+      // Update the content
+      const { error: updateError } = await supabase
         .from("saved_generations")
         .update({ content: editor.getHTML() })
-        .eq('user_id', user.id)
-        .eq('title', promptTitle);
+        .eq('id', savedGeneration.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       setIsEditing(false);
       toast({
