@@ -77,9 +77,23 @@ export function SavedGeneration() {
         levels: [1, 2, 3],
         HTMLAttributes: {
           class: 'font-bold',
-          1: { class: 'text-2xl mt-4 mb-2' },
-          2: { class: 'text-xl mt-3 mb-2' },
-          3: { class: 'text-lg mt-2 mb-1' },
+        },
+        level: {
+          1: {
+            HTMLAttributes: {
+              class: 'text-2xl mt-4 mb-2',
+            },
+          },
+          2: {
+            HTMLAttributes: {
+              class: 'text-xl mt-3 mb-2',
+            },
+          },
+          3: {
+            HTMLAttributes: {
+              class: 'text-lg mt-2 mb-1',
+            },
+          },
         },
       }),
       BulletList.configure({
