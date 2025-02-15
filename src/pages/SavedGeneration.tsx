@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -78,23 +77,6 @@ export function SavedGeneration() {
         HTMLAttributes: {
           class: 'font-bold',
         },
-        level: {
-          1: {
-            HTMLAttributes: {
-              class: 'text-2xl mt-4 mb-2',
-            },
-          },
-          2: {
-            HTMLAttributes: {
-              class: 'text-xl mt-3 mb-2',
-            },
-          },
-          3: {
-            HTMLAttributes: {
-              class: 'text-lg mt-2 mb-1',
-            },
-          },
-        },
       }),
       BulletList.configure({
         HTMLAttributes: {
@@ -137,7 +119,7 @@ export function SavedGeneration() {
     editable: isEditing,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none',
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none [&>h1]:text-2xl [&>h1]:mt-4 [&>h1]:mb-2 [&>h2]:text-xl [&>h2]:mt-3 [&>h2]:mb-2 [&>h3]:text-lg [&>h3]:mt-2 [&>h3]:mb-1',
       },
       transformPastedText: (text) => {
         return text
@@ -187,21 +169,15 @@ export function SavedGeneration() {
     },
   });
 
-  // Update editor content when generation data is loaded
   useEffect(() => {
     if (editor && generation?.content) {
-      // Transform markdown-style formatting before setting content
       const formattedContent = generation.content
-        // Transform headings
         .replace(/^### (.*$)/gm, '<h3>$1</h3>')
         .replace(/^## (.*$)/gm, '<h2>$1</h2>')
         .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-        // Transform bold and italic
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        // Transform lists
         .replace(/^- (.*$)/gm, '<li>$1</li>')
-        // Handle complex table structures
         .replace(/^([\|\-]+)$/gm, (match) => {
           if (match.includes('|')) {
             return '</tr></thead><tbody>';
@@ -213,7 +189,6 @@ export function SavedGeneration() {
             .map(cell => cell.trim())
             .filter(cell => cell !== '')
             .map(cell => {
-              // If this is a header row (contains dashes)
               if (cell.includes('---')) {
                 return '';
               }
@@ -239,7 +214,6 @@ export function SavedGeneration() {
     }
   }, [generation, editor]);
 
-  // Update editor's editable state when isEditing changes
   useEffect(() => {
     if (editor) {
       editor.setEditable(isEditing);
