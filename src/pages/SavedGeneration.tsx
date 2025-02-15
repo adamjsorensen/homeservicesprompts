@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +25,10 @@ import OrderedList from '@tiptap/extension-ordered-list';
 import ListItem from '@tiptap/extension-list-item';
 import Blockquote from '@tiptap/extension-blockquote';
 import Typography from '@tiptap/extension-typography';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
 
 export function SavedGeneration() {
   const { slug } = useParams();
@@ -55,11 +60,8 @@ export function SavedGeneration() {
         orderedList: false,
         heading: false,
         blockquote: false,
-        typography: false, // Disable default typography to use our custom config
       }),
-      Typography.configure({
-        asterisk: true, // Enable **bold** and *italic* syntax
-      }),
+      Typography,
       Link.configure({
         openOnClick: true,
         HTMLAttributes: {
@@ -96,6 +98,26 @@ export function SavedGeneration() {
           class: 'border-l-4 border-gray-300 pl-4 my-2 italic',
         },
       }),
+      Table.configure({
+        HTMLAttributes: {
+          class: 'min-w-full border-collapse my-4',
+        },
+      }),
+      TableRow.configure({
+        HTMLAttributes: {
+          class: 'border-b border-gray-200',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border px-4 py-2',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'border px-4 py-2 bg-gray-50 font-semibold',
+        },
+      }),
     ],
     content: generation?.content || "",
     editable: isEditing,
@@ -107,7 +129,17 @@ export function SavedGeneration() {
         // Transform ** to strong tags and * to em tags
         return text
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em>$1</em>');
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          // Basic ASCII table detection and conversion
+          .replace(/[|+]-[-+]+[|+]/g, (match) => {
+            // Convert ASCII table borders to HTML table markup
+            return '<table><tbody>';
+          })
+          .replace(/\|([^|]+)\|/g, (_, content) => {
+            // Convert pipe-separated content to table cells
+            const cells = content.trim().split('|').map(cell => `<td>${cell.trim()}</td>`).join('');
+            return `<tr>${cells}</tr>`;
+          });
       },
     },
   });
@@ -118,7 +150,15 @@ export function SavedGeneration() {
       // Transform markdown-style formatting before setting content
       const formattedContent = generation.content
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        // Basic ASCII table detection and conversion
+        .replace(/[|+]-[-+]+[|+]/g, (match) => {
+          return '<table><tbody>';
+        })
+        .replace(/\|([^|]+)\|/g, (_, content) => {
+          const cells = content.trim().split('|').map(cell => `<td>${cell.trim()}</td>`).join('');
+          return `<tr>${cells}</tr>`;
+        });
       
       editor.commands.setContent(formattedContent);
     }
