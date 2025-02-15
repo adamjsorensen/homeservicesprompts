@@ -126,19 +126,48 @@ export function SavedGeneration() {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none',
       },
       transformPastedText: (text) => {
-        // Transform ** to strong tags and * to em tags
         return text
+          // Transform headings
+          .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+          .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+          .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+          // Transform bold and italic
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          // Basic ASCII table detection and conversion
-          .replace(/[|+]-[-+]+[|+]/g, (match) => {
-            // Convert ASCII table borders to HTML table markup
-            return '<table><tbody>';
+          // Transform lists
+          .replace(/^- (.*$)/gm, '<li>$1</li>')
+          // Handle complex table structures
+          .replace(/^([\|\-]+)$/gm, (match) => {
+            if (match.includes('|')) {
+              return '</tr></thead><tbody>';
+            }
+            return '';
           })
-          .replace(/\|([^|]+)\|/g, (_, content) => {
-            // Convert pipe-separated content to table cells
-            const cells = content.trim().split('|').map(cell => `<td>${cell.trim()}</td>`).join('');
-            return `<tr>${cells}</tr>`;
+          .replace(/^\|(.*)\|$/gm, (_, content) => {
+            const cells = content.split('|')
+              .map(cell => cell.trim())
+              .filter(cell => cell !== '')
+              .map(cell => {
+                // If this is a header row (contains dashes)
+                if (cell.includes('---')) {
+                  return '';
+                }
+                return `<td>${cell}</td>`;
+              })
+              .join('');
+            
+            if (cells) {
+              return `<tr>${cells}</tr>`;
+            }
+            return '';
+          })
+          .replace(/^([^<].*)\n\|([-|\s]+)\|/gm, (_, header, separator) => {
+            const headers = header.split('|')
+              .map(h => h.trim())
+              .filter(h => h !== '')
+              .map(h => `<th>${h}</th>`)
+              .join('');
+            return `<table><thead><tr>${headers}</tr>`;
           });
       },
     },
@@ -149,15 +178,47 @@ export function SavedGeneration() {
     if (editor && generation?.content) {
       // Transform markdown-style formatting before setting content
       const formattedContent = generation.content
+        // Transform headings
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        // Transform bold and italic
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        // Basic ASCII table detection and conversion
-        .replace(/[|+]-[-+]+[|+]/g, (match) => {
-          return '<table><tbody>';
+        // Transform lists
+        .replace(/^- (.*$)/gm, '<li>$1</li>')
+        // Handle complex table structures
+        .replace(/^([\|\-]+)$/gm, (match) => {
+          if (match.includes('|')) {
+            return '</tr></thead><tbody>';
+          }
+          return '';
         })
-        .replace(/\|([^|]+)\|/g, (_, content) => {
-          const cells = content.trim().split('|').map(cell => `<td>${cell.trim()}</td>`).join('');
-          return `<tr>${cells}</tr>`;
+        .replace(/^\|(.*)\|$/gm, (_, content) => {
+          const cells = content.split('|')
+            .map(cell => cell.trim())
+            .filter(cell => cell !== '')
+            .map(cell => {
+              // If this is a header row (contains dashes)
+              if (cell.includes('---')) {
+                return '';
+              }
+              return `<td>${cell}</td>`;
+            })
+            .join('');
+          
+          if (cells) {
+            return `<tr>${cells}</tr>`;
+          }
+          return '';
+        })
+        .replace(/^([^<].*)\n\|([-|\s]+)\|/gm, (_, header, separator) => {
+          const headers = header.split('|')
+            .map(h => h.trim())
+            .filter(h => h !== '')
+            .map(h => `<th>${h}</th>`)
+            .join('');
+          return `<table><thead><tr>${headers}</tr>`;
         });
       
       editor.commands.setContent(formattedContent);
