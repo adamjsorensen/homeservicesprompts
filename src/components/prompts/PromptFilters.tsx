@@ -22,14 +22,13 @@ const fetchUniqueCategories = async () => {
   const { data, error } = await supabase
     .from('prompts')
     .select('category')
-    .eq('is_default', true);
+    .order('category', { ascending: true });
 
   if (error) throw error;
 
   // Get unique categories and sort them
-  const categories = data.map(item => item.category as string);
-  const uniqueCategories = Array.from(new Set(categories))
-    .sort((a, b) => a.localeCompare(b));
+  const categories = data.map(item => item.category);
+  const uniqueCategories = Array.from(new Set(categories));
 
   return uniqueCategories;
 };
@@ -56,7 +55,7 @@ export const PromptFilters = ({
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
             {categories.map((category) => (
-              <SelectItem key={category} value={category.toLowerCase()}>
+              <SelectItem key={category} value={category}>
                 {category}
               </SelectItem>
             ))}
