@@ -17,6 +17,13 @@ import { Copy, ArrowLeft, Edit2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
+import CodeBlock from '@tiptap/extension-code-block';
+import Heading from '@tiptap/extension-heading';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
+import Blockquote from '@tiptap/extension-blockquote';
 
 export function SavedGeneration() {
   const { slug } = useParams();
@@ -42,14 +49,63 @@ export function SavedGeneration() {
   });
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit.configure({
+        bulletList: false,
+        orderedList: false,
+        heading: false,
+        blockquote: false,
+      }),
+      Link.configure({
+        openOnClick: true,
+        HTMLAttributes: {
+          class: 'text-blue-500 hover:underline',
+        },
+      }),
+      CodeBlock.configure({
+        HTMLAttributes: {
+          class: 'bg-gray-100 rounded-md p-2 font-mono text-sm',
+        },
+      }),
+      Heading.configure({
+        levels: [1, 2, 3],
+        HTMLAttributes: {
+          class: 'font-bold',
+          1: { class: 'text-2xl mt-4 mb-2' },
+          2: { class: 'text-xl mt-3 mb-2' },
+          3: { class: 'text-lg mt-2 mb-1' },
+        },
+      }),
+      BulletList.configure({
+        HTMLAttributes: {
+          class: 'list-disc list-inside my-2',
+        },
+      }),
+      OrderedList.configure({
+        HTMLAttributes: {
+          class: 'list-decimal list-inside my-2',
+        },
+      }),
+      ListItem,
+      Blockquote.configure({
+        HTMLAttributes: {
+          class: 'border-l-4 border-gray-300 pl-4 my-2 italic',
+        },
+      }),
+    ],
     content: generation?.content || "",
     editable: isEditing,
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none',
+      },
+    },
   });
 
   // Update editor content when generation data is loaded
   useEffect(() => {
     if (editor && generation?.content) {
+      // If the content contains markdown-style formatting, it will be automatically parsed
       editor.commands.setContent(generation.content);
     }
   }, [generation, editor]);
