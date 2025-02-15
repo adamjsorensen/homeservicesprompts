@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -24,6 +23,7 @@ import BulletList from '@tiptap/extension-bullet-list';
 import OrderedList from '@tiptap/extension-ordered-list';
 import ListItem from '@tiptap/extension-list-item';
 import Blockquote from '@tiptap/extension-blockquote';
+import Typography from '@tiptap/extension-typography';
 
 export function SavedGeneration() {
   const { slug } = useParams();
@@ -55,6 +55,10 @@ export function SavedGeneration() {
         orderedList: false,
         heading: false,
         blockquote: false,
+        typography: false, // Disable default typography to use our custom config
+      }),
+      Typography.configure({
+        asterisk: true, // Enable **bold** and *italic* syntax
       }),
       Link.configure({
         openOnClick: true,
@@ -99,14 +103,24 @@ export function SavedGeneration() {
       attributes: {
         class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl focus:outline-none',
       },
+      transformPastedText: (text) => {
+        // Transform ** to strong tags and * to em tags
+        return text
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>');
+      },
     },
   });
 
   // Update editor content when generation data is loaded
   useEffect(() => {
     if (editor && generation?.content) {
-      // If the content contains markdown-style formatting, it will be automatically parsed
-      editor.commands.setContent(generation.content);
+      // Transform markdown-style formatting before setting content
+      const formattedContent = generation.content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+      
+      editor.commands.setContent(formattedContent);
     }
   }, [generation, editor]);
 
