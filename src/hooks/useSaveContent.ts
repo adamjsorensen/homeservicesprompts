@@ -31,21 +31,26 @@ export function useSaveContent() {
 
   const updateContent = async (content: string, userId: string, title: string) => {
     try {
-      // Find the saved generation by title and user_id
-      const { data: savedGeneration, error: findError } = await supabase
+      // Find the most recent saved generation by title and user_id
+      const { data: savedGenerations, error: findError } = await supabase
         .from("saved_generations")
         .select()
         .eq('user_id', userId)
         .eq('title', title)
-        .single();
+        .order('created_at', { ascending: false });
 
       if (findError) throw findError;
+      
+      if (!savedGenerations || savedGenerations.length === 0) {
+        throw new Error("No saved generation found");
+      }
 
-      // Update the content
+      // Update the most recent one
+      const mostRecent = savedGenerations[0];
       const { error: updateError } = await supabase
         .from("saved_generations")
         .update({ content })
-        .eq('id', savedGeneration.id);
+        .eq('id', mostRecent.id);
 
       if (updateError) throw updateError;
 
