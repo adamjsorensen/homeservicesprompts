@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,11 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Layout } from "@/components/layout/Layout";
-import { Copy, ArrowLeft, Undo } from "lucide-react";
+import { Copy, ArrowLeft, Edit2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 
 interface LocationState {
   generatedContent: string;
@@ -24,8 +25,15 @@ interface LocationState {
 export function GeneratedContent() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
   const { generatedContent: initialContent, promptTitle } = 
     (location.state as LocationState) || { generatedContent: "", promptTitle: "" };
+
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: initialContent,
+    editable: isEditing,
+  });
 
   useEffect(() => {
     const saveGeneratedContent = async () => {
@@ -62,7 +70,7 @@ export function GeneratedContent() {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(initialContent);
+      await navigator.clipboard.writeText(editor?.getHTML() || initialContent);
       toast({
         description: "Content copied to clipboard",
       });
@@ -70,6 +78,34 @@ export function GeneratedContent() {
       toast({
         variant: "destructive",
         description: "Failed to copy content",
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!editor) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
+        .from("saved_generations")
+        .update({ content: editor.getHTML() })
+        .eq('user_id', user.id)
+        .eq('title', promptTitle);
+
+      if (error) throw error;
+
+      setIsEditing(false);
+      toast({
+        description: "Content saved successfully",
+      });
+    } catch (error) {
+      console.error("Error saving content:", error);
+      toast({
+        variant: "destructive",
+        description: "Failed to save content",
       });
     }
   };
@@ -90,15 +126,15 @@ export function GeneratedContent() {
           <CardHeader>
             <CardTitle>Generated Content: {promptTitle}</CardTitle>
             <CardDescription>
-              Review your generated content
+              Review and edit your generated content
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="prose max-w-none">
-              <p className="whitespace-pre-wrap">{initialContent}</p>
+            <div className={`prose max-w-none ${isEditing ? 'border rounded-md p-4' : ''}`}>
+              <EditorContent editor={editor} />
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end">
+          <CardFooter className="flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={handleCopy}
@@ -106,6 +142,23 @@ export function GeneratedContent() {
               <Copy className="mr-2 h-4 w-4" />
               Copy
             </Button>
+            {isEditing ? (
+              <Button
+                variant="default"
+                onClick={handleSave}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Save
+              </Button>
+            ) : (
+              <Button
+                variant="default"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit2 className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>
