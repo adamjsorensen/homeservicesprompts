@@ -62,7 +62,16 @@ export function GeneratedContent() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
-    const success = await updateContent(initialContent, user.id, promptTitle);
+    const editorContent = document.querySelector('.ProseMirror')?.innerHTML;
+    if (!editorContent) {
+      toast({
+        variant: "destructive",
+        description: "Could not get editor content",
+      });
+      return;
+    }
+
+    const success = await updateContent(editorContent, user.id, promptTitle);
     if (success) {
       setIsEditing(false);
     }

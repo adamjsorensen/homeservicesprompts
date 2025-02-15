@@ -84,42 +84,66 @@ export const editorProps = {
 };
 
 export const formatContent = (content: string): string => {
-  return content
-    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^- (.*$)/gm, '<li>$1</li>')
-    .replace(/^([\|\-]+)$/gm, (match) => {
-      if (match.includes('|')) {
-        return '</tr></thead><tbody>';
-      }
-      return '';
-    })
-    .replace(/^\|(.*)\|$/gm, (_, content) => {
-      const cells = content.split('|')
-        .map(cell => cell.trim())
-        .filter(cell => cell !== '')
-        .map(cell => {
-          if (cell.includes('---')) {
-            return '';
-          }
-          return `<td>${cell}</td>`;
-        })
-        .join('');
-      
-      if (cells) {
-        return `<tr>${cells}</tr>`;
-      }
-      return '';
-    })
-    .replace(/^([^<].*)\n\|([-|\s]+)\|/gm, (_, header, separator) => {
-      const headers = header.split('|')
-        .map(h => h.trim())
-        .filter(h => h !== '')
-        .map(h => `<th>${h}</th>`)
-        .join('');
-      return `<table><thead><tr>${headers}</tr>`;
-    });
+  // First, normalize line endings
+  const normalizedContent = content.replace(/\r\n/g, '\n');
+  
+  // Split into paragraphs
+  const paragraphs = normalizedContent.split(/\n\n+/);
+  
+  // Process each paragraph
+  return paragraphs.map(paragraph => {
+    // Skip empty paragraphs
+    if (!paragraph.trim()) return '';
+    
+    let processed = paragraph
+      // Handle headings
+      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+      // Handle bold and italic
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Handle bullet points
+      .replace(/^- (.*$)/gm, '<li>$1</li>')
+      // Handle tables
+      .replace(/^([\|\-]+)$/gm, (match) => {
+        if (match.includes('|')) {
+          return '</tr></thead><tbody>';
+        }
+        return '';
+      })
+      .replace(/^\|(.*)\|$/gm, (_, content) => {
+        const cells = content.split('|')
+          .map(cell => cell.trim())
+          .filter(cell => cell !== '')
+          .map(cell => {
+            if (cell.includes('---')) {
+              return '';
+            }
+            return `<td>${cell}</td>`;
+          })
+          .join('');
+        
+        if (cells) {
+          return `<tr>${cells}</tr>`;
+        }
+        return '';
+      })
+      .replace(/^([^<].*)\n\|([-|\s]+)\|/gm, (_, header, separator) => {
+        const headers = header.split('|')
+          .map(h => h.trim())
+          .filter(h => h !== '')
+          .map(h => `<th>${h}</th>`)
+          .join('');
+        return `<table><thead><tr>${headers}</tr>`;
+      });
+
+    // If the paragraph doesn't start with a special tag (h1-h6, ul, ol, etc.),
+    // wrap it in a paragraph tag and preserve line breaks
+    if (!/^<(h[1-6]|ul|ol|li|table|blockquote)/.test(processed)) {
+      processed = '<p>' + processed.replace(/\n/g, '<br />') + '</p>';
+    }
+
+    return processed;
+  }).join('\n\n');
 };
