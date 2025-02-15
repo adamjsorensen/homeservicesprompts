@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,20 @@ export function SavedGeneration() {
     content: generation?.content || "",
     editable: isEditing,
   });
+
+  // Update editor content when generation data is loaded
+  useEffect(() => {
+    if (editor && generation?.content) {
+      editor.commands.setContent(generation.content);
+    }
+  }, [generation, editor]);
+
+  // Update editor's editable state when isEditing changes
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(isEditing);
+    }
+  }, [isEditing, editor]);
 
   const handleCopy = async () => {
     try {
