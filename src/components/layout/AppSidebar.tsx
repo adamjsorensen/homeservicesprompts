@@ -33,6 +33,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
@@ -94,13 +95,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="h-[60px] px-2 flex items-center">
+      <SidebarHeader className="h-[60px] px-2 flex items-center justify-between">
         <img 
-          src="/lovable-uploads/61bd61cb-59e9-486b-8761-66db1db44729.png" 
-          alt="Logo"
+          src="/propaint-logo.png" 
+          alt="PropaintAI Logo"
           className="h-8 w-auto cursor-pointer"
           onClick={() => navigate("/")}
         />
+        <SidebarTrigger className="lg:flex" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

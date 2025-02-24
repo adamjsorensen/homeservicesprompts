@@ -1,5 +1,5 @@
 
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -9,7 +9,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         <AppSidebar />
         <main className="flex-1">
           <div className="container py-4">
-            <SidebarTrigger className="mb-4 lg:hidden" />
             {children}
           </div>
         </main>
