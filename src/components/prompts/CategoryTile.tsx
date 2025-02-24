@@ -13,6 +13,18 @@ interface CategoryTileProps {
 }
 
 export function CategoryTile({ title, description, iconName, onClick, className }: CategoryTileProps) {
+  // Add debug logging
+  console.log("Available icon keys:", Object.keys(LucideIcons));
+  console.log("Icon type check:", {
+    isFunction: typeof LucideIcons[iconName] === 'function',
+    iconComponent: LucideIcons[iconName],
+    iconProperties: Object.getOwnPropertyDescriptor(LucideIcons, iconName)
+  });
+  console.log("Folder icon reference:", {
+    folderIcon: LucideIcons.Folder,
+    folderType: typeof LucideIcons.Folder
+  });
+
   // Ensure we only use valid icon names from Lucide
   const IconComponent = (LucideIcons as Record<string, React.ComponentType<any>>)[iconName] ?? Folder;
 
