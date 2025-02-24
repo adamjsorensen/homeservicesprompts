@@ -1,4 +1,3 @@
-
 import {
   Library,
   Building2,
@@ -38,7 +37,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -212,17 +210,8 @@ export function AppSidebar() {
           state === "collapsed" ? "rotate-180" : ""
         )}
       >
-        <SidebarTrigger 
-          className="h-8 w-8 rounded-full border bg-background shadow-md flex items-center justify-center hover:bg-accent"
-          asChild
-        >
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="p-0 border-none hover:bg-transparent"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <SidebarTrigger className="h-8 w-8 rounded-full border bg-background shadow-md flex items-center justify-center hover:bg-accent">
+          <ChevronRight className="h-4 w-4" />
         </SidebarTrigger>
       </div>
     </div>
