@@ -44,16 +44,25 @@ export function PromptGrid({
 
   if (!currentCategory) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {categories.map((category) => (
-          <CategoryTile
-            key={category.id}
-            title={category.title}
-            description={category.description}
-            iconName={category.icon_name || "folder"}
-            onClick={() => onCategorySelect?.(category.id)}
-          />
-        ))}
+      <div className="space-y-6">
+        <CategoryTile
+          title="Chat Assistant"
+          description="Get interactive help with content generation through our AI chat interface"
+          iconName="MessageSquare"
+          onClick={() => navigate("/chat")}
+          className="bg-purple-50 border-purple-200 hover:bg-purple-100"
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {categories.map((category) => (
+            <CategoryTile
+              key={category.id}
+              title={category.title}
+              description={category.description}
+              iconName={getCategoryIcon(category.title)}
+              onClick={() => onCategorySelect?.(category.id)}
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -72,4 +81,19 @@ export function PromptGrid({
       ))}
     </div>
   );
+}
+
+// Helper function to map category titles to appropriate icons
+function getCategoryIcon(title: string): string {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('blog')) return 'PenTool';
+  if (titleLower.includes('social')) return 'Share2';
+  if (titleLower.includes('email')) return 'Mail';
+  if (titleLower.includes('marketing')) return 'TrendingUp';
+  if (titleLower.includes('seo')) return 'Search';
+  if (titleLower.includes('ad')) return 'Target';
+  if (titleLower.includes('content')) return 'FileText';
+  if (titleLower.includes('video')) return 'Video';
+  if (titleLower.includes('script')) return 'FileCode';
+  return 'Folder';
 }
