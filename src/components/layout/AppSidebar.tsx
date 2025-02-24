@@ -7,6 +7,14 @@ import {
   Settings2,
   Menu,
   LogOut,
+  MessageSquare,
+  User,
+  Layers,
+  Building,
+  Users,
+  Target,
+  LineChart,
+  Brain,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +30,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
@@ -43,6 +54,16 @@ export function AppSidebar() {
     }
   };
 
+  const hubSubItems = [
+    { title: "Marketing", url: "/library/marketing", icon: Building },
+    { title: "Sales", url: "/library/sales", icon: Building },
+    { title: "Production", url: "/library/production", icon: Layers },
+    { title: "Team", url: "/library/team", icon: Users },
+    { title: "Strategy", url: "/library/strategy", icon: Target },
+    { title: "Financials", url: "/library/financials", icon: LineChart },
+    { title: "Personal Leadership", url: "/library/leadership", icon: Brain },
+  ];
+
   const mainItems = [
     {
       title: "Home",
@@ -52,9 +73,10 @@ export function AppSidebar() {
     ...(user
       ? [
           {
-            title: "Library",
+            title: "Hub",
             icon: Library,
             url: "/library",
+            subItems: hubSubItems,
           },
           {
             title: "Business",
@@ -65,6 +87,11 @@ export function AppSidebar() {
             title: "Saved Content",
             icon: FileText,
             url: "/saved-generations",
+          },
+          {
+            title: "Chat",
+            icon: MessageSquare,
+            url: "/chat",
           },
         ]
       : []),
@@ -80,11 +107,25 @@ export function AppSidebar() {
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    onClick={() => navigate(item.url)}
+                    onClick={() => item.subItems ? null : navigate(item.url)}
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
+                  {item.subItems && (
+                    <SidebarMenuSub>
+                      {item.subItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            onClick={() => navigate(subItem.url)}
+                          >
+                            <subItem.icon className="h-4 w-4" />
+                            <span>{subItem.title}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -94,9 +135,25 @@ export function AppSidebar() {
         {user && (
           <>
             <SidebarGroup>
-              <SidebarGroupLabel>Management</SidebarGroupLabel>
+              <SidebarGroupLabel>Account</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/profile")}
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Profile</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate("/settings")}
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      <span>Settings</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   {isAdmin && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
