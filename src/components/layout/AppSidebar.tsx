@@ -1,11 +1,9 @@
 
 import {
-  Home,
   Library,
   Building2,
   FileText,
   Settings2,
-  Menu,
   LogOut,
   MessageSquare,
   User,
@@ -15,6 +13,7 @@ import {
   Target,
   LineChart,
   Brain,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -65,11 +64,6 @@ export function AppSidebar() {
   ];
 
   const mainItems = [
-    {
-      title: "Home",
-      icon: Home,
-      url: "/",
-    },
     ...(user
       ? [
           {
@@ -101,13 +95,13 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     onClick={() => item.subItems ? null : navigate(item.url)}
+                    className={item.title === "Hub" ? "font-bold" : ""}
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
@@ -159,13 +153,16 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         onClick={() => navigate("/admin")}
                       >
-                        <Settings2 className="h-4 w-4" />
+                        <Shield className="h-4 w-4" />
                         <span>Admin</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleSignOut}>
+                    <SidebarMenuButton 
+                      onClick={handleSignOut}
+                      className="text-red-500 hover:text-red-600"
+                    >
                       <LogOut className="h-4 w-4" />
                       <span>Sign Out</span>
                     </SidebarMenuButton>
