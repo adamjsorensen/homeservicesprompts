@@ -25,8 +25,50 @@ export function PromptGrid({
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const categories = items.filter(item => item.is_category);
-  const prompts = items.filter(item => !item.is_category);
+  const categories = [
+    {
+      id: "marketing",
+      title: "Marketing",
+      description: "Generate content for your marketing campaigns",
+      iconName: "TrendingUp"
+    },
+    {
+      id: "sales",
+      title: "Sales",
+      description: "Create compelling sales copy and proposals",
+      iconName: "ShoppingBag"
+    },
+    {
+      id: "production",
+      title: "Production",
+      description: "Streamline your content production workflow",
+      iconName: "Factory"
+    },
+    {
+      id: "team",
+      title: "Team",
+      description: "Improve team communication and collaboration",
+      iconName: "Users"
+    },
+    {
+      id: "strategy",
+      title: "Strategy & Planning",
+      description: "Develop effective business strategies and plans",
+      iconName: "Brain"
+    },
+    {
+      id: "financials",
+      title: "Financials",
+      description: "Generate financial reports and analysis",
+      iconName: "DollarSign"
+    },
+    {
+      id: "leadership",
+      title: "Personal Leadership",
+      description: "Enhance your leadership and management skills",
+      iconName: "User"
+    }
+  ];
 
   const handleCopy = async (prompt: Prompt) => {
     try {
@@ -58,7 +100,7 @@ export function PromptGrid({
               key={category.id}
               title={category.title}
               description={category.description}
-              iconName={getCategoryIcon(category.title)}
+              iconName={category.iconName}
               onClick={() => onCategorySelect?.(category.id)}
             />
           ))}
@@ -69,7 +111,7 @@ export function PromptGrid({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {prompts.map((prompt) => (
+      {items.filter(item => !item.is_category).map((prompt) => (
         <PromptCard
           key={prompt.id}
           prompt={prompt}
@@ -81,19 +123,4 @@ export function PromptGrid({
       ))}
     </div>
   );
-}
-
-// Helper function to map category titles to appropriate icons
-function getCategoryIcon(title: string): string {
-  const titleLower = title.toLowerCase();
-  if (titleLower.includes('blog')) return 'PenTool';
-  if (titleLower.includes('social')) return 'Share2';
-  if (titleLower.includes('email')) return 'Mail';
-  if (titleLower.includes('marketing')) return 'TrendingUp';
-  if (titleLower.includes('seo')) return 'Search';
-  if (titleLower.includes('ad')) return 'Target';
-  if (titleLower.includes('content')) return 'FileText';
-  if (titleLower.includes('video')) return 'Video';
-  if (titleLower.includes('script')) return 'FileCode';
-  return 'Folder';
 }
