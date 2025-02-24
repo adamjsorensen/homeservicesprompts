@@ -8,13 +8,17 @@ export interface Prompt {
   description: string;
   category: string;
   prompt: string;
+  is_category?: boolean;
+  parent_id?: string | null;
+  icon_name?: string | null;
+  display_order?: number;
 }
 
 const fetchPrompts = async () => {
   const { data, error } = await supabase
     .from("prompts")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("display_order", { ascending: true });
 
   if (error) {
     throw error;

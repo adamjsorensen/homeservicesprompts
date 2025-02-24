@@ -281,8 +281,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string
+          display_order: number
+          icon_name: string | null
           id: string
+          is_category: boolean
           is_default: boolean
+          parent_id: string | null
           prompt: string
           tags: string[]
           title: string
@@ -293,8 +297,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description: string
+          display_order?: number
+          icon_name?: string | null
           id?: string
+          is_category?: boolean
           is_default?: boolean
+          parent_id?: string | null
           prompt: string
           tags?: string[]
           title: string
@@ -305,14 +313,26 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string
+          display_order?: number
+          icon_name?: string | null
           id?: string
+          is_category?: boolean
           is_default?: boolean
+          parent_id?: string | null
           prompt?: string
           tags?: string[]
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prompts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_generations: {
         Row: {
