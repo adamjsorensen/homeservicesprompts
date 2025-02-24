@@ -1,4 +1,3 @@
-
 import {
   Library,
   Building2,
@@ -95,7 +94,7 @@ export function AppSidebar() {
   ];
 
   return (
-    <Sidebar>
+    <Sidebar variant="default" collapsible="icon">
       <SidebarHeader className="h-[60px] px-2 flex items-center">
         <div 
           className="flex items-center gap-2 cursor-pointer" 
@@ -127,9 +126,7 @@ export function AppSidebar() {
                     tooltip={state === "collapsed" ? item.title : undefined}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span className={state === "collapsed" ? "hidden" : "block"}>
-                      {item.title}
-                    </span>
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                   {item.subItems && state !== "collapsed" && (
                     <SidebarMenuSub>
@@ -154,9 +151,7 @@ export function AppSidebar() {
         {user && (
           <>
             <SidebarGroup>
-              <SidebarGroupLabel className={state === "collapsed" ? "hidden" : "block"}>
-                Account
-              </SidebarGroupLabel>
+              <SidebarGroupLabel>Account</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -165,9 +160,7 @@ export function AppSidebar() {
                       tooltip={state === "collapsed" ? "Profile" : undefined}
                     >
                       <User className="h-4 w-4" />
-                      <span className={state === "collapsed" ? "hidden" : "block"}>
-                        Profile
-                      </span>
+                      <span>Profile</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -176,9 +169,7 @@ export function AppSidebar() {
                       tooltip={state === "collapsed" ? "Settings" : undefined}
                     >
                       <Settings2 className="h-4 w-4" />
-                      <span className={state === "collapsed" ? "hidden" : "block"}>
-                        Settings
-                      </span>
+                      <span>Settings</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {isAdmin && (
@@ -188,9 +179,7 @@ export function AppSidebar() {
                         tooltip={state === "collapsed" ? "Admin" : undefined}
                       >
                         <Shield className="h-4 w-4" />
-                        <span className={state === "collapsed" ? "hidden" : "block"}>
-                          Admin
-                        </span>
+                        <span>Admin</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
@@ -201,9 +190,7 @@ export function AppSidebar() {
                       tooltip={state === "collapsed" ? "Sign Out" : undefined}
                     >
                       <LogOut className="h-4 w-4" />
-                      <span className={state === "collapsed" ? "hidden" : "block"}>
-                        Sign Out
-                      </span>
+                      <span>Sign Out</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
