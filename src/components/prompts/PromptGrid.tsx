@@ -42,10 +42,10 @@ export function PromptGrid({
         description="Chat with an AI assistant to help you generate content"
         iconName="MessageSquare"
         onClick={() => navigate("/chat")}
-        className="bg-purple-50 border-purple-200 hover:bg-purple-100"
+        className="bg-purple-50 border-purple-200"
       />
       <div className="grid grid-cols-1 gap-6">
-        {items.map((prompt) => (
+        {items.filter(item => !item.is_category).map((prompt) => (
           <PromptCard
             key={prompt.id}
             prompt={prompt}
