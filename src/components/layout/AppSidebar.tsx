@@ -101,7 +101,7 @@ export function AppSidebar() {
   return (
     <div className="relative">
       <Sidebar variant="sidebar" collapsible="icon">
-        <SidebarHeader className="h-[60px] px-2 flex items-center">
+        <SidebarHeader className="px-4 py-4">
           <div 
             className="flex items-center gap-2 cursor-pointer" 
             onClick={() => navigate("/")}
@@ -208,14 +208,21 @@ export function AppSidebar() {
       </Sidebar>
       <div 
         className={cn(
-          "absolute top-16 right-0 translate-x-1/2 transition-transform",
+          "absolute top-16 -right-4 transition-transform cursor-pointer",
           state === "collapsed" ? "rotate-180" : ""
         )}
       >
         <SidebarTrigger 
-          className="h-8 w-8 rounded-full border bg-background shadow-md"
+          className="h-8 w-8 rounded-full border bg-background shadow-md flex items-center justify-center hover:bg-accent"
+          asChild
         >
-          <ChevronRight className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="p-0 border-none hover:bg-transparent"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </SidebarTrigger>
       </div>
     </div>
