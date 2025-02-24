@@ -1,15 +1,24 @@
 
-import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Library, PaintBucket, Paintbrush, House } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { LandingHeader } from "@/components/layout/LandingHeader";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { Navigate } from "react-router-dom";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Redirect authenticated users to library
+  if (user) {
+    return <Navigate to="/library" replace />;
+  }
 
   return (
-    <Layout>
-      <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center text-center space-y-8 px-4">
+    <>
+      <LandingHeader />
+      <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center text-center space-y-8 px-4 mt-14">
         <div className="space-y-4 max-w-3xl">
           <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
             Your AI Assistant for Professional Painting Success
@@ -23,19 +32,19 @@ const Index = () => {
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
             size="lg"
-            onClick={() => navigate("/library")}
+            onClick={() => navigate("/auth")}
             className="gap-2 bg-blue-600 hover:bg-blue-700"
           >
             <Library className="w-4 h-4" />
-            Explore Prompt Library
+            Get Started
           </Button>
           <Button
             size="lg"
             variant="outline"
-            onClick={() => navigate("/business")}
+            onClick={() => navigate("/auth")}
             className="gap-2"
           >
-            Get Started
+            Learn More
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
@@ -70,7 +79,7 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 };
 

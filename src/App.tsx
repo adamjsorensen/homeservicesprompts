@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { PublicOnlyRoute } from "./components/auth/PublicOnlyRoute";
+import { Layout } from "./components/layout/Layout";
 import Index from "./pages/Index";
 import Library from "./pages/Library";
 import Business from "./pages/Business";
@@ -31,7 +32,9 @@ const App = () => (
             <Route 
               path="/" 
               element={
-                <Index />
+                <PublicOnlyRoute>
+                  <Index />
+                </PublicOnlyRoute>
               } 
             />
             <Route 
@@ -46,7 +49,9 @@ const App = () => (
               path="/chat"
               element={
                 <ProtectedRoute>
-                  <Chat />
+                  <Layout>
+                    <Chat />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -54,7 +59,9 @@ const App = () => (
               path="/library"
               element={
                 <ProtectedRoute>
-                  <Library />
+                  <Layout>
+                    <Library />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -62,7 +69,9 @@ const App = () => (
               path="/business"
               element={
                 <ProtectedRoute>
-                  <Business />
+                  <Layout>
+                    <Business />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -70,7 +79,9 @@ const App = () => (
               path="/admin"
               element={
                 <ProtectedRoute>
-                  <Admin />
+                  <Layout>
+                    <Admin />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -78,7 +89,9 @@ const App = () => (
               path="/generated-content"
               element={
                 <ProtectedRoute>
-                  <GeneratedContent />
+                  <Layout>
+                    <GeneratedContent />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -86,7 +99,9 @@ const App = () => (
               path="/saved-generations"
               element={
                 <ProtectedRoute>
-                  <SavedGenerations />
+                  <Layout>
+                    <SavedGenerations />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -94,7 +109,9 @@ const App = () => (
               path="/saved-generations/:slug"
               element={
                 <ProtectedRoute>
-                  <SavedGeneration />
+                  <Layout>
+                    <SavedGeneration />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
