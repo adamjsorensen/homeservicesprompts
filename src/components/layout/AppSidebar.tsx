@@ -127,7 +127,9 @@ export function AppSidebar() {
                     tooltip={state === "collapsed" ? item.title : undefined}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span className={state === "collapsed" ? "hidden" : "block"}>
+                      {item.title}
+                    </span>
                   </SidebarMenuButton>
                   {item.subItems && state !== "collapsed" && (
                     <SidebarMenuSub>
@@ -152,7 +154,9 @@ export function AppSidebar() {
         {user && (
           <>
             <SidebarGroup>
-              <SidebarGroupLabel>Account</SidebarGroupLabel>
+              <SidebarGroupLabel className={state === "collapsed" ? "hidden" : "block"}>
+                Account
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -161,7 +165,9 @@ export function AppSidebar() {
                       tooltip={state === "collapsed" ? "Profile" : undefined}
                     >
                       <User className="h-4 w-4" />
-                      <span>Profile</span>
+                      <span className={state === "collapsed" ? "hidden" : "block"}>
+                        Profile
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -170,7 +176,9 @@ export function AppSidebar() {
                       tooltip={state === "collapsed" ? "Settings" : undefined}
                     >
                       <Settings2 className="h-4 w-4" />
-                      <span>Settings</span>
+                      <span className={state === "collapsed" ? "hidden" : "block"}>
+                        Settings
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {isAdmin && (
@@ -180,7 +188,9 @@ export function AppSidebar() {
                         tooltip={state === "collapsed" ? "Admin" : undefined}
                       >
                         <Shield className="h-4 w-4" />
-                        <span>Admin</span>
+                        <span className={state === "collapsed" ? "hidden" : "block"}>
+                          Admin
+                        </span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
@@ -191,7 +201,9 @@ export function AppSidebar() {
                       tooltip={state === "collapsed" ? "Sign Out" : undefined}
                     >
                       <LogOut className="h-4 w-4" />
-                      <span>Sign Out</span>
+                      <span className={state === "collapsed" ? "hidden" : "block"}>
+                        Sign Out
+                      </span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
