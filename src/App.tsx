@@ -15,6 +15,7 @@ import Admin from "./pages/Admin";
 import { GeneratedContent } from "./pages/GeneratedContent";
 import { SavedGenerations } from "./pages/SavedGenerations";
 import { SavedGeneration } from "./pages/SavedGeneration";
+import Chat from "./pages/Chat";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,14 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/library"
               element={
