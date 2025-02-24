@@ -12,7 +12,8 @@ interface CategoryTileProps {
 }
 
 export function CategoryTile({ title, description, iconName, onClick, className }: CategoryTileProps) {
-  const Icon = LucideIcons[iconName as keyof typeof LucideIcons];
+  // Ensure we only use valid icon names from Lucide
+  const IconComponent = (LucideIcons as Record<string, React.ComponentType>)[iconName] ?? LucideIcons.Folder;
 
   return (
     <Card
@@ -32,9 +33,7 @@ export function CategoryTile({ title, description, iconName, onClick, className 
               {description}
             </CardDescription>
           </div>
-          {Icon && (
-            <Icon className="w-8 h-8 text-muted-foreground group-hover:text-purple-600 transition-colors" />
-          )}
+          <IconComponent className="w-8 h-8 text-muted-foreground group-hover:text-purple-600 transition-colors" />
         </div>
       </CardHeader>
     </Card>

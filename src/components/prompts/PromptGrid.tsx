@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CategoryTile } from "./CategoryTile";
 import { PromptCard } from "./PromptCard";
 import { type Prompt } from "@/hooks/usePrompts";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PromptGridProps {
   items: Prompt[];
@@ -22,9 +23,24 @@ export function PromptGrid({
   onCategorySelect,
 }: PromptGridProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const categories = items.filter(item => item.is_category);
   const prompts = items.filter(item => !item.is_category);
+
+  const handleCopy = async (prompt: Prompt) => {
+    try {
+      await navigator.clipboard.writeText(prompt.prompt);
+      toast({
+        description: "Prompt copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        description: "Failed to copy prompt",
+      });
+    }
+  };
 
   if (!currentCategory) {
     return (
@@ -51,6 +67,7 @@ export function PromptGrid({
           isAdmin={isAdmin}
           onCustomize={() => onCustomize?.(prompt)}
           onDelete={() => onDelete?.(prompt)}
+          onCopy={() => handleCopy(prompt)}
         />
       ))}
     </div>
