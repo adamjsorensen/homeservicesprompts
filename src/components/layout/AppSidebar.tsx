@@ -33,7 +33,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
@@ -41,6 +41,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const { isAdmin } = usePrompts();
   const { toast } = useToast();
+  const { state } = useSidebar();
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -95,16 +96,24 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="h-[60px] px-2 flex items-center justify-between">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+      <SidebarHeader className="h-[60px] px-2 flex items-center">
+        <div 
+          className="flex items-center gap-2 cursor-pointer" 
+          onClick={() => navigate("/")}
+        >
           <img 
             src="/lovable-uploads/bcb8494a-3402-46b5-8b33-dd45d3103ebf.png" 
             alt="PropaintAI Logo"
             className="h-8 w-auto"
           />
-          <span className="font-semibold text-lg">PropaintAI</span>
+          <span 
+            className={`font-semibold text-lg transition-opacity duration-200 ${
+              state === "collapsed" ? "opacity-0 hidden" : "opacity-100"
+            }`}
+          >
+            PropaintAI
+          </span>
         </div>
-        <SidebarTrigger className="lg:flex" />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -115,11 +124,12 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     onClick={() => item.subItems ? null : navigate(item.url)}
                     className={item.title === "Hub" ? "font-bold" : ""}
+                    tooltip={state === "collapsed" ? item.title : undefined}
                   >
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
                   </SidebarMenuButton>
-                  {item.subItems && (
+                  {item.subItems && state !== "collapsed" && (
                     <SidebarMenuSub>
                       {item.subItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
@@ -148,6 +158,7 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={() => navigate("/profile")}
+                      tooltip={state === "collapsed" ? "Profile" : undefined}
                     >
                       <User className="h-4 w-4" />
                       <span>Profile</span>
@@ -156,6 +167,7 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={() => navigate("/settings")}
+                      tooltip={state === "collapsed" ? "Settings" : undefined}
                     >
                       <Settings2 className="h-4 w-4" />
                       <span>Settings</span>
@@ -165,6 +177,7 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         onClick={() => navigate("/admin")}
+                        tooltip={state === "collapsed" ? "Admin" : undefined}
                       >
                         <Shield className="h-4 w-4" />
                         <span>Admin</span>
@@ -175,6 +188,7 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       onClick={handleSignOut}
                       className="text-red-500 hover:text-red-600"
+                      tooltip={state === "collapsed" ? "Sign Out" : undefined}
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Sign Out</span>
