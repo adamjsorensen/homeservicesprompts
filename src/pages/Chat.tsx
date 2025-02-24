@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Layout } from "@/components/layout/Layout";
 import {
   Brain,
   Code,
@@ -16,8 +17,18 @@ import {
   ThumbsDown,
   ThumbsUp,
   Share2,
-  RotateCcw
+  RotateCcw,
+  ChevronLeft
 } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { useNavigate } from "react-router-dom";
 
 interface Message {
   id: string;
@@ -30,6 +41,7 @@ export default function Chat() {
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const navigate = useNavigate();
 
   const actions = [
     { icon: FileText, label: "Research", onClick: () => console.log("Research") },
@@ -55,103 +67,129 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-6xl mx-auto px-4">
-      {/* Welcome Header */}
-      <div className="text-center py-12 space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">
-          Good morning{user?.email ? `, ${user.email.split('@')[0]}` : ''}.
-        </h1>
-        <p className="text-3xl text-muted-foreground">
-          How can I help you today?
-        </p>
-      </div>
+    <Layout>
+      <div className="space-y-8">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center justify-between">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="gap-2" 
+                    onClick={() => navigate(-1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                  </Button>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Chat</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap justify-center gap-4 mb-8">
-        {actions.map((action) => (
-          <Button
-            key={action.label}
-            variant="outline"
-            className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-accent"
-            onClick={action.onClick}
-          >
-            <action.icon className="w-4 h-4" />
-            {action.label}
-          </Button>
-        ))}
-      </div>
+        {/* Welcome Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight">
+            Good morning{user?.email ? `, ${user.email.split('@')[0]}` : ''}.
+          </h1>
+          <p className="text-3xl text-muted-foreground">
+            How can I help you today?
+          </p>
+        </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+        {/* Action Buttons */}
+        <div className="flex flex-wrap justify-center gap-4">
+          {actions.map((action) => (
+            <Button
+              key={action.label}
+              variant="outline"
+              className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-accent"
+              onClick={action.onClick}
+            >
+              <action.icon className="w-4 h-4" />
+              {action.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[400px]">
+          {messages.map((message) => (
             <div
-              className={`max-w-[80%] p-4 rounded-lg ${
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
+              key={message.id}
+              className={`flex ${
+                message.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
-              <p>{message.content}</p>
-              {message.role === "assistant" && (
-                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <ThumbsUp className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <ThumbsDown className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+              <div
+                className={`max-w-[80%] p-4 rounded-lg ${
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                }`}
+              >
+                <p>{message.content}</p>
+                {message.role === "assistant" && (
+                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <ThumbsUp className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <ThumbsDown className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Chat Input */}
-      <div className="sticky bottom-0 p-4 bg-background/80 backdrop-blur-sm border-t">
-        <div className="max-w-4xl mx-auto relative flex items-center">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="How can I help?"
-            className="pr-24 py-6 text-lg"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-          />
-          <div className="absolute right-2 flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <PaperclipIcon className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <Link2 className="h-5 w-5" />
-            </Button>
-            <Button 
-              onClick={sendMessage}
-              size="icon"
-              className="h-9 w-9"
-              disabled={!input.trim()}
-            >
-              <Send className="h-5 w-5" />
-            </Button>
+        {/* Chat Input */}
+        <div className="sticky bottom-0 p-4 bg-background/80 backdrop-blur-sm border-t">
+          <div className="max-w-4xl mx-auto relative flex items-center">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="How can I help?"
+              className="pr-24 py-6 text-lg"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+            />
+            <div className="absolute right-2 flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <PaperclipIcon className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Link2 className="h-5 w-5" />
+              </Button>
+              <Button 
+                onClick={sendMessage}
+                size="icon"
+                className="h-9 w-9"
+                disabled={!input.trim()}
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }
