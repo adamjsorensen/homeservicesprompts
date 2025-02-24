@@ -26,6 +26,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -93,6 +94,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
+      <SidebarHeader className="h-[60px] px-2 flex items-center">
+        <img 
+          src="/lovable-uploads/61bd61cb-59e9-486b-8761-66db1db44729.png" 
+          alt="Logo"
+          className="h-8 w-auto cursor-pointer"
+          onClick={() => navigate("/")}
+        />
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
