@@ -2,6 +2,7 @@
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Folder } from "lucide-react";
 
 interface CategoryTileProps {
   title: string;
@@ -13,7 +14,7 @@ interface CategoryTileProps {
 
 export function CategoryTile({ title, description, iconName, onClick, className }: CategoryTileProps) {
   // Ensure we only use valid icon names from Lucide
-  const IconComponent = (LucideIcons as Record<string, React.ComponentType>)[iconName] ?? LucideIcons.Folder;
+  const IconComponent = (LucideIcons as Record<string, React.ComponentType<any>>)[iconName] ?? Folder;
 
   return (
     <Card
