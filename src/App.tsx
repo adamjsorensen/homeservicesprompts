@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { PublicOnlyRoute } from "./components/auth/PublicOnlyRoute";
 import Index from "./pages/Index";
 import Library from "./pages/Library";
 import Business from "./pages/Business";
@@ -27,8 +28,20 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
+            <Route 
+              path="/" 
+              element={
+                <Index />
+              } 
+            />
+            <Route 
+              path="/auth" 
+              element={
+                <PublicOnlyRoute>
+                  <Auth />
+                </PublicOnlyRoute>
+              } 
+            />
             <Route
               path="/chat"
               element={

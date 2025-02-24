@@ -21,32 +21,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { toast } = useToast();
 
+  // Handle auth state changes
   useEffect(() => {
-    // Check active sessions
+    // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      handleAuthRedirect(currentUser);
       setIsLoading(false);
     });
 
-    // Listen for changes
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user;
       setUser(currentUser ?? null);
+      handleAuthRedirect(currentUser ?? null);
       setIsLoading(false);
+    });
 
-      if (currentUser && location.pathname === "/auth") {
-        navigate("/library");
+    return () => subscription.unsubscribe();
+  }, []); // Remove location dependency to prevent unnecessary re-renders
+
+  // Centralized redirect logic
+  const handleAuthRedirect = (currentUser: User | null) => {
+    const path = location.pathname;
+    const returnTo = new URLSearchParams(location.search).get("returnTo");
+
+    if (currentUser) {
+      // User is logged in
+      if (path === "/auth") {
+        // Redirect to returnTo or default route
+        const destination = returnTo || "/library";
+        navigate(destination, { replace: true });
         toast({
           title: "Welcome!",
           description: "Successfully authenticated.",
         });
+      } else if (path === "/") {
+        // Redirect from landing to main app
+        navigate("/library", { replace: true });
       }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, location.pathname]);
+    } else {
+      // User is not logged in
+      if (path !== "/" && path !== "/auth") {
+        // Save current path and redirect to auth
+        navigate(`/auth?returnTo=${encodeURIComponent(path)}`, { replace: true });
+      }
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, isLoading }}>
