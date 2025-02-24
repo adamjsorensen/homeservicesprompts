@@ -96,12 +96,14 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="h-[60px] px-2 flex items-center justify-between">
-        <img 
-          src="/propaint-logo.png" 
-          alt="PropaintAI Logo"
-          className="h-8 w-auto cursor-pointer"
-          onClick={() => navigate("/")}
-        />
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+          <img 
+            src="/lovable-uploads/bcb8494a-3402-46b5-8b33-dd45d3103ebf.png" 
+            alt="PropaintAI Logo"
+            className="h-8 w-auto"
+          />
+          <span className="font-semibold text-lg">PropaintAI</span>
+        </div>
         <SidebarTrigger className="lg:flex" />
       </SidebarHeader>
       <SidebarContent>
