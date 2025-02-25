@@ -10,17 +10,76 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function Settings() {
+  const { user } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
-    toast({
-      title: "Settings saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  useEffect(() => {
+    async function loadPreferences() {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('preferences')
+          .select('email_notifications, marketing_emails')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        
+        if (data) {
+          setEmailNotifications(data.email_notifications);
+          setMarketingEmails(data.marketing_emails);
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load preferences.",
+        });
+      }
+    }
+
+    loadPreferences();
+  }, [user?.id]);
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('preferences')
+        .update({
+          email_notifications: emailNotifications,
+          marketing_emails: marketingEmails,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Settings saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update preferences.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,7 +129,9 @@ export default function Settings() {
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave}>Save Changes</Button>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? "Saving..." : "Save Changes"}
+        </Button>
       </div>
     </div>
   );
