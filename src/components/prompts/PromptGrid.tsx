@@ -30,19 +30,19 @@ export function PromptGrid({
       id: "marketing",
       title: "Marketing",
       description: "Generate content for your marketing campaigns",
-      iconName: "TrendingUp"
+      iconName: "Building"
     },
     {
       id: "sales",
       title: "Sales",
       description: "Create compelling sales copy and proposals",
-      iconName: "ShoppingBag"
+      iconName: "Building2"
     },
     {
       id: "production",
       title: "Production",
       description: "Streamline your content production workflow",
-      iconName: "Factory"
+      iconName: "Layers"
     },
     {
       id: "team",
@@ -54,19 +54,19 @@ export function PromptGrid({
       id: "strategy",
       title: "Strategy & Planning",
       description: "Develop effective business strategies and plans",
-      iconName: "Brain"
+      iconName: "Target"
     },
     {
       id: "financials",
       title: "Financials",
       description: "Generate financial reports and analysis",
-      iconName: "DollarSign"
+      iconName: "LineChart"
     },
     {
       id: "leadership",
       title: "Personal Leadership",
       description: "Enhance your leadership and management skills",
-      iconName: "User"
+      iconName: "Brain"
     }
   ];
 
