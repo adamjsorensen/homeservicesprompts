@@ -66,9 +66,9 @@ export function SidebarMenuSection({
                   "w-full",
                   item.subItems && state !== "collapsed" && "pr-8",
                   // For regular menu items, use exact matching
-                  isRouteActive(item.url, currentPath, 'exact') && "bg-sidebar-accent text-sidebar-accent-foreground",
+                  isRouteActive(item.url, currentPath, 'exact') && "bg-accent/50 text-accent-foreground",
                   // For Hub and its subitems, use parent matching
-                  item.subItems && isRouteActive(item.url, currentPath, 'parent') && "bg-sidebar-accent text-sidebar-accent-foreground"
+                  item.subItems && isRouteActive(item.url, currentPath, 'parent') && "bg-accent/50 text-accent-foreground"
                 )}
                 tooltip={state === "collapsed" ? item.title : undefined}
               >
@@ -102,7 +102,7 @@ export function SidebarMenuSection({
                     <SidebarMenuSubButton
                       onClick={() => onItemClick(subItem)}
                       className={cn(
-                        isRouteActive(subItem.url, currentPath, 'exact') && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        isRouteActive(subItem.url, currentPath, 'exact') && "bg-accent/50 text-accent-foreground"
                       )}
                     >
                       <subItem.icon className="h-4 w-4" />
@@ -118,4 +118,3 @@ export function SidebarMenuSection({
     </>
   );
 }
-
