@@ -1,18 +1,37 @@
 
-import { ReactNode } from "react";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useLocation, Outlet } from "react-router-dom";
 
-interface LayoutProps {
-  children: ReactNode;
-}
+export const Layout = () => {
+  const { user } = useAuth();
+  const location = useLocation();
 
-export const Layout = ({ children }: LayoutProps) => {
+  console.log('[Layout]', {
+    hasUser: !!user,
+    pathname: location.pathname,
+    isNested: !!location.pathname.split('/')[2],
+    timestamp: new Date().toISOString(),
+    renderCount: Math.random(),
+    stackTrace: new Error().stack
+  });
+
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="flex min-h-screen">
-      <AppSidebar />
-      <main className="flex-1 p-8">
-        {children}
-      </main>
-    </div>
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <main className="flex-1">
+          <div className="container py-4">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
+

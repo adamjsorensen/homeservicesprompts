@@ -14,5 +14,5 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" />;
   }
 
-  return children;
+  return <>{children}</>;
 };
