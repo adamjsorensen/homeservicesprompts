@@ -20,6 +20,11 @@ import { GeneratedContent } from "./pages/GeneratedContent";
 import { SavedGenerations } from "./pages/SavedGenerations";
 import { SavedGeneration } from "./pages/SavedGeneration";
 import Chat from "./pages/Chat";
+import AdminHubs from "./pages/admin/AdminHubs";
+import AdminParameters from "./pages/admin/AdminParameters";
+import AdminPrompts from "./pages/admin/AdminPrompts";
+import AdminGenerations from "./pages/admin/AdminGenerations";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +69,11 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/hubs" element={<AdminHubs />} />
+              <Route path="/admin/parameters" element={<AdminParameters />} />
+              <Route path="/admin/prompts" element={<AdminPrompts />} />
+              <Route path="/admin/generations" element={<AdminGenerations />} />
+              <Route path="/admin/analytics" element={<AdminAnalytics />} />
               <Route path="/generated-content" element={<GeneratedContent />} />
               <Route path="/saved-generations" element={<SavedGenerations />} />
               <Route path="/saved-generations/:slug" element={<SavedGeneration />} />
@@ -79,4 +89,3 @@ const App = () => (
 );
 
 export default App;
-
