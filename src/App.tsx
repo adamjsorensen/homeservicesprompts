@@ -47,96 +47,36 @@ const App = () => (
                 </PublicOnlyRoute>
               } 
             />
+            {/* Protected routes wrapped in a single Layout */}
             <Route
-              path="/chat"
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Chat />
+                    <Routes>
+                      <Route path="/chat" element={<Chat />} />
+                      <Route path="/library" element={<Library />} />
+                      <Route path="/business" element={<Business />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/generated-content" element={<GeneratedContent />} />
+                      <Route path="/saved-generations" element={<SavedGenerations />} />
+                      <Route path="/saved-generations/:slug" element={<SavedGeneration />} />
+                    </Routes>
                   </Layout>
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/library"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Library />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/business"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Business />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Profile />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Settings />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Admin />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/generated-content"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <GeneratedContent />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/saved-generations"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <SavedGenerations />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/saved-generations/:slug"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <SavedGeneration />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/business" element={<Business />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/generated-content" element={<GeneratedContent />} />
+              <Route path="/saved-generations" element={<SavedGenerations />} />
+              <Route path="/saved-generations/:slug" element={<SavedGeneration />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>
