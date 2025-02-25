@@ -1,22 +1,5 @@
 
-import {
-  Library,
-  Building2,
-  FileText,
-  Settings2,
-  LogOut,
-  MessageSquare,
-  User,
-  Layers,
-  Building,
-  Users,
-  Target,
-  LineChart,
-  Brain,
-  Shield,
-  ChevronRight,
-  ChevronDown,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { usePrompts } from "@/hooks/usePrompts";
@@ -27,19 +10,15 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { getMenuSections, MenuItem } from "@/config/menuConfig";
+import { SidebarMenuSection } from "./SidebarMenuSection";
+import { LogOut } from "lucide-react";
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -56,55 +35,6 @@ export function AppSidebar() {
     pathname: currentPath,
     renderCount: Math.random()
   });
-
-  const hubSubItems = [{
-    title: "Marketing",
-    url: "/library/marketing",
-    icon: Building
-  }, {
-    title: "Sales",
-    url: "/library/sales",
-    icon: Building
-  }, {
-    title: "Production",
-    url: "/library/production",
-    icon: Layers
-  }, {
-    title: "Team",
-    url: "/library/team",
-    icon: Users
-  }, {
-    title: "Strategy",
-    url: "/library/strategy",
-    icon: Target
-  }, {
-    title: "Financials",
-    url: "/library/financials",
-    icon: LineChart
-  }, {
-    title: "Personal Leadership",
-    url: "/library/leadership",
-    icon: Brain
-  }];
-
-  const mainItems = [...(user ? [{
-    title: "Hub",
-    icon: Library,
-    url: "/library",
-    subItems: hubSubItems
-  }, {
-    title: "Business",
-    icon: Building2,
-    url: "/business"
-  }, {
-    title: "Saved Content",
-    icon: FileText,
-    url: "/saved-generations"
-  }, {
-    title: "Chat",
-    icon: MessageSquare,
-    url: "/chat"
-  }] : [])];
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -125,13 +55,15 @@ export function AppSidebar() {
     setIsHubExpanded(!isHubExpanded);
   };
 
-  const handleItemClick = (item: typeof mainItems[0]) => {
+  const handleItemClick = (item: MenuItem) => {
     if (item.subItems) {
       setIsHubExpanded(!isHubExpanded);
     } else {
       navigate(item.url);
     }
   };
+
+  const menuSections = user ? getMenuSections(isAdmin) : [];
 
   return (
     <div className="relative">
@@ -156,127 +88,35 @@ export function AppSidebar() {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mainItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <div className="relative">
-                      <SidebarMenuButton
-                        onClick={() => handleItemClick(item)}
-                        className={cn(
-                          "w-full",
-                          item.subItems && state !== "collapsed" && "pr-8",
-                          currentPath === item.url && "bg-sidebar-accent text-sidebar-accent-foreground",
-                          // Also highlight Hub when on a sub-route
-                          item.subItems && currentPath.startsWith('/library') && "bg-sidebar-accent text-sidebar-accent-foreground"
-                        )}
-                        tooltip={state === "collapsed" ? item.title : undefined}
-                      >
-                        <div className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </div>
-                      </SidebarMenuButton>
-                      {item.subItems && state !== "collapsed" && (
-                        <button
-                          onClick={toggleHubExpansion}
-                          className={cn(
-                            "absolute right-2 top-1/2 -translate-y-1/2",
-                            "p-1.5 rounded-md hover:bg-accent/50",
-                            "focus:outline-none focus:ring-2 focus:ring-accent"
-                          )}
-                        >
-                          <ChevronDown 
-                            className={cn(
-                              "h-4 w-4 transition-transform",
-                              isHubExpanded ? "rotate-0" : "-rotate-90"
-                            )}
-                          />
-                        </button>
-                      )}
-                    </div>
-                    {item.subItems && isHubExpanded && state !== "collapsed" && (
-                      <SidebarMenuSub>
-                        {item.subItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              onClick={() => navigate(subItem.url)}
-                              className={cn(
-                                currentPath === subItem.url && "bg-sidebar-accent text-sidebar-accent-foreground"
-                              )}
-                            >
-                              <subItem.icon className="h-4 w-4" />
-                              <span>{subItem.title}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    )}
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
+          {menuSections.map((section, index) => (
+            <SidebarGroup key={section.title || index}>
+              <SidebarGroupContent>
+                <SidebarMenuSection
+                  section={section}
+                  currentPath={currentPath}
+                  onItemClick={handleItemClick}
+                  isHubExpanded={isHubExpanded}
+                  onHubToggle={toggleHubExpansion}
+                />
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
           {user && (
-            <>
-              <SidebarGroup>
-                <SidebarGroupLabel>Account</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        onClick={() => navigate("/profile")}
-                        tooltip={state === "collapsed" ? "Profile" : undefined}
-                        className={cn(
-                          currentPath === "/profile" && "bg-sidebar-accent text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <User className="h-4 w-4" />
-                        <span>Profile</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        onClick={() => navigate("/settings")}
-                        tooltip={state === "collapsed" ? "Settings" : undefined}
-                        className={cn(
-                          currentPath === "/settings" && "bg-sidebar-accent text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <Settings2 className="h-4 w-4" />
-                        <span>Settings</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    {isAdmin && (
-                      <SidebarMenuItem>
-                        <SidebarMenuButton
-                          onClick={() => navigate("/admin")}
-                          tooltip={state === "collapsed" ? "Admin" : undefined}
-                          className={cn(
-                            currentPath === "/admin" && "bg-sidebar-accent text-sidebar-accent-foreground"
-                          )}
-                        >
-                          <Shield className="h-4 w-4" />
-                          <span>Admin</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )}
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        onClick={handleSignOut}
-                        className="text-red-500 hover:text-red-600"
-                        tooltip={state === "collapsed" ? "Sign Out" : undefined}
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>Sign Out</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenuSection
+                  section={{
+                    items: [{
+                      title: "Sign Out",
+                      icon: LogOut,
+                      url: "#signout"
+                    }]
+                  }}
+                  currentPath={currentPath}
+                  onItemClick={() => handleSignOut()}
+                />
+              </SidebarGroupContent>
+            </SidebarGroup>
           )}
         </SidebarContent>
       </Sidebar>
