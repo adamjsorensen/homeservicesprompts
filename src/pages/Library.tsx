@@ -1,4 +1,3 @@
-import { Layout } from "@/components/layout/Layout";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,119 +68,103 @@ const Library = () => {
   };
 
   if (isLoading) {
-    return (
-      <Layout>
-        <div className="space-y-8">
-          <div>Loading prompts...</div>
-        </div>
-      </Layout>
-    );
+    return <div>Loading prompts...</div>;
   }
 
   if (error) {
-    return (
-      <Layout>
-        <div className="space-y-8">
-          <div>Error loading prompts. Please try again later.</div>
-        </div>
-      </Layout>
-    );
+    return <div>Error loading prompts. Please try again later.</div>;
   }
 
   return (
-    <Layout>
-      <div className="space-y-8">
-        <div>
-          <Breadcrumb>
-            <BreadcrumbList>
+    <div className="space-y-8">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink onClick={() => setCurrentCategoryId(null)}>
+              Content Generation Library
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          {currentCategory && (
+            <>
+              <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink onClick={() => setCurrentCategoryId(null)}>
-                  Content Generation Library
-                </BreadcrumbLink>
+                <BreadcrumbPage>{currentCategory.title}</BreadcrumbPage>
               </BreadcrumbItem>
-              {currentCategory && (
-                <>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{currentCategory.title}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </>
-              )}
-            </BreadcrumbList>
-          </Breadcrumb>
+            </>
+          )}
+        </BreadcrumbList>
+      </Breadcrumb>
 
-          <div className="flex justify-between items-center mt-4">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">
-                {currentCategory ? currentCategory.title : "Content Generation Library"}
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                {currentCategory ? currentCategory.description : "Browse and customize AI prompts"}
-              </p>
-            </div>
-            {currentCategory && (
-              <Button
-                variant="outline"
-                onClick={() => setCurrentCategoryId(null)}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Categories
-              </Button>
-            )}
-          </div>
-
-          <div className="mt-4">
-            <PromptFilters
-              filter={filter}
-              searchQuery={searchQuery}
-              onFilterChange={setFilter}
-              onSearchChange={setSearchQuery}
-            />
-          </div>
+      <div className="flex justify-between items-center mt-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">
+            {currentCategory ? currentCategory.title : "Content Generation Library"}
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            {currentCategory ? currentCategory.description : "Browse and customize AI prompts"}
+          </p>
         </div>
-
-        <PromptGrid
-          items={filteredPrompts}
-          isAdmin={isAdmin}
-          onCustomize={handleCustomizePrompt}
-          onDelete={prompt => setDeletePromptId(prompt.id)}
-          currentCategory={currentCategoryId}
-          onCategorySelect={setCurrentCategoryId}
-        />
-
-        <CustomPromptWizard
-          basePrompt={selectedPrompt}
-          isOpen={isWizardOpen}
-          onClose={() => {
-            setIsWizardOpen(false);
-            setSelectedPrompt(null);
-          }}
-        />
-
-        <AlertDialog
-          open={!!deletePromptId}
-          onOpenChange={open => !open && setDeletePromptId(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the prompt.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeletePrompt}
-                className="bg-destructive text-destructive-foreground"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {currentCategory && (
+          <Button
+            variant="outline"
+            onClick={() => setCurrentCategoryId(null)}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Categories
+          </Button>
+        )}
       </div>
-    </Layout>
+
+      <div className="mt-4">
+        <PromptFilters
+          filter={filter}
+          searchQuery={searchQuery}
+          onFilterChange={setFilter}
+          onSearchChange={setSearchQuery}
+        />
+      </div>
+
+      <PromptGrid
+        items={filteredPrompts}
+        isAdmin={isAdmin}
+        onCustomize={handleCustomizePrompt}
+        onDelete={prompt => setDeletePromptId(prompt.id)}
+        currentCategory={currentCategoryId}
+        onCategorySelect={setCurrentCategoryId}
+      />
+
+      <CustomPromptWizard
+        basePrompt={selectedPrompt}
+        isOpen={isWizardOpen}
+        onClose={() => {
+          setIsWizardOpen(false);
+          setSelectedPrompt(null);
+        }}
+      />
+
+      <AlertDialog
+        open={!!deletePromptId}
+        onOpenChange={open => !open && setDeletePromptId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the prompt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePrompt}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 
