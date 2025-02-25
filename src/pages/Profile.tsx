@@ -13,12 +13,9 @@ import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-interface UserProfile {
-  first_name: string | null;
-  last_name: string | null;
-  company: string | null;
-}
+type UserProfile = Database["public"]["Tables"]["user_profiles"]["Row"];
 
 export default function Profile() {
   const { user } = useAuth();
