@@ -1,9 +1,17 @@
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Folder } from "lucide-react";
-import { LucideIcon } from "lucide-react";
+import { 
+  Building,
+  Building2,
+  Layers,
+  Users,
+  Target,
+  LineChart,
+  Brain,
+  MessageSquare,
+  LucideIcon
+} from "lucide-react";
 
 interface CategoryTileProps {
   title: string;
@@ -13,13 +21,23 @@ interface CategoryTileProps {
   className?: string;
 }
 
+const iconMap: Record<string, LucideIcon> = {
+  Building,
+  Building2,
+  Layers,
+  Users,
+  Target,
+  LineChart,
+  Brain,
+  MessageSquare,
+};
+
 export function CategoryTile({ title, description, iconName, onClick, className }: CategoryTileProps) {
-  // Get the icon component, filtering out non-icon exports and falling back to Folder
-  const IconComponent = (Object.keys(LucideIcons)
-    .filter(key => typeof LucideIcons[key] === 'function' && key !== 'createLucideIcon')
-    .includes(iconName)
-      ? LucideIcons[iconName] as LucideIcon
-      : Folder) as LucideIcon;
+  const IconComponent = iconMap[iconName];
+
+  if (!IconComponent) {
+    console.warn(`Icon "${iconName}" not found in icon map`);
+  }
 
   return (
     <Card
@@ -39,7 +57,9 @@ export function CategoryTile({ title, description, iconName, onClick, className 
               {description}
             </CardDescription>
           </div>
-          <IconComponent className="w-8 h-8 text-muted-foreground group-hover:text-purple-600 transition-colors" />
+          {IconComponent && (
+            <IconComponent className="w-8 h-8 text-muted-foreground group-hover:text-purple-600 transition-colors" />
+          )}
         </div>
       </CardHeader>
     </Card>
