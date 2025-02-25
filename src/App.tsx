@@ -31,6 +31,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
+            {/* Public routes */}
             <Route 
               path="/" 
               element={
@@ -47,28 +48,28 @@ const App = () => (
                 </PublicOnlyRoute>
               } 
             />
-            {/* Protected routes wrapped in a single Layout */}
+            
+            {/* Protected routes */}
             <Route
-              path="/"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <Routes>
-                      <Route path="chat" element={<Chat />} />
-                      <Route path="library" element={<Library />} />
-                      <Route path="library/:hubArea" element={<Library />} />
-                      <Route path="business" element={<Business />} />
-                      <Route path="profile" element={<Profile />} />
-                      <Route path="settings" element={<Settings />} />
-                      <Route path="admin" element={<Admin />} />
-                      <Route path="generated-content" element={<GeneratedContent />} />
-                      <Route path="saved-generations" element={<SavedGenerations />} />
-                      <Route path="saved-generations/:slug" element={<SavedGeneration />} />
-                    </Routes>
-                  </Layout>
+                  <Layout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/library/:hubArea" element={<Library />} />
+              <Route path="/business" element={<Business />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/generated-content" element={<GeneratedContent />} />
+              <Route path="/saved-generations" element={<SavedGenerations />} />
+              <Route path="/saved-generations/:slug" element={<SavedGeneration />} />
+            </Route>
+
+            {/* 404 route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>
@@ -78,3 +79,4 @@ const App = () => (
 );
 
 export default App;
+

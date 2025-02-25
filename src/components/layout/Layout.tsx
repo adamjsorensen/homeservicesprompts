@@ -2,9 +2,9 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useLocation } from "react-router-dom";
+import { useLocation, Outlet } from "react-router-dom";
 
-export const Layout = ({ children }: { children: React.ReactNode }) => {
+export const Layout = () => {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -18,7 +18,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   });
 
   if (!user) {
-    return <>{children}</>;
+    return null;
   }
 
   return (
@@ -27,10 +27,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         <AppSidebar />
         <main className="flex-1">
           <div className="container py-4">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>
     </SidebarProvider>
   );
 };
+
