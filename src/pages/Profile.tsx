@@ -14,7 +14,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-interface Profile {
+interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   company: string | null;
@@ -33,7 +33,7 @@ export default function Profile() {
       
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('first_name, last_name, company')
           .eq('id', user.id)
           .maybeSingle();
@@ -64,7 +64,7 @@ export default function Profile() {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .update({
           first_name: firstName || null,
           last_name: lastName || null,
