@@ -1,4 +1,3 @@
-
 import { ChevronRight } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
