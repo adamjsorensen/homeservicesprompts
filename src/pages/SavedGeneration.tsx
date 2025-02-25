@@ -123,16 +123,12 @@ export function SavedGeneration() {
       },
       transformPastedText: (text) => {
         return text
-          // Transform headings
           .replace(/^### (.*$)/gm, '<h3>$1</h3>')
           .replace(/^## (.*$)/gm, '<h2>$1</h2>')
           .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-          // Transform bold and italic
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          // Transform lists
           .replace(/^- (.*$)/gm, '<li>$1</li>')
-          // Handle complex table structures
           .replace(/^([\|\-]+)$/gm, (match) => {
             if (match.includes('|')) {
               return '</tr></thead><tbody>';
@@ -144,7 +140,6 @@ export function SavedGeneration() {
               .map(cell => cell.trim())
               .filter(cell => cell !== '')
               .map(cell => {
-                // If this is a header row (contains dashes)
                 if (cell.includes('---')) {
                   return '';
                 }
@@ -271,57 +266,55 @@ export function SavedGeneration() {
   }
 
   return (
-    <Layout>
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Button
-          variant="outline"
-          onClick={() => navigate(-1)}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <Button
+        variant="outline"
+        onClick={() => navigate(-1)}
+        className="mb-6"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
 
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle>{generation.title}</CardTitle>
-            <CardDescription>
-              Review and edit your saved content
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className={`prose max-w-none ${isEditing ? 'border rounded-md p-4' : ''}`}>
-              <EditorContent editor={editor} />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
+      <Card className="animate-fade-in">
+        <CardHeader>
+          <CardTitle>{generation.title}</CardTitle>
+          <CardDescription>
+            Review and edit your saved content
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className={`prose max-w-none ${isEditing ? 'border rounded-md p-4' : ''}`}>
+            <EditorContent editor={editor} />
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={handleCopy}
+          >
+            <Copy className="mr-2 h-4 w-4" />
+            Copy
+          </Button>
+          {isEditing ? (
             <Button
-              variant="outline"
-              onClick={handleCopy}
+              variant="default"
+              onClick={handleSave}
             >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy
+              <Save className="mr-2 h-4 w-4" />
+              Save
             </Button>
-            {isEditing ? (
-              <Button
-                variant="default"
-                onClick={handleSave}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save
-              </Button>
-            ) : (
-              <Button
-                variant="default"
-                onClick={() => setIsEditing(true)}
-              >
-                <Edit2 className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-      </div>
-    </Layout>
+          ) : (
+            <Button
+              variant="default"
+              onClick={() => setIsEditing(true)}
+            >
+              <Edit2 className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
