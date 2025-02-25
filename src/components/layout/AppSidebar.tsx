@@ -1,3 +1,4 @@
+
 import {
   Library,
   Building2,
@@ -14,6 +15,7 @@ import {
   Brain,
   Shield,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -37,6 +39,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export function AppSidebar() {
   const navigate = useNavigate();
@@ -44,10 +47,13 @@ export function AppSidebar() {
   const { isAdmin } = usePrompts();
   const { toast } = useToast();
   const { state } = useSidebar();
+  const [isHubExpanded, setIsHubExpanded] = useState(true);
+
+  const currentPath = window.location.pathname;
 
   console.log('[Sidebar] Rendering AppSidebar', {
     sidebarState: state,
-    pathname: window.location.pathname,
+    pathname: currentPath,
     renderCount: Math.random()
   });
 
@@ -113,6 +119,12 @@ export function AppSidebar() {
     }
   };
 
+  const toggleHubExpansion = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsHubExpanded(!isHubExpanded);
+  };
+
   return (
     <div className="relative">
       <Sidebar variant="sidebar" collapsible="icon">
@@ -142,19 +154,36 @@ export function AppSidebar() {
                 {mainItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      onClick={() => item.subItems ? null : navigate(item.url)}
-                      className={item.title === "Hub" ? "font-bold" : ""}
+                      onClick={() => item.subItems ? toggleHubExpansion : navigate(item.url)}
+                      className={cn(
+                        item.subItems && state !== "collapsed" && "flex justify-between items-center",
+                        currentPath === item.url && "bg-sidebar-accent text-sidebar-accent-foreground"
+                      )}
                       tooltip={state === "collapsed" ? item.title : undefined}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <div className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </div>
+                      {item.subItems && state !== "collapsed" && (
+                        <ChevronDown 
+                          className={cn(
+                            "h-4 w-4 transition-transform",
+                            isHubExpanded ? "rotate-0" : "-rotate-90"
+                          )}
+                          onClick={toggleHubExpansion}
+                        />
+                      )}
                     </SidebarMenuButton>
-                    {item.subItems && state !== "collapsed" && (
+                    {item.subItems && isHubExpanded && state !== "collapsed" && (
                       <SidebarMenuSub>
                         {item.subItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
                             <SidebarMenuSubButton
                               onClick={() => navigate(subItem.url)}
+                              className={cn(
+                                currentPath === subItem.url && "bg-sidebar-accent text-sidebar-accent-foreground"
+                              )}
                             >
                               <subItem.icon className="h-4 w-4" />
                               <span>{subItem.title}</span>
@@ -179,6 +208,9 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         onClick={() => navigate("/profile")}
                         tooltip={state === "collapsed" ? "Profile" : undefined}
+                        className={cn(
+                          currentPath === "/profile" && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
                       >
                         <User className="h-4 w-4" />
                         <span>Profile</span>
@@ -188,6 +220,9 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         onClick={() => navigate("/settings")}
                         tooltip={state === "collapsed" ? "Settings" : undefined}
+                        className={cn(
+                          currentPath === "/settings" && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
                       >
                         <Settings2 className="h-4 w-4" />
                         <span>Settings</span>
@@ -198,6 +233,9 @@ export function AppSidebar() {
                         <SidebarMenuButton
                           onClick={() => navigate("/admin")}
                           tooltip={state === "collapsed" ? "Admin" : undefined}
+                          className={cn(
+                            currentPath === "/admin" && "bg-sidebar-accent text-sidebar-accent-foreground"
+                          )}
                         >
                           <Shield className="h-4 w-4" />
                           <span>Admin</span>
