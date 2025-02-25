@@ -14,5 +14,5 @@ export const PublicOnlyRoute = ({ children }: PublicOnlyRouteProps) => {
     return <Navigate to="/library" />;
   }
 
-  return <>{children}</>;
+  return children;
 };
