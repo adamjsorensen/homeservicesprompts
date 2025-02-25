@@ -13,6 +13,29 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+type MatchType = 'exact' | 'parent';
+
+function isRouteActive(itemUrl: string, currentPath: string, matchType: MatchType): boolean {
+  // Remove trailing slashes for comparison
+  const normalizedItemUrl = itemUrl.replace(/\/$/, '');
+  const normalizedCurrentPath = currentPath.replace(/\/$/, '');
+
+  console.log('[Route Matching]', {
+    itemUrl: normalizedItemUrl,
+    currentPath: normalizedCurrentPath,
+    matchType,
+    isExactMatch: normalizedItemUrl === normalizedCurrentPath,
+    isParentMatch: normalizedCurrentPath.startsWith(normalizedItemUrl) && normalizedItemUrl !== '/'
+  });
+
+  if (matchType === 'exact') {
+    return normalizedItemUrl === normalizedCurrentPath;
+  }
+
+  // Parent match - check if current path starts with item URL (but prevent root '/' from matching everything)
+  return normalizedCurrentPath.startsWith(normalizedItemUrl) && normalizedItemUrl !== '/';
+}
+
 interface SidebarMenuSectionProps {
   section: MenuSection;
   currentPath: string;
@@ -42,8 +65,10 @@ export function SidebarMenuSection({
                 className={cn(
                   "w-full",
                   item.subItems && state !== "collapsed" && "pr-8",
-                  currentPath === item.url && "bg-sidebar-accent text-sidebar-accent-foreground",
-                  item.subItems && currentPath.startsWith('/library') && "bg-sidebar-accent text-sidebar-accent-foreground"
+                  // For regular menu items, use exact matching
+                  isRouteActive(item.url, currentPath, 'exact') && "bg-sidebar-accent text-sidebar-accent-foreground",
+                  // For Hub and its subitems, use parent matching
+                  item.subItems && isRouteActive(item.url, currentPath, 'parent') && "bg-sidebar-accent text-sidebar-accent-foreground"
                 )}
                 tooltip={state === "collapsed" ? item.title : undefined}
               >
@@ -77,7 +102,7 @@ export function SidebarMenuSection({
                     <SidebarMenuSubButton
                       onClick={() => onItemClick(subItem)}
                       className={cn(
-                        currentPath === subItem.url && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        isRouteActive(subItem.url, currentPath, 'exact') && "bg-sidebar-accent text-sidebar-accent-foreground"
                       )}
                     >
                       <subItem.icon className="h-4 w-4" />
@@ -93,3 +118,4 @@ export function SidebarMenuSection({
     </>
   );
 }
+
