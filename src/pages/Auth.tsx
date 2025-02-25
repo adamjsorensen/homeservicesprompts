@@ -8,15 +8,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Chrome } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -57,7 +57,6 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
   const handleGoogleSignIn = async () => {
     try {
       const {
@@ -80,12 +79,11 @@ const Auth = () => {
       });
     }
   };
-
   return <Layout>
       <div className="container relative h-[800px] flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
         <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
           <div className="absolute inset-0 bg-zinc-900">
-            <img src="/lovable-uploads/c9cdd661-c76a-4cf5-94e9-17587a302075.png" alt="PainterGrowth.com" className="w-full h-full object-cover opacity-80" />
+            <img src="/lovable-uploads/c9cdd661-c76a-4cf5-94e9-17587a302075.png" alt="PainterGrowth.com" className="w-full h-full opacity-80 object-contain" />
           </div>
         </div>
         <div className="lg:p-8">
@@ -136,5 +134,4 @@ const Auth = () => {
       </div>
     </Layout>;
 };
-
 export default Auth;
