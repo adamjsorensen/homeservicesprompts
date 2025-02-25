@@ -125,6 +125,14 @@ export function AppSidebar() {
     setIsHubExpanded(!isHubExpanded);
   };
 
+  const handleItemClick = (item: typeof mainItems[0]) => {
+    if (item.subItems) {
+      setIsHubExpanded(!isHubExpanded);
+    } else {
+      navigate(item.url);
+    }
+  };
+
   return (
     <div className="relative">
       <Sidebar variant="sidebar" collapsible="icon">
@@ -153,28 +161,41 @@ export function AppSidebar() {
               <SidebarMenu>
                 {mainItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      onClick={() => item.subItems ? toggleHubExpansion : navigate(item.url)}
-                      className={cn(
-                        item.subItems && state !== "collapsed" && "flex justify-between items-center",
-                        currentPath === item.url && "bg-sidebar-accent text-sidebar-accent-foreground"
-                      )}
-                      tooltip={state === "collapsed" ? item.title : undefined}
-                    >
-                      <div className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </div>
+                    <div className="relative">
+                      <SidebarMenuButton
+                        onClick={() => handleItemClick(item)}
+                        className={cn(
+                          "w-full",
+                          item.subItems && state !== "collapsed" && "pr-8",
+                          currentPath === item.url && "bg-sidebar-accent text-sidebar-accent-foreground",
+                          // Also highlight Hub when on a sub-route
+                          item.subItems && currentPath.startsWith('/library') && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                        tooltip={state === "collapsed" ? item.title : undefined}
+                      >
+                        <div className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </div>
+                      </SidebarMenuButton>
                       {item.subItems && state !== "collapsed" && (
-                        <ChevronDown 
-                          className={cn(
-                            "h-4 w-4 transition-transform",
-                            isHubExpanded ? "rotate-0" : "-rotate-90"
-                          )}
+                        <button
                           onClick={toggleHubExpansion}
-                        />
+                          className={cn(
+                            "absolute right-2 top-1/2 -translate-y-1/2",
+                            "p-1.5 rounded-md hover:bg-accent/50",
+                            "focus:outline-none focus:ring-2 focus:ring-accent"
+                          )}
+                        >
+                          <ChevronDown 
+                            className={cn(
+                              "h-4 w-4 transition-transform",
+                              isHubExpanded ? "rotate-0" : "-rotate-90"
+                            )}
+                          />
+                        </button>
                       )}
-                    </SidebarMenuButton>
+                    </div>
                     {item.subItems && isHubExpanded && state !== "collapsed" && (
                       <SidebarMenuSub>
                         {item.subItems.map((subItem) => (
