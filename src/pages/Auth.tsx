@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -87,6 +86,7 @@ const Auth = () => {
     <Layout>
       <div className="container relative h-[800px] flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
         <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+          <div className="absolute inset-0 bg-zinc-900" />
           <div className="relative z-20 flex items-center text-lg font-medium">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -102,7 +102,12 @@ const Auth = () => {
             </svg>
             Lovable
           </div>
-          <div className="relative z-20 mt-auto">
+          <div className="relative z-20 mt-auto flex flex-col items-center">
+            <img 
+              src="/lovable-uploads/8701bbec-385d-4921-afea-acfe67bc6ae0.png" 
+              alt="PainterGrowth.com"
+              className="mb-8 w-64"
+            />
             <blockquote className="space-y-2">
               <p className="text-lg">
                 &ldquo;This library has everything you need to get your content
