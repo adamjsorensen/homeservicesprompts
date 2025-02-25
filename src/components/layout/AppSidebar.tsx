@@ -1,3 +1,4 @@
+
 import {
   Library,
   Building2,
@@ -31,10 +32,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
-  SidebarMenuSubItem,
   SidebarMenuSubButton,
-  useSidebar,
+  SidebarMenuSubItem,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -217,12 +218,14 @@ export function AppSidebar() {
       </Sidebar>
       <div 
         className={cn(
-          "absolute top-16 -right-4 z-50",
-          state === "collapsed" ? "-rotate-180" : ""
+          "absolute top-16 -right-4 z-[100]", // Increased z-index to ensure it's above other elements
+          state === "collapsed" ? "-rotate-180" : "",
+          "transition-transform duration-200" // Smooth rotation transition
         )}
       >
         <SidebarTrigger 
           className="h-8 w-8 rounded-full border bg-background shadow-md flex items-center justify-center hover:bg-accent text-violet-900 font-bold"
+          aria-label={state === "collapsed" ? "Expand sidebar" : "Collapse sidebar"}
         >
           <ChevronRight className="h-4 w-4" />
         </SidebarTrigger>

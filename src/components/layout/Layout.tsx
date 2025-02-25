@@ -10,8 +10,9 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
   }
 
+  // Wrap only authenticated content with SidebarProvider
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <main className="flex-1">
@@ -23,3 +24,4 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     </SidebarProvider>
   );
 };
+
