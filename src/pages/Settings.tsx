@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,10 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/use-toast";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -18,6 +20,10 @@ export default function Settings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -39,6 +45,46 @@ export default function Settings() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!user?.id) return;
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "New passwords do not match.",
+      });
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password updated",
+        description: "Your password has been changed successfully.",
+      });
+      
+      // Clear the password fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update password.",
+      });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -85,6 +131,67 @@ export default function Settings() {
               onCheckedChange={setMarketingEmails}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+          <CardDescription>
+            Update your password to keep your account secure.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input
+              id="current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <Input
+              id="new-password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+          <Button 
+            onClick={handlePasswordChange} 
+            disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+          >
+            {passwordLoading ? "Updating..." : "Update Password"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Billing Details</CardTitle>
+          <CardDescription>
+            Manage your billing information and subscription.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Billing functionality will be implemented soon. Check back later for updates.
+          </p>
+          <Button variant="outline" disabled>
+            Manage Billing
+          </Button>
         </CardContent>
       </Card>
 
