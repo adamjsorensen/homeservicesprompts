@@ -217,8 +217,8 @@ export function AppSidebar() {
       </Sidebar>
       <div 
         className={cn(
-          "absolute top-16 -right-4 transition-transform cursor-pointer z-50",
-          state === "collapsed" ? "rotate-180" : ""
+          "absolute top-16 -right-4 z-50",
+          state === "collapsed" ? "-rotate-180" : ""
         )}
       >
         <SidebarTrigger 
