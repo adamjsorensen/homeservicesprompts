@@ -42,18 +42,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []); // Remove location dependency to prevent unnecessary re-renders
+  }, []); 
 
   // Centralized redirect logic
   const handleAuthRedirect = (currentUser: User | null) => {
     const path = location.pathname;
     const returnTo = new URLSearchParams(location.search).get("returnTo");
 
+    console.log('[Auth Redirect]', {
+      currentUser: !!currentUser,
+      path,
+      returnTo,
+      timestamp: new Date().toISOString(),
+      stackTrace: new Error().stack
+    });
+
     if (currentUser) {
       // User is logged in
       if (path === "/auth") {
         // Redirect to returnTo or default route
         const destination = returnTo || "/library";
+        console.log('[Auth Redirect] Navigating to:', destination);
         navigate(destination, { replace: true });
         toast({
           title: "Welcome!",
@@ -61,13 +70,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       } else if (path === "/") {
         // Redirect from landing to main app
+        console.log('[Auth Redirect] Redirecting from landing to library');
         navigate("/library", { replace: true });
       }
     } else {
       // User is not logged in
       if (path !== "/" && path !== "/auth") {
         // Save current path and redirect to auth
-        navigate(`/auth?returnTo=${encodeURIComponent(path)}`, { replace: true });
+        const authPath = `/auth?returnTo=${encodeURIComponent(path)}`;
+        console.log('[Auth Redirect] Redirecting to auth:', authPath);
+        navigate(authPath, { replace: true });
       }
     }
   };

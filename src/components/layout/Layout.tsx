@@ -2,15 +2,19 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useLocation } from "react-router-dom";
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
+  const location = useLocation();
 
-  console.log('[Layout] Rendering Layout component', {
+  console.log('[Layout]', {
     hasUser: !!user,
-    pathname: window.location.pathname,
+    pathname: location.pathname,
+    isNested: !!location.pathname.split('/')[2],
+    timestamp: new Date().toISOString(),
     renderCount: Math.random(),
-    stackTrace: new Error().stack // This will help identify where Layout is being called from
+    stackTrace: new Error().stack
   });
 
   if (!user) {
@@ -30,4 +34,3 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     </SidebarProvider>
   );
 };
-
