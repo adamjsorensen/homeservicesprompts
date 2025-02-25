@@ -282,6 +282,7 @@ export type Database = {
           created_by: string | null
           description: string
           display_order: number
+          hub_area: Database["public"]["Enums"]["hub_area_type"] | null
           icon_name: string | null
           id: string
           is_category: boolean
@@ -298,6 +299,7 @@ export type Database = {
           created_by?: string | null
           description: string
           display_order?: number
+          hub_area?: Database["public"]["Enums"]["hub_area_type"] | null
           icon_name?: string | null
           id?: string
           is_category?: boolean
@@ -314,6 +316,7 @@ export type Database = {
           created_by?: string | null
           description?: string
           display_order?: number
+          hub_area?: Database["public"]["Enums"]["hub_area_type"] | null
           icon_name?: string | null
           id?: string
           is_category?: boolean
@@ -426,6 +429,14 @@ export type Database = {
       }
     }
     Enums: {
+      hub_area_type:
+        | "marketing"
+        | "sales"
+        | "production"
+        | "team"
+        | "strategy"
+        | "financials"
+        | "leadership"
       prompt_parameter_type:
         | "tone_and_style"
         | "audience_specificity"

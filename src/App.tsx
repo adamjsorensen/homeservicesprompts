@@ -55,6 +55,7 @@ const App = () => (
                     <Routes>
                       <Route path="/chat" element={<Chat />} />
                       <Route path="/library" element={<Library />} />
+                      <Route path="/library/:hubArea" element={<Library />} />
                       <Route path="/business" element={<Business />} />
                       <Route path="/profile" element={<Profile />} />
                       <Route path="/settings" element={<Settings />} />
@@ -66,17 +67,7 @@ const App = () => (
                   </Layout>
                 </ProtectedRoute>
               }
-            >
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/library" element={<Library />} />
-              <Route path="/business" element={<Business />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/generated-content" element={<GeneratedContent />} />
-              <Route path="/saved-generations" element={<SavedGenerations />} />
-              <Route path="/saved-generations/:slug" element={<SavedGeneration />} />
-            </Route>
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>

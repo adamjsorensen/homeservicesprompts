@@ -12,18 +12,23 @@ export interface Prompt {
   parent_id?: string | null;
   icon_name?: string | null;
   display_order?: number;
+  hub_area?: string | null;
 }
 
 const fetchPrompts = async () => {
+  console.log('[Fetching Prompts] Starting to fetch prompts');
+  
   const { data, error } = await supabase
     .from("prompts")
     .select("*")
     .order("display_order", { ascending: true });
 
   if (error) {
+    console.error('[Fetching Prompts] Error:', error);
     throw error;
   }
 
+  console.log('[Fetching Prompts] Success:', data);
   return data;
 };
 
@@ -44,9 +49,9 @@ const checkAdminRole = async () => {
   return data;
 };
 
-export const usePrompts = () => {
+export const usePrompts = (hubArea?: string) => {
   const { data: prompts = [], isLoading, error } = useQuery({
-    queryKey: ["prompts"],
+    queryKey: ["prompts", hubArea],
     queryFn: fetchPrompts,
   });
 
@@ -55,5 +60,10 @@ export const usePrompts = () => {
     queryFn: checkAdminRole,
   });
 
-  return { prompts, isLoading, error, isAdmin };
+  // Filter prompts by hub area if specified
+  const filteredPrompts = hubArea 
+    ? prompts.filter(prompt => prompt.hub_area === hubArea)
+    : prompts;
+
+  return { prompts: filteredPrompts, isLoading, error, isAdmin };
 };

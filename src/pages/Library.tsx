@@ -1,3 +1,4 @@
+
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,10 +10,15 @@ import { PromptGrid } from "@/components/prompts/PromptGrid";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ArrowLeft } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
 
 const Library = () => {
+  const { hubArea } = useParams();
+  const navigate = useNavigate();
+  
   console.log('[Library] Rendering Library page', {
     pathname: window.location.pathname,
+    hubArea,
     renderCount: Math.random()
   });
 
@@ -23,7 +29,7 @@ const Library = () => {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { prompts, isLoading, error, isAdmin } = usePrompts();
+  const { prompts, isLoading, error, isAdmin } = usePrompts(hubArea);
 
   const currentCategory = prompts.find(p => p.id === currentCategoryId);
   
@@ -75,15 +81,44 @@ const Library = () => {
     return <div>Error loading prompts. Please try again later.</div>;
   }
 
+  const getHubTitle = () => {
+    if (!hubArea) return "Content Generation Library";
+    return hubArea.charAt(0).toUpperCase() + hubArea.slice(1);
+  };
+
+  const getHubDescription = () => {
+    if (!hubArea) return "Browse and customize AI prompts";
+    
+    const descriptions: Record<string, string> = {
+      marketing: "Generate content for your marketing campaigns",
+      sales: "Create compelling sales copy and proposals",
+      production: "Streamline your content production workflow",
+      team: "Improve team communication and collaboration",
+      strategy: "Develop effective business strategies and plans",
+      financials: "Generate financial reports and analysis",
+      leadership: "Enhance your leadership and management skills"
+    };
+    
+    return descriptions[hubArea] || "Browse and customize AI prompts";
+  };
+
   return (
     <div className="space-y-8">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink onClick={() => setCurrentCategoryId(null)}>
+            <BreadcrumbLink onClick={() => navigate("/library")}>
               Content Generation Library
             </BreadcrumbLink>
           </BreadcrumbItem>
+          {hubArea && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{getHubTitle()}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </>
+          )}
           {currentCategory && (
             <>
               <BreadcrumbSeparator />
@@ -98,19 +133,25 @@ const Library = () => {
       <div className="flex justify-between items-center mt-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">
-            {currentCategory ? currentCategory.title : "Content Generation Library"}
+            {getHubTitle()}
           </h2>
           <p className="text-muted-foreground mt-2">
-            {currentCategory ? currentCategory.description : "Browse and customize AI prompts"}
+            {getHubDescription()}
           </p>
         </div>
-        {currentCategory && (
+        {(currentCategory || hubArea) && (
           <Button
             variant="outline"
-            onClick={() => setCurrentCategoryId(null)}
+            onClick={() => {
+              if (currentCategory) {
+                setCurrentCategoryId(null);
+              } else {
+                navigate("/library");
+              }
+            }}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Categories
+            Back to {currentCategory ? (hubArea ? getHubTitle() : "Categories") : "Categories"}
           </Button>
         )}
       </div>
