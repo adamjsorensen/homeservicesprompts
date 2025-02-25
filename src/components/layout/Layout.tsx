@@ -9,7 +9,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   console.log('[Layout] Rendering Layout component', {
     hasUser: !!user,
     pathname: window.location.pathname,
-    renderCount: Math.random()
+    renderCount: Math.random(),
+    stackTrace: new Error().stack // This will help identify where Layout is being called from
   });
 
   if (!user) {
