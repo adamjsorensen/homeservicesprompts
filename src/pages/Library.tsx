@@ -1,4 +1,3 @@
-
 import { Layout } from "@/components/layout/Layout";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
@@ -13,6 +12,11 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { ArrowLeft } from "lucide-react";
 
 const Library = () => {
+  console.log('[Library] Rendering Library page', {
+    pathname: window.location.pathname,
+    renderCount: Math.random()
+  });
+
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);

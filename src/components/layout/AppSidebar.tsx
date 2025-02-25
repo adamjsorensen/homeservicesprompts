@@ -1,4 +1,3 @@
-
 import {
   Library,
   Building2,
@@ -45,6 +44,12 @@ export function AppSidebar() {
   const { isAdmin } = usePrompts();
   const { toast } = useToast();
   const { state } = useSidebar();
+
+  console.log('[Sidebar] Rendering AppSidebar', {
+    sidebarState: state,
+    pathname: window.location.pathname,
+    renderCount: Math.random()
+  });
 
   const hubSubItems = [{
     title: "Marketing",
@@ -218,9 +223,9 @@ export function AppSidebar() {
       </Sidebar>
       <div 
         className={cn(
-          "absolute top-16 -right-4 z-[100]", // Increased z-index to ensure it's above other elements
+          "absolute top-16 -right-4 z-[100]",
           state === "collapsed" ? "-rotate-180" : "",
-          "transition-transform duration-200" // Smooth rotation transition
+          "transition-transform duration-200"
         )}
       >
         <SidebarTrigger 

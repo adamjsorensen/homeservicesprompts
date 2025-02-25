@@ -6,11 +6,16 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
 
+  console.log('[Layout] Rendering Layout component', {
+    hasUser: !!user,
+    pathname: window.location.pathname,
+    renderCount: Math.random()
+  });
+
   if (!user) {
     return <>{children}</>;
   }
 
-  // Wrap only authenticated content with SidebarProvider
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full">
@@ -24,4 +29,3 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     </SidebarProvider>
   );
 };
-
