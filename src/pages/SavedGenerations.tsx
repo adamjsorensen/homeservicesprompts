@@ -43,6 +43,13 @@ export function SavedGenerations() {
     },
   });
 
+  console.log('[SavedGenerations] Rendering', {
+    isLoading,
+    hasError: !!error,
+    pathname: window.location.pathname,
+    renderCount: Math.random()
+  });
+
   if (error) {
     return (
       <Layout>
@@ -113,3 +120,4 @@ export function SavedGenerations() {
     </Layout>
   );
 }
+
