@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { CategoryTree } from "@/components/admin/CategoryTree";
 
 type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
 
