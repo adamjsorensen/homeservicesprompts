@@ -1,4 +1,3 @@
-
 import { type Prompt } from "@/hooks/usePrompts";
 import { useState } from "react";
 import { CategoryItem } from "./CategoryItem";
@@ -128,6 +127,55 @@ export const CategoryTree = ({
     }
   };
 
+  const movePrompt = async (promptId: string, direction: 'up' | 'down', categoryId: string) => {
+    console.log('[CategoryTree] Moving prompt:', { promptId, direction, categoryId });
+    
+    const prompts = getPrompts(categoryId);
+    const currentIndex = prompts.findIndex(prompt => prompt.id === promptId);
+    
+    if (currentIndex === -1) {
+      console.error('[CategoryTree] Prompt not found:', promptId);
+      return;
+    }
+
+    let newOrder: number;
+    if (direction === 'up' && currentIndex > 0) {
+      const prevPrompt = prompts[currentIndex - 1];
+      newOrder = prevPrompt.display_order! - 1;
+    } else if (direction === 'down' && currentIndex < prompts.length - 1) {
+      const nextPrompt = prompts[currentIndex + 1];
+      newOrder = nextPrompt.display_order! + 1;
+    } else {
+      console.log('[CategoryTree] Cannot move prompt', direction);
+      return;
+    }
+
+    try {
+      console.log('[CategoryTree] Updating prompt order:', { promptId, newOrder });
+      const { error } = await supabase
+        .from('prompts')
+        .update({ display_order: newOrder })
+        .eq('id', promptId);
+
+      if (error) {
+        console.error('[CategoryTree] Error updating prompt order:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Prompt moved ${direction} successfully`,
+      });
+    } catch (error) {
+      console.error('[CategoryTree] Error moving prompt:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Failed to move prompt ${direction}`,
+      });
+    }
+  };
+
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
     console.log('[CategoryTree] Rendering categories for parent:', parentId, 'Level:', level);
     const categoryItems = getSubcategories(parentId);
@@ -162,14 +210,18 @@ export const CategoryTree = ({
                 <>
                   {renderCategories(category.id, level + 1)}
                   <div className="ml-6 space-y-2">
-                    {getPrompts(category.id).map((prompt) => {
-                      console.log('[CategoryTree] Rendering prompt item:', prompt.id, prompt.title);
+                    {getPrompts(category.id).map((prompt, promptIndex) => {
+                      const prompts = getPrompts(category.id);
                       return (
                         <PromptItem
                           key={prompt.id}
                           id={prompt.id}
                           title={prompt.title}
                           description={prompt.description || ""}
+                          onMoveUp={() => movePrompt(prompt.id, 'up', category.id)}
+                          onMoveDown={() => movePrompt(prompt.id, 'down', category.id)}
+                          isFirst={promptIndex === 0}
+                          isLast={promptIndex === prompts.length - 1}
                         />
                       );
                     })}
