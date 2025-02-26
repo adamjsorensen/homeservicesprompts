@@ -42,9 +42,10 @@ const Library = () => {
     isLoading, 
     error, 
     isAdmin,
+    getHubRoot,
+    getSubcategories,
+    getPromptsForCategory,
     getPromptsByCategory,
-    getRootCategories,
-    getPromptsForCategory
   } = usePrompts(hubArea);
 
   // Update URL when category changes
