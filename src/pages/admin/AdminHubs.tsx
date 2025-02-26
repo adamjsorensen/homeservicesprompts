@@ -33,8 +33,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
+// Define the valid hub area types
+type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
+
 interface SortableHubProps {
-  id: string;
+  id: HubAreaType;
   title: string;
   promptCount: number;
   onDelete: () => void;
@@ -99,11 +102,14 @@ const SortableHub = ({ id, title, promptCount, onDelete }: SortableHubProps) => 
 const AdminHubs = () => {
   const { prompts } = usePrompts();
   const { toast } = useToast();
-  const [deleteHubId, setDeleteHubId] = useState<string | null>(null);
+  const [deleteHubId, setDeleteHubId] = useState<HubAreaType | null>(null);
   
-  // Group prompts by hub area and sort by display order
+  // Filter and type-check hub areas
   const hubAreas = [...new Set(prompts.map(prompt => prompt.hub_area))]
-    .filter(Boolean)
+    .filter((area): area is HubAreaType => {
+      const validAreas: HubAreaType[] = ["marketing", "sales", "production", "team", "strategy", "financials", "leadership"];
+      return area !== null && validAreas.includes(area as HubAreaType);
+    })
     .sort((a, b) => {
       const aOrder = prompts.find(p => p.hub_area === a)?.display_order || 0;
       const bOrder = prompts.find(p => p.hub_area === b)?.display_order || 0;
@@ -121,8 +127,8 @@ const AdminHubs = () => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = hubAreas.indexOf(active.id as string);
-      const newIndex = hubAreas.indexOf(over.id as string);
+      const oldIndex = hubAreas.indexOf(active.id as HubAreaType);
+      const newIndex = hubAreas.indexOf(over.id as HubAreaType);
 
       // Update display order in the database
       const updateOrder = async () => {
