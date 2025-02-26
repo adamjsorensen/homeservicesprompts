@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -228,6 +227,46 @@ const AdminParameters = () => {
     setIsEditingParameter(true);
   };
 
+  const handleDeleteParameter = async (parameterId: string) => {
+    try {
+      console.log('Deleting parameter:', parameterId);
+
+      // First, delete all associated tweaks
+      const { error: tweaksError } = await supabase
+        .from('parameter_tweaks')
+        .update({ active: false })
+        .eq('parameter_id', parameterId);
+
+      if (tweaksError) {
+        console.error('Error deleting parameter tweaks:', tweaksError);
+        throw tweaksError;
+      }
+
+      // Then, update the parameter to set active = false
+      const { error: paramError } = await supabase
+        .from('prompt_parameters')
+        .update({ active: false })
+        .eq('id', parameterId);
+
+      if (paramError) {
+        console.error('Error deleting parameter:', paramError);
+        throw paramError;
+      }
+
+      toast({
+        title: "Parameter deleted",
+        description: "The parameter has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting parameter:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete parameter. Please try again.",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -285,6 +324,7 @@ const AdminParameters = () => {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive/90"
+                          onClick={() => handleDeleteParameter(param.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
