@@ -14,8 +14,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Prompt } from "@/hooks/usePrompts";
 import { CategoryItem } from "./CategoryItem";
+import { type Prompt } from "@/hooks/usePrompts";
 
 interface CategoryTreeProps {
   categories: Prompt[];

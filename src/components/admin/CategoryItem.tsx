@@ -4,7 +4,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { ChevronRight, Grip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Prompt } from "@/hooks/usePrompts";
 
 interface CategoryItemProps {
   id: string;
