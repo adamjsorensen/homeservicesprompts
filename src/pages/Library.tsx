@@ -29,10 +29,27 @@ const Library = () => {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { prompts, isLoading, error, isAdmin } = usePrompts(hubArea);
-
-  const currentCategory = prompts.find(p => p.id === currentCategoryId);
   
+  // Use enhanced usePrompts hook with hubArea
+  const { 
+    prompts, 
+    isLoading, 
+    error, 
+    isAdmin,
+    getPromptsByCategory,
+    getRootCategories,
+    getPromptsForCategory
+  } = usePrompts(hubArea);
+
+  // Get the current category if one is selected
+  const currentCategory = currentCategoryId 
+    ? prompts.find(p => p.id === currentCategoryId)
+    : null;
+
+  // Get categorized prompts for the current hub
+  const categorizedPrompts = hubArea ? getPromptsByCategory() : [];
+  
+  // Filter prompts based on search and category
   const filteredPrompts = prompts.filter(prompt => {
     // Filter by parent category
     const matchesCategory = !currentCategoryId || prompt.parent_id === currentCategoryId;
@@ -71,6 +88,11 @@ const Library = () => {
         description: "Failed to delete prompt. Please try again."
       });
     }
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    setCurrentCategoryId(categoryId);
+    setSearchQuery(""); // Reset search when changing category
   };
 
   if (isLoading) {
@@ -115,7 +137,12 @@ const Library = () => {
             <>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{getHubTitle()}</BreadcrumbPage>
+                <BreadcrumbLink onClick={() => {
+                  setCurrentCategoryId(null);
+                  navigate(`/library/${hubArea}`);
+                }}>
+                  {getHubTitle()}
+                </BreadcrumbLink>
               </BreadcrumbItem>
             </>
           )}
@@ -133,10 +160,10 @@ const Library = () => {
       <div className="flex justify-between items-center mt-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">
-            {getHubTitle()}
+            {currentCategory ? currentCategory.title : getHubTitle()}
           </h2>
           <p className="text-muted-foreground mt-2">
-            {getHubDescription()}
+            {currentCategory ? currentCategory.description : getHubDescription()}
           </p>
         </div>
         {(currentCategory || hubArea) && (
@@ -167,11 +194,12 @@ const Library = () => {
 
       <PromptGrid
         items={filteredPrompts}
+        categorizedPrompts={categorizedPrompts}
         isAdmin={isAdmin}
         onCustomize={handleCustomizePrompt}
         onDelete={prompt => setDeletePromptId(prompt.id)}
         currentCategory={currentCategoryId}
-        onCategorySelect={setCurrentCategoryId}
+        onCategorySelect={handleCategorySelect}
       />
 
       <CustomPromptWizard
