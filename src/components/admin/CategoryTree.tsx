@@ -1,17 +1,4 @@
 
-import { useState } from "react";
-import {
-  DndContext,
-  DragEndEvent,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragOverlay,
-  defaultDropAnimation,
-} from "@dnd-kit/core";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
@@ -20,36 +7,20 @@ import {
 import { CategoryItem } from "./CategoryItem";
 import { PromptItem } from "./PromptItem";
 import { type Prompt } from "@/hooks/usePrompts";
+import { useState } from "react";
 
 interface CategoryTreeProps {
   categories: Prompt[];
   hubArea: string;
-  onDragEnd: (event: DragEndEvent, parentId: string | null) => void;
   onDeleteCategory: (categoryId: string) => void;
 }
 
 export const CategoryTree = ({
   categories,
   hubArea,
-  onDragEnd,
   onDeleteCategory,
 }: CategoryTreeProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-        delay: 50,
-        tolerance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const toggleCategory = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -97,21 +68,6 @@ export const CategoryTree = ({
     return directPrompts + subcategoryPrompts;
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const id = event.active.id as string;
-    setActiveId(id);
-    const item = categories.find(c => c.id === id);
-    if (item) {
-      setCurrentParentId(item.parent_id);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveId(null);
-    onDragEnd(event, currentParentId);
-    setCurrentParentId(null);
-  };
-
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
     const categoryItems = getSubcategories(parentId);
     const rootCategory = getRootCategory();
@@ -126,7 +82,7 @@ export const CategoryTree = ({
           strategy={verticalListSortingStrategy}
         >
           {categoryItems.map((category) => (
-            <div key={category.id}>
+            <div key={category.id} data-parent-id={effectiveParentId}>
               <CategoryItem
                 id={category.id}
                 title={category.title}
@@ -138,10 +94,8 @@ export const CategoryTree = ({
               />
               {expandedCategories.has(category.id) && (
                 <>
-                  {/* Render subcategories */}
                   {renderCategories(category.id, level + 1)}
                   
-                  {/* Render prompts */}
                   <SortableContext
                     items={getPrompts(category.id).map(p => p.id)}
                     strategy={verticalListSortingStrategy}
@@ -166,42 +120,9 @@ export const CategoryTree = ({
     );
   };
 
-  const dropAnimation = {
-    ...defaultDropAnimation,
-    dragSourceOpacity: 0.5,
-  };
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <div className="space-y-2">
       {renderCategories()}
-      <DragOverlay dropAnimation={dropAnimation}>
-        {activeId ? (
-          <div className="opacity-80">
-            {categories.find(c => c.id === activeId)?.is_category ? (
-              <CategoryItem
-                id={activeId}
-                title={categories.find(c => c.id === activeId)?.title || ''}
-                level={0}
-                isExpanded={false}
-                promptCount={getPromptCount(activeId)}
-                onDelete={() => {}}
-                onToggle={() => {}}
-              />
-            ) : (
-              <PromptItem
-                id={activeId}
-                title={categories.find(c => c.id === activeId)?.title || ''}
-                description={categories.find(c => c.id === activeId)?.description || ''}
-              />
-            )}
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    </div>
   );
 };

@@ -66,65 +66,60 @@ const AdminHubs = () => {
   }
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
-  const handleHubDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const activeId = active.id.toString();
-      const overId = over.id.toString();
-      
-      const oldIndex = orderedHubs.indexOf(activeId as HubAreaType);
-      const newIndex = orderedHubs.indexOf(overId as HubAreaType);
-
-      const newOrder = arrayMove(orderedHubs, oldIndex, newIndex);
-      setOrderedHubs(newOrder);
-
-      const updateOrder = async () => {
-        try {
-          toast({
-            title: "Success",
-            description: "Hub order updated successfully",
-          });
-        } catch (error) {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to update hub order",
-          });
-          setOrderedHubs(orderedHubs);
-        }
-      };
-
-      updateOrder();
-    }
-  };
-
-  const handleCategoryDragEnd = async (event: DragEndEvent, parentId: string | null) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (!over || active.id === over.id) return;
 
-    const activeItemId = active.id.toString();
-    const overItemId = over.id.toString();
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
 
-    const activeItem = prompts.find(p => p.id === activeItemId);
-    const overItem = prompts.find(p => p.id === overItemId);
+    // Check if we're dealing with a hub or a prompt/category
+    const activeHub = orderedHubs.find(hub => hub === activeId);
+    if (activeHub) {
+      // Handle hub reordering
+      const oldIndex = orderedHubs.indexOf(activeId as HubAreaType);
+      const newIndex = orderedHubs.indexOf(overId as HubAreaType);
+      const newOrder = arrayMove(orderedHubs, oldIndex, newIndex);
+      setOrderedHubs(newOrder);
+      return;
+    }
+
+    // Handle prompt/category reordering
+    const activeItem = prompts.find(p => p.id === activeId);
+    const overItem = prompts.find(p => p.id === overId);
     
     if (!activeItem || !overItem) return;
 
+    // Get the parent element's data-parent-id attribute
+    const parentElement = document.querySelector(`[data-id="${activeId}"]`)?.closest('[data-parent-id]');
+    const parentId = parentElement?.getAttribute('data-parent-id') || null;
+
     try {
+      console.log('Reordering items:', {
+        activeId,
+        overId,
+        parentId,
+        activeItem,
+        overItem
+      });
+
       const itemsAtLevel = prompts
         .filter(p => p.parent_id === parentId)
         .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
       
-      const oldIndex = itemsAtLevel.findIndex(item => item.id === activeItemId);
-      const newIndex = itemsAtLevel.findIndex(item => item.id === overItemId);
+      const oldIndex = itemsAtLevel.findIndex(item => item.id === activeId);
+      const newIndex = itemsAtLevel.findIndex(item => item.id === overId);
       
       let newOrder: number;
       if (newIndex === 0) {
@@ -137,10 +132,17 @@ const AdminHubs = () => {
         newOrder = (prevOrder + nextOrder) / 2;
       }
 
+      console.log('Updating order:', {
+        itemId: activeId,
+        newOrder,
+        oldIndex,
+        newIndex
+      });
+
       const { error } = await supabase
         .from('prompts')
         .update({ display_order: newOrder })
-        .eq('id', activeItemId);
+        .eq('id', activeId);
 
       if (error) throw error;
 
@@ -220,7 +222,7 @@ const AdminHubs = () => {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragEnd={handleHubDragEnd}
+        onDragEnd={handleDragEnd}
       >
         <SortableContext
           items={orderedHubs}
@@ -245,7 +247,6 @@ const AdminHubs = () => {
                       <CategoryTree
                         categories={prompts.filter(p => p.hub_area === hubArea)}
                         hubArea={hubArea}
-                        onDragEnd={handleCategoryDragEnd}
                         onDeleteCategory={handleDeleteCategory}
                       />
                     </div>
