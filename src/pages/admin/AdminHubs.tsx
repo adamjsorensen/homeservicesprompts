@@ -12,6 +12,7 @@ import {
   useSensor,
   useSensors,
   DragStartEvent,
+  UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -75,8 +76,11 @@ const AdminHubs = () => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = orderedHubs.indexOf(active.id as HubAreaType);
-      const newIndex = orderedHubs.indexOf(over.id as HubAreaType);
+      const activeId = active.id.toString();
+      const overId = over.id.toString();
+      
+      const oldIndex = orderedHubs.indexOf(activeId as HubAreaType);
+      const newIndex = orderedHubs.indexOf(overId as HubAreaType);
 
       const newOrder = arrayMove(orderedHubs, oldIndex, newIndex);
       setOrderedHubs(newOrder);
@@ -106,8 +110,11 @@ const AdminHubs = () => {
     
     if (!over || active.id === over.id) return;
 
-    const activeItem = prompts.find(p => p.id === active.id);
-    const overItem = prompts.find(p => p.id === over.id);
+    const activeItemId = active.id.toString();
+    const overItemId = over.id.toString();
+
+    const activeItem = prompts.find(p => p.id === activeItemId);
+    const overItem = prompts.find(p => p.id === overItemId);
     
     if (!activeItem || !overItem) return;
 
@@ -116,8 +123,8 @@ const AdminHubs = () => {
         .filter(p => p.parent_id === parentId)
         .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
       
-      const oldIndex = itemsAtLevel.findIndex(item => item.id === active.id);
-      const newIndex = itemsAtLevel.findIndex(item => item.id === over.id);
+      const oldIndex = itemsAtLevel.findIndex(item => item.id === activeItemId);
+      const newIndex = itemsAtLevel.findIndex(item => item.id === overItemId);
       
       let newOrder: number;
       if (newIndex === 0) {
@@ -133,7 +140,7 @@ const AdminHubs = () => {
       const { error } = await supabase
         .from('prompts')
         .update({ display_order: newOrder })
-        .eq('id', active.id);
+        .eq('id', activeItemId);
 
       if (error) throw error;
 
