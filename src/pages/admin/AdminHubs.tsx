@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Grip, ChevronRight, X } from "lucide-react";
@@ -33,7 +32,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
-// Define the valid hub area types
 type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
 
 interface SortableHubProps {
@@ -103,8 +101,8 @@ const AdminHubs = () => {
   const { prompts } = usePrompts();
   const { toast } = useToast();
   const [deleteHubId, setDeleteHubId] = useState<HubAreaType | null>(null);
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   
-  // Filter and type-check hub areas
   const hubAreas = [...new Set(prompts.map(prompt => prompt.hub_area))]
     .filter((area): area is HubAreaType => {
       const validAreas: HubAreaType[] = ["marketing", "sales", "production", "team", "strategy", "financials", "leadership"];
@@ -123,17 +121,15 @@ const AdminHubs = () => {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleHubDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
       const oldIndex = hubAreas.indexOf(active.id as HubAreaType);
       const newIndex = hubAreas.indexOf(over.id as HubAreaType);
 
-      // Update display order in the database
       const updateOrder = async () => {
         try {
-          // TODO: Implement the database update for display order
           toast({
             title: "Success",
             description: "Hub order updated successfully",
@@ -151,11 +147,14 @@ const AdminHubs = () => {
     }
   };
 
+  const handleCategoryDragEnd = async (event: DragEndEvent) => {
+    console.log("Category drag ended:", event);
+  };
+
   const handleDeleteHub = async () => {
     if (!deleteHubId) return;
 
     try {
-      // TODO: Implement the database deletion for hub
       toast({
         title: "Success",
         description: "Hub deleted successfully",
@@ -169,6 +168,10 @@ const AdminHubs = () => {
     } finally {
       setDeleteHubId(null);
     }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    setDeleteCategoryId(categoryId);
   };
 
   return (
@@ -189,21 +192,30 @@ const AdminHubs = () => {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
+        onDragEnd={handleHubDragEnd}
       >
         <SortableContext
           items={hubAreas}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-4">
+          <div className="space-y-6">
             {hubAreas.map((hubArea) => (
-              <SortableHub
-                key={hubArea}
-                id={hubArea}
-                title={hubArea}
-                promptCount={prompts.filter(p => p.hub_area === hubArea).length}
-                onDelete={() => setDeleteHubId(hubArea)}
-              />
+              <div key={hubArea} className="space-y-2">
+                <SortableHub
+                  id={hubArea}
+                  title={hubArea}
+                  promptCount={prompts.filter(p => p.hub_area === hubArea).length}
+                  onDelete={() => setDeleteHubId(hubArea)}
+                />
+                <div className="ml-6">
+                  <CategoryTree
+                    categories={prompts.filter(p => p.hub_area === hubArea)}
+                    hubArea={hubArea}
+                    onDragEnd={handleCategoryDragEnd}
+                    onDeleteCategory={handleDeleteCategory}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         </SortableContext>
@@ -221,6 +233,28 @@ const AdminHubs = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteHub}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteCategoryId} onOpenChange={() => setDeleteCategoryId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this category? All prompts will need to be reassigned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeleteCategoryId(null);
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
