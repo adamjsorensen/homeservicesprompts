@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Grip, ChevronRight, X } from "lucide-react";
@@ -103,17 +104,22 @@ const AdminHubs = () => {
   const { toast } = useToast();
   const [deleteHubId, setDeleteHubId] = useState<HubAreaType | null>(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
+  const [orderedHubs, setOrderedHubs] = useState<HubAreaType[]>([]);
   
-  const hubAreas = [...new Set(prompts.map(prompt => prompt.hub_area))]
-    .filter((area): area is HubAreaType => {
-      const validAreas: HubAreaType[] = ["marketing", "sales", "production", "team", "strategy", "financials", "leadership"];
-      return area !== null && validAreas.includes(area as HubAreaType);
-    })
-    .sort((a, b) => {
-      const aOrder = prompts.find(p => p.hub_area === a)?.display_order || 0;
-      const bOrder = prompts.find(p => p.hub_area === b)?.display_order || 0;
-      return aOrder - bOrder;
-    });
+  // Initialize orderedHubs from prompts if not already set
+  if (orderedHubs.length === 0 && prompts.length > 0) {
+    const hubAreas = [...new Set(prompts.map(prompt => prompt.hub_area))]
+      .filter((area): area is HubAreaType => {
+        const validAreas: HubAreaType[] = ["marketing", "sales", "production", "team", "strategy", "financials", "leadership"];
+        return area !== null && validAreas.includes(area as HubAreaType);
+      })
+      .sort((a, b) => {
+        const aOrder = prompts.find(p => p.hub_area === a)?.display_order || 0;
+        const bOrder = prompts.find(p => p.hub_area === b)?.display_order || 0;
+        return aOrder - bOrder;
+      });
+    setOrderedHubs(hubAreas);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -126,8 +132,11 @@ const AdminHubs = () => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = hubAreas.indexOf(active.id as HubAreaType);
-      const newIndex = hubAreas.indexOf(over.id as HubAreaType);
+      const oldIndex = orderedHubs.indexOf(active.id as HubAreaType);
+      const newIndex = orderedHubs.indexOf(over.id as HubAreaType);
+
+      const newOrder = arrayMove(orderedHubs, oldIndex, newIndex);
+      setOrderedHubs(newOrder);
 
       const updateOrder = async () => {
         try {
@@ -141,6 +150,8 @@ const AdminHubs = () => {
             title: "Error",
             description: "Failed to update hub order",
           });
+          // Revert the order if the update fails
+          setOrderedHubs(orderedHubs);
         }
       };
 
@@ -196,11 +207,11 @@ const AdminHubs = () => {
         onDragEnd={handleHubDragEnd}
       >
         <SortableContext
-          items={hubAreas}
+          items={orderedHubs}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-6">
-            {hubAreas.map((hubArea) => (
+            {orderedHubs.map((hubArea) => (
               <div key={hubArea} className="space-y-2">
                 <SortableHub
                   id={hubArea}
