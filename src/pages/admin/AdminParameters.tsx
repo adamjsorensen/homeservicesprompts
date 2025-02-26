@@ -65,16 +65,14 @@ const AdminParameters = () => {
       }
 
       const tweaksData = newParameter.tweaks.map(t => ({
-        name: t.title,
-        sub_prompt: t.content
+        title: t.title,
+        content: t.content
       }));
       
       console.log('Updating parameter tweaks:', {
         parameterId: param.id,
-        tweaksData: tweaksData,
-        tweaksDataStringified: JSON.stringify(tweaksData),
-        tweaksDataType: typeof tweaksData,
-        tweaksRawData: newParameter.tweaks
+        tweaksData,
+        tweaksDataType: typeof tweaksData
       });
 
       const { error: tweaksError } = await supabase
@@ -135,19 +133,19 @@ const AdminParameters = () => {
       }
 
       const tweaksData = editedParameter.tweaks.map(t => ({
-        name: t.title,
-        sub_prompt: t.content
+        title: t.title,
+        content: t.content
       }));
 
       console.log('Updating parameter tweaks:', {
         parameterId: selectedParameter.id,
-        tweaksData: JSON.stringify(tweaksData)
+        tweaksData
       });
 
       const { error: tweaksError } = await supabase
         .rpc('batch_update_parameter_tweaks', {
           p_parameter_id: selectedParameter.id,
-          p_tweaks: JSON.stringify(tweaksData)
+          p_tweaks: tweaksData
         });
 
       if (tweaksError) {
