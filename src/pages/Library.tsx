@@ -1,6 +1,6 @@
 
 import { useToast } from "@/components/ui/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PromptFilters } from "@/components/prompts/PromptFilters";
@@ -10,15 +10,17 @@ import { PromptGrid } from "@/components/prompts/PromptGrid";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { ArrowLeft } from "lucide-react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const Library = () => {
   const { hubArea } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   console.log('[Library] Rendering Library page', {
-    pathname: window.location.pathname,
+    pathname: location.pathname,
     hubArea,
+    search: location.search,
     renderCount: Math.random()
   });
 
@@ -27,10 +29,14 @@ const Library = () => {
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null);
+  const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(() => {
+    // Initialize from URL search params
+    const params = new URLSearchParams(location.search);
+    return params.get('category');
+  });
+  
   const { toast } = useToast();
   
-  // Use enhanced usePrompts hook with hubArea
   const { 
     prompts, 
     isLoading, 
@@ -40,6 +46,31 @@ const Library = () => {
     getRootCategories,
     getPromptsForCategory
   } = usePrompts(hubArea);
+
+  // Update URL when category changes
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (currentCategoryId) {
+      searchParams.set('category', currentCategoryId);
+    } else {
+      searchParams.delete('category');
+    }
+    
+    // Update URL without triggering navigation
+    const newUrl = `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [currentCategoryId, location.pathname]);
+
+  // Listen for browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setCurrentCategoryId(params.get('category'));
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Get the current category if one is selected
   const currentCategory = currentCategoryId 
@@ -93,6 +124,14 @@ const Library = () => {
   const handleCategorySelect = (categoryId: string) => {
     setCurrentCategoryId(categoryId);
     setSearchQuery(""); // Reset search when changing category
+  };
+
+  const handleNavigateBack = () => {
+    if (currentCategory) {
+      setCurrentCategoryId(null);
+    } else {
+      navigate("/library");
+    }
   };
 
   if (isLoading) {
@@ -169,13 +208,7 @@ const Library = () => {
         {(currentCategory || hubArea) && (
           <Button
             variant="outline"
-            onClick={() => {
-              if (currentCategory) {
-                setCurrentCategoryId(null);
-              } else {
-                navigate("/library");
-              }
-            }}
+            onClick={handleNavigateBack}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to {currentCategory ? (hubArea ? getHubTitle() : "Categories") : "Categories"}
