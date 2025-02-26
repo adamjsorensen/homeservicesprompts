@@ -18,22 +18,32 @@ export interface ParameterTweak {
 }
 
 const fetchParameters = async () => {
+  console.log('[Parameters] Fetching parameters...');
   const { data, error } = await supabase
     .from("prompt_parameters")
     .select("*")
     .order("type");
 
-  if (error) throw error;
+  if (error) {
+    console.error('[Parameters] Error fetching:', error);
+    throw error;
+  }
+  console.log('[Parameters] Fetch success:', data);
   return data;
 };
 
 const fetchTweaks = async (promptId?: string) => {
+  console.log('[Tweaks] Fetching tweaks for prompt:', promptId);
   if (!promptId) {
     const { data, error } = await supabase
       .from("parameter_tweaks")
       .select("*");
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Tweaks] Error fetching:', error);
+      throw error;
+    }
+    console.log('[Tweaks] Fetch success:', data);
     return data;
   }
 
@@ -51,7 +61,11 @@ const fetchTweaks = async (promptId?: string) => {
     .eq('prompt_parameter_enabled_tweaks.prompt_id', promptId)
     .eq('prompt_parameter_enabled_tweaks.is_enabled', true);
 
-  if (error) throw error;
+  if (error) {
+    console.error('[Tweaks] Error fetching enabled tweaks:', error);
+    throw error;
+  }
+  console.log('[Tweaks] Fetch enabled tweaks success:', data);
   return data;
 };
 
@@ -75,6 +89,8 @@ export const usePromptParameters = (promptId?: string) => {
   });
 
   useEffect(() => {
+    console.log('[Realtime] Setting up parameters subscription...');
+    
     // Subscribe to changes in prompt_parameters table
     const parametersChannel = supabase
       .channel('prompt_parameters_changes')
@@ -85,13 +101,18 @@ export const usePromptParameters = (promptId?: string) => {
           schema: 'public',
           table: 'prompt_parameters'
         },
-        () => {
-          console.log('Parameters changed, refetching...');
+        (payload) => {
+          console.log('[Realtime] Parameters change detected:', payload);
+          console.log('[Realtime] Triggering parameters refetch...');
           refetchParameters();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Realtime] Parameters subscription status:', status);
+      });
 
+    console.log('[Realtime] Setting up tweaks subscription...');
+    
     // Subscribe to changes in parameter_tweaks table
     const tweaksChannel = supabase
       .channel('parameter_tweaks_changes')
@@ -102,14 +123,18 @@ export const usePromptParameters = (promptId?: string) => {
           schema: 'public',
           table: 'parameter_tweaks'
         },
-        () => {
-          console.log('Tweaks changed, refetching...');
+        (payload) => {
+          console.log('[Realtime] Tweaks change detected:', payload);
+          console.log('[Realtime] Triggering tweaks refetch...');
           refetchTweaks();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Realtime] Tweaks subscription status:', status);
+      });
 
     return () => {
+      console.log('[Realtime] Cleaning up subscriptions...');
       supabase.removeChannel(parametersChannel);
       supabase.removeChannel(tweaksChannel);
     };
