@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -42,13 +41,12 @@ export function CustomPromptWizard({
   const [selectedTweaks, setSelectedTweaks] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [additionalContext, setAdditionalContext] = useState("");
-  const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters();
+  const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters(basePrompt?.id);
   const { toast } = useToast();
   const [rules, setRules] = useState<any[]>([]);
   const [isLoadingRules, setIsLoadingRules] = useState(true);
   const [showAdditionalContext, setShowAdditionalContext] = useState(false);
 
-  // Load parameter rules for the prompt
   const loadRules = async () => {
     try {
       setIsLoadingRules(true);
@@ -86,7 +84,6 @@ export function CustomPromptWizard({
     }
   }, [basePrompt, isOpen]);
 
-  // We move this check after all hooks are defined
   if (!basePrompt) return null;
 
   const currentRule = !showAdditionalContext ? rules[currentParameterIndex] : null;
@@ -148,9 +145,8 @@ export function CustomPromptWizard({
 
       if (customPromptError) throw customPromptError;
 
-      // Only include selected tweaks (skip those that were skipped)
       const customizations = Object.entries(selectedTweaks)
-        .filter(([parameterId, tweakId]) => tweakId) // Filter out undefined/null tweaks
+        .filter(([parameterId, tweakId]) => tweakId)
         .map(([parameterId, tweakId]) => ({
           custom_prompt_id: customPrompt.id,
           parameter_tweak_id: tweakId,
@@ -164,7 +160,6 @@ export function CustomPromptWizard({
         if (customizationsError) throw customizationsError;
       }
 
-      // Save additional context if provided
       if (additionalContext.trim()) {
         const { error: contextError } = await supabase
           .from("prompt_additional_context")

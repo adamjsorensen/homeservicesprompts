@@ -26,24 +26,43 @@ const fetchParameters = async () => {
   return data;
 };
 
-const fetchTweaks = async () => {
+const fetchTweaks = async (promptId?: string) => {
+  if (!promptId) {
+    const { data, error } = await supabase
+      .from("parameter_tweaks")
+      .select("*");
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Fetch only enabled tweaks for this prompt
   const { data, error } = await supabase
     .from("parameter_tweaks")
-    .select("*");
+    .select(`
+      *,
+      prompt_parameter_enabled_tweaks!inner(
+        prompt_id,
+        parameter_id,
+        is_enabled
+      )
+    `)
+    .eq('prompt_parameter_enabled_tweaks.prompt_id', promptId)
+    .eq('prompt_parameter_enabled_tweaks.is_enabled', true);
 
   if (error) throw error;
   return data;
 };
 
-export const usePromptParameters = () => {
+export const usePromptParameters = (promptId?: string) => {
   const { data: parameters = [], isLoading: isLoadingParameters } = useQuery({
     queryKey: ["prompt_parameters"],
     queryFn: fetchParameters,
   });
 
   const { data: tweaks = [], isLoading: isLoadingTweaks } = useQuery({
-    queryKey: ["parameter_tweaks"],
-    queryFn: fetchTweaks,
+    queryKey: ["parameter_tweaks", promptId],
+    queryFn: () => fetchTweaks(promptId),
   });
 
   const getTweaksForParameter = (parameterId: string | null) => {
