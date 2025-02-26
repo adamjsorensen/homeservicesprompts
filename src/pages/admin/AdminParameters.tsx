@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +43,6 @@ const AdminParameters = () => {
 
   const handleAddParameter = async () => {
     try {
-      // Log the parameter data before creation
       console.log('Creating new parameter:', {
         parameter: {
           name: newParameter.name,
@@ -52,12 +50,11 @@ const AdminParameters = () => {
         }
       });
 
-      // Insert new parameter
       const { data: param, error: paramError } = await supabase
         .from('prompt_parameters')
         .insert({
           name: newParameter.name,
-          type: 'tone_and_style' // Default type
+          type: 'tone_and_style'
         })
         .select()
         .single();
@@ -67,22 +64,20 @@ const AdminParameters = () => {
         throw paramError;
       }
 
-      // Log the tweaks data before batch update
       const tweaksData = newParameter.tweaks.map(t => ({
-        name: t.title,      // Match the expected column name
-        sub_prompt: t.content // Match the expected column name
+        name: t.title,
+        sub_prompt: t.content
       }));
       
       console.log('Updating parameter tweaks:', {
         parameterId: param.id,
-        tweaksData: tweaksData
+        tweaksData: JSON.stringify(tweaksData)
       });
 
-      // Use the batch update function for tweaks with correct property names
       const { error: tweaksError } = await supabase
         .rpc('batch_update_parameter_tweaks', {
           p_parameter_id: param.id,
-          p_tweaks: tweaksData
+          p_tweaks: JSON.stringify(tweaksData)
         });
 
       if (tweaksError) {
@@ -116,7 +111,6 @@ const AdminParameters = () => {
     try {
       if (!selectedParameter) return;
 
-      // Log the parameter update data
       console.log('Updating parameter:', {
         parameterId: selectedParameter.id,
         updatedData: {
@@ -124,7 +118,6 @@ const AdminParameters = () => {
         }
       });
 
-      // Update parameter details
       const { error: paramError } = await supabase
         .from('prompt_parameters')
         .update({
@@ -138,22 +131,20 @@ const AdminParameters = () => {
         throw paramError;
       }
 
-      // Log the tweaks update data
       const tweaksData = editedParameter.tweaks.map(t => ({
-        name: t.title,      // Match the expected column name
-        sub_prompt: t.content // Match the expected column name
+        name: t.title,
+        sub_prompt: t.content
       }));
 
       console.log('Updating parameter tweaks:', {
         parameterId: selectedParameter.id,
-        tweaksData: tweaksData
+        tweaksData: JSON.stringify(tweaksData)
       });
 
-      // Use the batch update function for tweaks with correct property names
       const { error: tweaksError } = await supabase
         .rpc('batch_update_parameter_tweaks', {
           p_parameter_id: selectedParameter.id,
-          p_tweaks: tweaksData
+          p_tweaks: JSON.stringify(tweaksData)
         });
 
       if (tweaksError) {
