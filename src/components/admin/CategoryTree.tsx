@@ -8,6 +8,9 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragStartEvent,
+  DragOverlay,
+  defaultDropAnimation,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -31,9 +34,19 @@ export const CategoryTree = ({
   onDeleteCategory,
 }: CategoryTreeProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        // Only start dragging after moving 8px to prevent accidental drags
+        distance: 8,
+        // Add a small delay to prevent accidental drags
+        delay: 50,
+        // Tolerance for movement during the delay
+        tolerance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -49,7 +62,6 @@ export const CategoryTree = ({
     setExpandedCategories(newExpanded);
   };
 
-  // First, find the root category for this hub
   const getRootCategory = () => {
     return categories.find(
       category => 
@@ -60,7 +72,6 @@ export const CategoryTree = ({
   };
 
   const getSubcategories = (parentId: string | null): Prompt[] => {
-    // If we're looking for root-level categories, use the hub's root category ID
     const rootCategory = getRootCategory();
     const effectiveParentId = parentId === null ? rootCategory?.id : parentId;
 
@@ -68,7 +79,6 @@ export const CategoryTree = ({
       (category) => 
         category.is_category && 
         category.parent_id === effectiveParentId &&
-        // Don't include the root category itself in the list
         category.id !== rootCategory?.id
     );
   };
@@ -86,16 +96,18 @@ export const CategoryTree = ({
     return directPrompts + subcategoryPrompts;
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    onDragEnd(event);
+  };
+
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
     const categoryItems = getSubcategories(parentId);
     
-    console.log('Rendering categories:', {
-      parentId,
-      level,
-      itemCount: categoryItems.length,
-      categoryItems: categoryItems.map(c => ({ id: c.id, title: c.title }))
-    });
-
     if (categoryItems.length === 0) return null;
 
     return (
@@ -120,11 +132,17 @@ export const CategoryTree = ({
     );
   };
 
+  const dropAnimation = {
+    ...defaultDropAnimation,
+    dragSourceOpacity: 0.5,
+  };
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragEnd={onDragEnd}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <SortableContext
         items={categories.filter(c => c.is_category).map(c => c.id)}
@@ -132,6 +150,21 @@ export const CategoryTree = ({
       >
         {renderCategories()}
       </SortableContext>
+      <DragOverlay dropAnimation={dropAnimation}>
+        {activeId ? (
+          <div className="opacity-80">
+            <CategoryItem
+              id={activeId}
+              title={categories.find(c => c.id === activeId)?.title || ''}
+              level={0}
+              isExpanded={false}
+              promptCount={getPromptCount(activeId)}
+              onDelete={() => {}}
+              onToggle={() => {}}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 };

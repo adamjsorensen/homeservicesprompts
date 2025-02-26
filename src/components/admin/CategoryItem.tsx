@@ -37,7 +37,13 @@ export const CategoryItem = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ 
+    id,
+    transition: {
+      duration: 200,
+      easing: 'ease',
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -49,8 +55,8 @@ export const CategoryItem = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "p-3 rounded-lg border bg-card/50 text-card-foreground shadow-sm hover:shadow-md transition-all",
-        isDragging && "opacity-50 shadow-lg",
+        "p-3 rounded-lg border bg-card/50 text-card-foreground shadow-sm hover:shadow-md transition-all duration-200",
+        isDragging && "opacity-50 shadow-lg scale-105",
         level > 0 && "ml-6"
       )}
     >
@@ -76,7 +82,7 @@ export const CategoryItem = ({
         >
           <ChevronRight
             className={cn(
-              "w-4 h-4 text-muted-foreground transition-transform",
+              "w-4 h-4 text-muted-foreground transition-transform duration-200",
               isExpanded && "rotate-90"
             )}
           />
