@@ -71,13 +71,16 @@ const AdminParameters = () => {
       
       console.log('Updating parameter tweaks:', {
         parameterId: param.id,
-        tweaksData: JSON.stringify(tweaksData)
+        tweaksData: tweaksData,
+        tweaksDataStringified: JSON.stringify(tweaksData),
+        tweaksDataType: typeof tweaksData,
+        tweaksRawData: newParameter.tweaks
       });
 
       const { error: tweaksError } = await supabase
         .rpc('batch_update_parameter_tweaks', {
           p_parameter_id: param.id,
-          p_tweaks: JSON.stringify(tweaksData)
+          p_tweaks: tweaksData
         });
 
       if (tweaksError) {
