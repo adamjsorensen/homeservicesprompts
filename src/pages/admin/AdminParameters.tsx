@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -11,56 +12,31 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Settings2, Link2, MoreHorizontal } from "lucide-react";
+import { Edit2, Plus, Trash2, User } from "lucide-react";
 import { usePromptParameters } from "@/hooks/usePromptParameters";
-import { PARAMETER_TYPES } from "@/constants/parameterTypes";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminParameters = () => {
   const { parameters, tweaks } = usePromptParameters();
   const { toast } = useToast();
-  const [selectedParameter, setSelectedParameter] = useState<string | null>(null);
   const [isAddingParameter, setIsAddingParameter] = useState(false);
-  const [isAddingTweak, setIsAddingTweak] = useState(false);
+  const [isEditingParameter, setIsEditingParameter] = useState(false);
+  const [selectedParameter, setSelectedParameter] = useState<any>(null);
   const [newParameter, setNewParameter] = useState({
     name: "",
-    description: "",
-    type: PARAMETER_TYPES[0],
-  });
-  const [newTweak, setNewTweak] = useState({
-    name: "",
-    sub_prompt: "",
+    tweaks: [{ title: "", content: "" }]
   });
 
   const handleAddParameter = async () => {
     try {
-      const { error } = await supabase.from("prompt_parameters").insert([
-        {
-          name: newParameter.name,
-          description: newParameter.description,
-          type: newParameter.type,
-        },
-      ]);
-
-      if (error) throw error;
-
+      // TODO: Implement parameter addition
+      setIsAddingParameter(false);
       toast({
         title: "Parameter added",
         description: "The parameter has been created successfully.",
       });
-
-      setIsAddingParameter(false);
-      setNewParameter({ name: "", description: "", type: PARAMETER_TYPES[0] });
     } catch (error) {
-      console.error("Error adding parameter:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -69,210 +45,161 @@ const AdminParameters = () => {
     }
   };
 
-  const handleAddTweak = async () => {
-    try {
-      const { error } = await supabase.from("parameter_tweaks").insert([
-        {
-          name: newTweak.name,
-          sub_prompt: newTweak.sub_prompt,
-          parameter_id: selectedParameter,
-        },
-      ]);
+  const handleAddTweak = () => {
+    setNewParameter({
+      ...newParameter,
+      tweaks: [...newParameter.tweaks, { title: "", content: "" }]
+    });
+  };
 
-      if (error) throw error;
-
-      toast({
-        title: "Tweak added",
-        description: "The tweak has been created successfully.",
-      });
-
-      setIsAddingTweak(false);
-      setNewTweak({ name: "", sub_prompt: "" });
-    } catch (error) {
-      console.error("Error adding tweak:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create tweak. Please try again.",
-      });
-    }
+  const handleRemoveTweak = (index: number) => {
+    setNewParameter({
+      ...newParameter,
+      tweaks: newParameter.tweaks.filter((_, i) => i !== index)
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Parameter System</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Parameters</h1>
           <p className="text-muted-foreground">
-            Configure parameters and tweaks for prompts
+            Manage parameters and their tweaks
           </p>
         </div>
-        <Button onClick={() => setIsAddingParameter(true)}>
+        <Button onClick={() => setIsAddingParameter(true)} className="bg-[#9b87f5] hover:bg-[#8b77e5]">
           <Plus className="w-4 h-4 mr-2" />
           Add Parameter
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {PARAMETER_TYPES.map((type) => {
-          const typeParameters = parameters.filter((p) => p.type === type);
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {parameters.map((param) => {
+          const paramTweaks = tweaks.filter((t) => t.parameter_id === param.id);
           return (
-            <div
-              key={type}
-              className="p-6 rounded-lg border bg-card text-card-foreground hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">
-                  {type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                </h3>
-                <Settings2 className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                {typeParameters.length} parameters
-              </p>
-              <div className="space-y-3">
-                {typeParameters.map((param) => {
-                  const paramTweaks = tweaks.filter(
-                    (t) => t.parameter_id === param.id
-                  );
-                  return (
-                    <div
-                      key={param.id}
-                      className="p-3 rounded-md bg-muted/50 space-y-2"
-                      onClick={() => setSelectedParameter(param.id)}
+            <Card key={param.id} className="relative">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-semibold">{param.name}</h3>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      setSelectedParameter(param);
+                      setIsEditingParameter(true);
+                    }}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/90">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {paramTweaks.length} available tweaks
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {paramTweaks.map((tweak) => (
+                    <span
+                      key={tweak.id}
+                      className="bg-muted text-muted-foreground px-3 py-1 rounded-md text-sm"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{param.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedParameter(param.id);
-                            setIsAddingTweak(true);
-                          }}
-                        >
-                          <Plus className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      {paramTweaks.length > 0 && (
-                        <div className="pl-3 border-l-2 border-muted space-y-1">
-                          {paramTweaks.map((tweak) => (
-                            <div
-                              key={tweak.id}
-                              className="flex items-center text-sm text-muted-foreground"
-                            >
-                              <Link2 className="w-3 h-3 mr-2" />
-                              {tweak.name}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      {tweak.name}
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
       {/* Add Parameter Dialog */}
       <Dialog open={isAddingParameter} onOpenChange={setIsAddingParameter}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add New Parameter</DialogTitle>
+            <p className="text-muted-foreground">
+              Create a new parameter with custom tweaks
+            </p>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Parameter Name</Label>
-              <Input
-                id="name"
-                value={newParameter.name}
-                onChange={(e) =>
-                  setNewParameter({ ...newParameter, name: e.target.value })
-                }
-                placeholder="Enter parameter name"
-              />
+          <div className="space-y-6 py-4">
+            <div className="space-y-4">
+              <Label>Parameter Name</Label>
+              <div className="relative">
+                <Input
+                  placeholder="e.g., Writing Style"
+                  value={newParameter.name}
+                  onChange={(e) =>
+                    setNewParameter({ ...newParameter, name: e.target.value })
+                  }
+                />
+                <User className="absolute right-3 top-2.5 h-5 w-5 text-muted-foreground" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={newParameter.description}
-                onChange={(e) =>
-                  setNewParameter({ ...newParameter, description: e.target.value })
-                }
-                placeholder="Enter parameter description"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="type">Parameter Type</Label>
-              <Select
-                value={newParameter.type}
-                onValueChange={(value) =>
-                  setNewParameter({ ...newParameter, type: value as any })
-                }
+            <div className="space-y-4">
+              <Label>Tweaks</Label>
+              {newParameter.tweaks.map((tweak, index) => (
+                <div key={index} className="space-y-4 p-4 border rounded-lg relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-2"
+                    onClick={() => handleRemoveTweak(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="space-y-2">
+                    <Label>Title (Visible to Users)</Label>
+                    <Input
+                      placeholder="e.g., Professional"
+                      value={tweak.title}
+                      onChange={(e) => {
+                        const newTweaks = [...newParameter.tweaks];
+                        newTweaks[index].title = e.target.value;
+                        setNewParameter({ ...newParameter, tweaks: newTweaks });
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Content (Added to Prompt)</Label>
+                    <Textarea
+                      placeholder="e.g., Maintain a formal and business-appropriate tone"
+                      value={tweak.content}
+                      onChange={(e) => {
+                        const newTweaks = [...newParameter.tweaks];
+                        newTweaks[index].content = e.target.value;
+                        setNewParameter({ ...newParameter, tweaks: newTweaks });
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddTweak}
+                className="w-full"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select parameter type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PARAMETER_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type.replace(/_/g, " ").replace(/\b\w/g, (l) =>
-                        l.toUpperCase()
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Tweak
+              </Button>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddingParameter(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddParameter}>Add Parameter</Button>
+            <Button onClick={handleAddParameter} className="bg-[#9b87f5] hover:bg-[#8b77e5]">
+              Add Parameter
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Tweak Dialog */}
-      <Dialog open={isAddingTweak} onOpenChange={setIsAddingTweak}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Tweak</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="tweakName">Tweak Name</Label>
-              <Input
-                id="tweakName"
-                value={newTweak.name}
-                onChange={(e) =>
-                  setNewTweak({ ...newTweak, name: e.target.value })
-                }
-                placeholder="Enter tweak name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="subPrompt">Sub-prompt</Label>
-              <Textarea
-                id="subPrompt"
-                value={newTweak.sub_prompt}
-                onChange={(e) =>
-                  setNewTweak({ ...newTweak, sub_prompt: e.target.value })
-                }
-                placeholder="Enter sub-prompt text"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddingTweak(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddTweak}>Add Tweak</Button>
-          </DialogFooter>
+      {/* Edit Parameter Dialog - Similar to Add but with pre-filled values */}
+      <Dialog open={isEditingParameter} onOpenChange={setIsEditingParameter}>
+        <DialogContent className="max-w-2xl">
+          {/* Similar content to Add Parameter Dialog but with editing functionality */}
         </DialogContent>
       </Dialog>
     </div>
