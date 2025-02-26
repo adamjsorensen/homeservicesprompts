@@ -212,6 +212,58 @@ export type Database = {
           },
         ]
       }
+      prompt_parameter_enabled_tweaks: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          parameter_id: string
+          parameter_tweak_id: string
+          prompt_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          parameter_id: string
+          parameter_tweak_id: string
+          prompt_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          parameter_id?: string
+          parameter_tweak_id?: string
+          prompt_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_parameter_enabled_tweaks_parameter_id_fkey"
+            columns: ["parameter_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_parameters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_parameter_enabled_tweaks_parameter_tweak_id_fkey"
+            columns: ["parameter_tweak_id"]
+            isOneToOne: false
+            referencedRelation: "parameter_tweaks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_parameter_enabled_tweaks_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_parameter_rules: {
         Row: {
           created_at: string
@@ -220,6 +272,7 @@ export type Database = {
           is_required: boolean
           order: number
           parameter_id: string
+          parameter_order: number | null
           prompt_id: string
           updated_at: string
         }
@@ -230,6 +283,7 @@ export type Database = {
           is_required?: boolean
           order: number
           parameter_id: string
+          parameter_order?: number | null
           prompt_id: string
           updated_at?: string
         }
@@ -240,6 +294,7 @@ export type Database = {
           is_required?: boolean
           order?: number
           parameter_id?: string
+          parameter_order?: number | null
           prompt_id?: string
           updated_at?: string
         }

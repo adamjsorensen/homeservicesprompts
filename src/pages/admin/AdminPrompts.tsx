@@ -14,42 +14,132 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
-import { usePromptParameters } from "@/hooks/usePromptParameters";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { PromptParameterSelector } from "@/components/admin/PromptParameterSelector";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminPrompts = () => {
   const { prompts, isAdmin } = usePrompts();
-  const { parameters, tweaks } = usePromptParameters();
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
   const [editedPrompt, setEditedPrompt] = useState({
     name: "",
     description: "",
-    selectedParameters: new Set<string>()
+    basePrompt: "",
   });
+  const [selectedParameters, setSelectedParameters] = useState<Set<string>>(new Set());
+  const [enabledTweaks, setEnabledTweaks] = useState<Record<string, Set<string>>>({});
 
   const handleEditPrompt = (prompt: any) => {
     setSelectedPrompt(prompt);
     setEditedPrompt({
       name: prompt.title,
       description: prompt.description,
-      selectedParameters: new Set() // TODO: Load actual selected parameters
+      basePrompt: prompt.prompt,
     });
     setIsEditingPrompt(true);
   };
 
-  const handleUpdatePrompt = () => {
-    // TODO: Implement update logic
-    setIsEditingPrompt(false);
+  const handleParameterToggle = (parameterId: string, enabled: boolean) => {
+    setSelectedParameters((prev) => {
+      const next = new Set(prev);
+      if (enabled) {
+        next.add(parameterId);
+        // Initialize enabled tweaks for this parameter
+        setEnabledTweaks((prev) => ({
+          ...prev,
+          [parameterId]: new Set(),
+        }));
+      } else {
+        next.delete(parameterId);
+        // Clean up enabled tweaks for this parameter
+        setEnabledTweaks((prev) => {
+          const { [parameterId]: _, ...rest } = prev;
+          return rest;
+        });
+      }
+      return next;
+    });
   };
 
-  const getEnabledTweaksText = (promptId: string) => {
-    // TODO: Replace with actual logic to get enabled tweaks
-    const targetAudienceTweaks = 2;
-    const toneTweaks = 2;
-    return `4 tweaks enabled\nTarget Audience (${targetAudienceTweaks} tweaks), Tone (${toneTweaks} tweaks)`;
+  const handleTweakToggle = (
+    parameterId: string,
+    tweakId: string,
+    enabled: boolean
+  ) => {
+    setEnabledTweaks((prev) => {
+      const parameterTweaks = new Set(prev[parameterId] || new Set());
+      if (enabled) {
+        parameterTweaks.add(tweakId);
+      } else {
+        parameterTweaks.delete(tweakId);
+      }
+      return {
+        ...prev,
+        [parameterId]: parameterTweaks,
+      };
+    });
+  };
+
+  const handleCreatePrompt = async () => {
+    try {
+      // Insert the new prompt
+      const { data: promptData, error: promptError } = await supabase
+        .from('prompts')
+        .insert({
+          title: editedPrompt.name,
+          description: editedPrompt.description,
+          prompt: editedPrompt.basePrompt,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+        })
+        .select()
+        .single();
+
+      if (promptError) throw promptError;
+
+      // Create parameter rules and enabled tweaks
+      const parameterPromises = Array.from(selectedParameters).map(async (parameterId) => {
+        // Create parameter rule
+        const { error: ruleError } = await supabase
+          .from('prompt_parameter_rules')
+          .insert({
+            prompt_id: promptData.id,
+            parameter_id: parameterId,
+            is_required: true,
+            is_active: true,
+          });
+
+        if (ruleError) throw ruleError;
+
+        // Create enabled tweaks entries
+        const tweakPromises = Array.from(enabledTweaks[parameterId] || []).map(
+          (tweakId) =>
+            supabase.from('prompt_parameter_enabled_tweaks').insert({
+              prompt_id: promptData.id,
+              parameter_id: parameterId,
+              parameter_tweak_id: tweakId,
+              is_enabled: true,
+            })
+        );
+
+        await Promise.all(tweakPromises);
+      });
+
+      await Promise.all(parameterPromises);
+
+      toast.success("Prompt created successfully");
+      setIsEditingPrompt(false);
+      setEditedPrompt({
+        name: "",
+        description: "",
+        basePrompt: "",
+      });
+      setSelectedParameters(new Set());
+      setEnabledTweaks({});
+    } catch (error) {
+      console.error("Error creating prompt:", error);
+      toast.error("Failed to create prompt");
+    }
   };
 
   return (
@@ -61,7 +151,10 @@ const AdminPrompts = () => {
             Manage your content generation prompts
           </p>
         </div>
-        <Button className="bg-[#9b87f5] hover:bg-[#8b77e5]">
+        <Button 
+          className="bg-[#9b87f5] hover:bg-[#8b77e5]"
+          onClick={() => setIsEditingPrompt(true)}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Prompt
         </Button>
@@ -83,7 +176,8 @@ const AdminPrompts = () => {
                 <TableCell>{prompt.title}</TableCell>
                 <TableCell>{prompt.description}</TableCell>
                 <TableCell className="max-w-[300px]">
-                  {getEnabledTweaksText(prompt.id)}
+                  {/* We'll implement this later */}
+                  Parameters info here
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -112,71 +206,62 @@ const AdminPrompts = () => {
       <Dialog open={isEditingPrompt} onOpenChange={setIsEditingPrompt}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Prompt</DialogTitle>
-            <p className="text-muted-foreground">
-              Modify prompt details and parameters
-            </p>
+            <DialogTitle>
+              {selectedPrompt ? "Edit Prompt" : "Create New Prompt"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-4">
-              <Label>Name</Label>
-              <Input
-                value={editedPrompt.name}
-                onChange={(e) =>
-                  setEditedPrompt({ ...editedPrompt, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-4">
-              <Label>Description</Label>
-              <Textarea
-                value={editedPrompt.description}
-                onChange={(e) =>
-                  setEditedPrompt({ ...editedPrompt, description: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-4">
-              <Label>Parameters</Label>
-              <div className="flex flex-wrap gap-2">
-                {parameters.map((param) => (
-                  <Badge
-                    key={param.id}
-                    variant="secondary"
-                    className="px-3 py-1 cursor-pointer"
-                  >
-                    {param.name}
-                  </Badge>
-                ))}
+              <div>
+                <Label>Name</Label>
+                <Input
+                  value={editedPrompt.name}
+                  onChange={(e) =>
+                    setEditedPrompt({ ...editedPrompt, name: e.target.value })
+                  }
+                  placeholder="Enter prompt name"
+                />
               </div>
-              {parameters.map((param) => (
-                <div key={param.id} className="space-y-2 border-t pt-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{param.name}</h3>
-                    <Button variant="ghost" size="sm">
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="pl-6 space-y-2">
-                    {tweaks
-                      .filter((tweak) => tweak.parameter_id === param.id)
-                      .map((tweak) => (
-                        <div key={tweak.id} className="flex items-center space-x-2">
-                          <Checkbox id={tweak.id} />
-                          <Label htmlFor={tweak.id}>{tweak.name}</Label>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              ))}
+              <div>
+                <Label>Description</Label>
+                <Textarea
+                  value={editedPrompt.description}
+                  onChange={(e) =>
+                    setEditedPrompt({ ...editedPrompt, description: e.target.value })
+                  }
+                  placeholder="Enter prompt description"
+                />
+              </div>
+              <div>
+                <Label>Base Prompt</Label>
+                <Textarea
+                  value={editedPrompt.basePrompt}
+                  onChange={(e) =>
+                    setEditedPrompt({ ...editedPrompt, basePrompt: e.target.value })
+                  }
+                  placeholder="Enter base prompt text"
+                />
+              </div>
+              <div>
+                <Label>Parameters</Label>
+                <PromptParameterSelector
+                  selectedParameters={selectedParameters}
+                  enabledTweaks={enabledTweaks}
+                  onParameterToggle={handleParameterToggle}
+                  onTweakToggle={handleTweakToggle}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditingPrompt(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdatePrompt} className="bg-[#9b87f5] hover:bg-[#8b77e5]">
-              Update Prompt
+            <Button 
+              onClick={handleCreatePrompt} 
+              className="bg-[#9b87f5] hover:bg-[#8b77e5]"
+            >
+              {selectedPrompt ? "Update Prompt" : "Create Prompt"}
             </Button>
           </DialogFooter>
         </DialogContent>
