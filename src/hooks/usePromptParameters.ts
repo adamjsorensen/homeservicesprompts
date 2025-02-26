@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export interface PromptParameter {
   id: string;
@@ -55,15 +56,64 @@ const fetchTweaks = async (promptId?: string) => {
 };
 
 export const usePromptParameters = (promptId?: string) => {
-  const { data: parameters = [], isLoading: isLoadingParameters } = useQuery({
+  const { 
+    data: parameters = [], 
+    isLoading: isLoadingParameters,
+    refetch: refetchParameters 
+  } = useQuery({
     queryKey: ["prompt_parameters"],
     queryFn: fetchParameters,
   });
 
-  const { data: tweaks = [], isLoading: isLoadingTweaks } = useQuery({
+  const { 
+    data: tweaks = [], 
+    isLoading: isLoadingTweaks,
+    refetch: refetchTweaks 
+  } = useQuery({
     queryKey: ["parameter_tweaks", promptId],
     queryFn: () => fetchTweaks(promptId),
   });
+
+  useEffect(() => {
+    // Subscribe to changes in prompt_parameters table
+    const parametersChannel = supabase
+      .channel('prompt_parameters_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prompt_parameters'
+        },
+        () => {
+          console.log('Parameters changed, refetching...');
+          refetchParameters();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to changes in parameter_tweaks table
+    const tweaksChannel = supabase
+      .channel('parameter_tweaks_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'parameter_tweaks'
+        },
+        () => {
+          console.log('Tweaks changed, refetching...');
+          refetchTweaks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(parametersChannel);
+      supabase.removeChannel(tweaksChannel);
+    };
+  }, [refetchParameters, refetchTweaks]);
 
   const getTweaksForParameter = (parameterId: string | null) => {
     if (!parameterId) return tweaks;
