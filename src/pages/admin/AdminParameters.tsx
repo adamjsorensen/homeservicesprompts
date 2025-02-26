@@ -1,9 +1,17 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -235,49 +243,58 @@ const AdminParameters = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {parameters
-          .filter(param => param.active)
-          .map((param) => {
-            const paramTweaks = tweaks.filter((t) => t.parameter_id === param.id && t.active);
-            return (
-              <Card key={param.id} className="relative">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-semibold">{param.name}</h3>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleStartEditing(param);
-                        }}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/90">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    {paramTweaks.length} available tweaks
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {paramTweaks.map((tweak) => (
-                      <span
-                        key={tweak.id}
-                        className="bg-muted text-muted-foreground px-3 py-1 rounded-md text-sm"
-                      >
-                        {tweak.name}
-                      </span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[200px]">Name</TableHead>
+              <TableHead>Tweaks</TableHead>
+              <TableHead className="w-[100px] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {parameters
+              .filter(param => param.active)
+              .map((param) => {
+                const paramTweaks = tweaks.filter((t) => t.parameter_id === param.id && t.active);
+                return (
+                  <TableRow key={param.id}>
+                    <TableCell className="font-medium">{param.name}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        {paramTweaks.map((tweak) => (
+                          <span
+                            key={tweak.id}
+                            className="bg-muted text-muted-foreground px-3 py-1 rounded-md text-sm"
+                          >
+                            {tweak.name}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleStartEditing(param)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive/90"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
       </div>
 
       <Dialog open={isAddingParameter} onOpenChange={setIsAddingParameter}>
