@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -10,6 +11,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragStartEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -36,6 +38,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SortableHub } from "@/components/admin/SortableHub";
+import { supabase } from "@/integrations/supabase/client";
 
 type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
 
