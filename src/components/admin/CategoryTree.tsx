@@ -1,13 +1,10 @@
 
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CategoryItem } from "./CategoryItem";
-import { PromptItem } from "./PromptItem";
 import { type Prompt } from "@/hooks/usePrompts";
 import { useState } from "react";
+import { CategoryItem } from "./CategoryItem";
+import { PromptItem } from "./PromptItem";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CategoryTreeProps {
   categories: Prompt[];
@@ -21,6 +18,7 @@ export const CategoryTree = ({
   onDeleteCategory,
 }: CategoryTreeProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const toggleCategory = (categoryId: string) => {
     console.log('[CategoryTree] Toggling category:', categoryId);
@@ -81,6 +79,55 @@ export const CategoryTree = ({
     return total;
   };
 
+  const moveItem = async (itemId: string, direction: 'up' | 'down', parentId: string | null) => {
+    console.log('[CategoryTree] Moving item:', { itemId, direction, parentId });
+    
+    const items = getSubcategories(parentId);
+    const currentIndex = items.findIndex(item => item.id === itemId);
+    
+    if (currentIndex === -1) {
+      console.error('[CategoryTree] Item not found:', itemId);
+      return;
+    }
+
+    let newOrder: number;
+    if (direction === 'up' && currentIndex > 0) {
+      const prevItem = items[currentIndex - 1];
+      newOrder = prevItem.display_order! - 1;
+    } else if (direction === 'down' && currentIndex < items.length - 1) {
+      const nextItem = items[currentIndex + 1];
+      newOrder = nextItem.display_order! + 1;
+    } else {
+      console.log('[CategoryTree] Cannot move item', direction);
+      return;
+    }
+
+    try {
+      console.log('[CategoryTree] Updating order:', { itemId, newOrder });
+      const { error } = await supabase
+        .from('prompts')
+        .update({ display_order: newOrder })
+        .eq('id', itemId);
+
+      if (error) {
+        console.error('[CategoryTree] Error updating order:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Item moved ${direction} successfully`,
+      });
+    } catch (error) {
+      console.error('[CategoryTree] Error moving item:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Failed to move item ${direction}`,
+      });
+    }
+  };
+
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
     console.log('[CategoryTree] Rendering categories for parent:', parentId, 'Level:', level);
     const categoryItems = getSubcategories(parentId);
@@ -94,51 +141,44 @@ export const CategoryTree = ({
 
     return (
       <div className="space-y-2 animate-fade-in">
-        <SortableContext
-          items={categoryItems.map(c => c.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {categoryItems.map((category) => {
-            console.log('[CategoryTree] Rendering category item:', category.id, category.title);
-            return (
-              <div key={category.id} data-parent-id={effectiveParentId}>
-                <CategoryItem
-                  id={category.id}
-                  title={category.title}
-                  level={level}
-                  isExpanded={expandedCategories.has(category.id)}
-                  promptCount={getPromptCount(category.id)}
-                  onDelete={() => onDeleteCategory(category.id)}
-                  onToggle={() => toggleCategory(category.id)}
-                />
-                {expandedCategories.has(category.id) && (
-                  <>
-                    {renderCategories(category.id, level + 1)}
-                    
-                    <SortableContext
-                      items={getPrompts(category.id).map(p => p.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="ml-6 space-y-2">
-                        {getPrompts(category.id).map((prompt) => {
-                          console.log('[CategoryTree] Rendering prompt item:', prompt.id, prompt.title);
-                          return (
-                            <PromptItem
-                              key={prompt.id}
-                              id={prompt.id}
-                              title={prompt.title}
-                              description={prompt.description || ""}
-                            />
-                          );
-                        })}
-                      </div>
-                    </SortableContext>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </SortableContext>
+        {categoryItems.map((category, index) => {
+          console.log('[CategoryTree] Rendering category item:', category.id, category.title);
+          return (
+            <div key={category.id} data-parent-id={effectiveParentId}>
+              <CategoryItem
+                id={category.id}
+                title={category.title}
+                level={level}
+                isExpanded={expandedCategories.has(category.id)}
+                promptCount={getPromptCount(category.id)}
+                onDelete={() => onDeleteCategory(category.id)}
+                onToggle={() => toggleCategory(category.id)}
+                onMoveUp={() => moveItem(category.id, 'up', effectiveParentId)}
+                onMoveDown={() => moveItem(category.id, 'down', effectiveParentId)}
+                isFirst={index === 0}
+                isLast={index === categoryItems.length - 1}
+              />
+              {expandedCategories.has(category.id) && (
+                <>
+                  {renderCategories(category.id, level + 1)}
+                  <div className="ml-6 space-y-2">
+                    {getPrompts(category.id).map((prompt) => {
+                      console.log('[CategoryTree] Rendering prompt item:', prompt.id, prompt.title);
+                      return (
+                        <PromptItem
+                          key={prompt.id}
+                          id={prompt.id}
+                          title={prompt.title}
+                          description={prompt.description || ""}
+                        />
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };

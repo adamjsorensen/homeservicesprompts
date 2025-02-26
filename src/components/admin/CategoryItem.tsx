@@ -1,7 +1,5 @@
 
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { Grip, ChevronRight, Trash2 } from "lucide-react";
+import { ArrowUp, ArrowDown, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -19,6 +17,10 @@ interface CategoryItemProps {
   promptCount: number;
   onDelete: () => void;
   onToggle: () => void;
+  onMoveUp: () => Promise<void>;
+  onMoveDown: () => Promise<void>;
+  isFirst: boolean;
+  isLast: boolean;
 }
 
 export const CategoryItem = ({
@@ -29,53 +31,19 @@ export const CategoryItem = ({
   promptCount,
   onDelete,
   onToggle,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
 }: CategoryItemProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
-    id,
-    transition: {
-      duration: 200,
-      easing: 'ease',
-    },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
         "p-3 rounded-lg border bg-card/50 text-card-foreground shadow-sm hover:shadow-md transition-all duration-200",
-        isDragging && "opacity-50 shadow-lg scale-105",
         level > 0 && "ml-6"
       )}
     >
       <div className="flex items-center gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                {...attributes}
-                {...listeners}
-                className="p-1 hover:bg-accent rounded cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                <Grip className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Drag to reorder category</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
         <button
           onClick={onToggle}
           className="p-1 hover:bg-accent rounded focus:outline-none focus:ring-2 focus:ring-accent"
@@ -95,21 +63,57 @@ export const CategoryItem = ({
           </span>
         </div>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive"
-                onClick={onDelete}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete category</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center gap-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                  onClick={onMoveUp}
+                  disabled={isFirst}
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Move category up</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                  onClick={onMoveDown}
+                  disabled={isLast}
+                >
+                  <ArrowDown className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Move category down</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete category</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
     </div>
   );
