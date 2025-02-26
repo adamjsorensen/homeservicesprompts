@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Grip, ChevronRight, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { usePrompts } from "@/hooks/usePrompts";
 import {
   DndContext,
@@ -16,11 +16,8 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,71 +30,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { CategoryTree } from "@/components/admin/CategoryTree";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { SortableHub } from "@/components/admin/SortableHub";
 
 type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
-
-interface SortableHubProps {
-  id: HubAreaType;
-  title: string;
-  promptCount: number;
-  onDelete: () => void;
-}
-
-const SortableHub = ({ id, title, promptCount, onDelete }: SortableHubProps) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "p-6 rounded-lg border bg-card text-card-foreground hover:shadow-md transition-shadow",
-        isDragging && "opacity-50"
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
-          >
-            <Grip className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <div>
-            <h3 className="text-lg font-semibold group-hover:text-purple-600 transition-colors flex items-center gap-2">
-              {title}
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              {promptCount} prompts
-            </p>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-destructive"
-          onClick={onDelete}
-        >
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 const AdminHubs = () => {
   const { prompts } = usePrompts();
@@ -150,7 +91,6 @@ const AdminHubs = () => {
             title: "Error",
             description: "Failed to update hub order",
           });
-          // Revert the order if the update fails
           setOrderedHubs(orderedHubs);
         }
       };
@@ -186,6 +126,10 @@ const AdminHubs = () => {
     setDeleteCategoryId(categoryId);
   };
 
+  const formatHubTitle = (hubArea: string) => {
+    return hubArea.charAt(0).toUpperCase() + hubArea.slice(1) + " Hub";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -195,10 +139,17 @@ const AdminHubs = () => {
             Organize and manage your prompt hubs
           </p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Hub
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button className="bg-[#9b87f5] hover:bg-[#8b77e5]">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Hub
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Create a new hub for organizing prompts</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <DndContext
@@ -210,25 +161,28 @@ const AdminHubs = () => {
           items={orderedHubs}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-6">
-            {orderedHubs.map((hubArea) => (
-              <div key={hubArea} className="space-y-2">
-                <SortableHub
-                  id={hubArea}
-                  title={hubArea}
-                  promptCount={prompts.filter(p => p.hub_area === hubArea).length}
-                  onDelete={() => setDeleteHubId(hubArea)}
-                />
-                <div className="ml-6">
-                  <CategoryTree
-                    categories={prompts.filter(p => p.hub_area === hubArea)}
-                    hubArea={hubArea}
-                    onDragEnd={handleCategoryDragEnd}
-                    onDeleteCategory={handleDeleteCategory}
+          <div className="space-y-4">
+            {orderedHubs.map((hubArea) => {
+              const promptCount = prompts.filter(p => p.hub_area === hubArea).length;
+              return (
+                <div key={hubArea} className="space-y-2">
+                  <SortableHub
+                    id={hubArea}
+                    title={formatHubTitle(hubArea)}
+                    promptCount={promptCount}
+                    onDelete={() => setDeleteHubId(hubArea)}
                   />
+                  <div className="ml-8">
+                    <CategoryTree
+                      categories={prompts.filter(p => p.hub_area === hubArea)}
+                      hubArea={hubArea}
+                      onDragEnd={handleCategoryDragEnd}
+                      onDeleteCategory={handleDeleteCategory}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </SortableContext>
       </DndContext>
@@ -236,9 +190,9 @@ const AdminHubs = () => {
       <AlertDialog open={!!deleteHubId} onOpenChange={() => setDeleteHubId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Hub</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the hub and all its categories. Prompts will be preserved but will need to be reassigned.
+              Are you sure you want to delete this hub? All categories will be deleted, but prompts will be preserved and can be reassigned.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -247,7 +201,7 @@ const AdminHubs = () => {
               onClick={handleDeleteHub}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Delete Hub
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -264,12 +218,10 @@ const AdminHubs = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                setDeleteCategoryId(null);
-              }}
+              onClick={() => setDeleteCategoryId(null)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Delete Category
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

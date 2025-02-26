@@ -1,9 +1,15 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronRight, Grip, X } from "lucide-react";
+import { Grip, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CategoryItemProps {
   id: string;
@@ -43,48 +49,61 @@ export const CategoryItem = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "p-4 rounded-lg border bg-card text-card-foreground hover:shadow-md transition-shadow",
-        isDragging && "opacity-50",
+        "p-3 rounded-lg border bg-card/50 text-card-foreground shadow-sm hover:shadow-md transition-all",
+        isDragging && "opacity-50 shadow-lg",
         level > 0 && "ml-6"
       )}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
-          >
-            <Grip className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <button
-            onClick={onToggle}
-            className="p-1 hover:bg-accent rounded"
-          >
-            <ChevronRight
-              className={cn(
-                "w-4 h-4 text-muted-foreground transition-transform",
-                isExpanded && "rotate-90"
-              )}
-            />
-          </button>
-          <div>
-            <h4 className="text-sm font-medium">
-              {title}
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              {promptCount} prompts
-            </p>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-destructive"
-          onClick={onDelete}
+      <div className="flex items-center gap-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                {...attributes}
+                {...listeners}
+                className="p-1 hover:bg-accent rounded cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-accent"
+              >
+                <Grip className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Drag to reorder category</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <button
+          onClick={onToggle}
+          className="p-1 hover:bg-accent rounded focus:outline-none focus:ring-2 focus:ring-accent"
         >
-          <X className="w-4 h-4" />
-        </Button>
+          <ChevronRight
+            className={cn(
+              "w-4 h-4 text-muted-foreground transition-transform",
+              isExpanded && "rotate-90"
+            )}
+          />
+        </button>
+
+        <div className="flex items-center gap-2 flex-1">
+          <h4 className="text-sm font-medium">{title}</h4>
+          <span className="text-xs text-muted-foreground">
+            {promptCount} {promptCount === 1 ? 'prompt' : 'prompts'}
+          </span>
+        </div>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive"
+                onClick={onDelete}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete category</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );

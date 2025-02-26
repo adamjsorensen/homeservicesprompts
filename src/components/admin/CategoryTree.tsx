@@ -49,14 +49,12 @@ export const CategoryTree = ({
     setExpandedCategories(newExpanded);
   };
 
-  // Function to get all subcategories for a given parent
   const getSubcategories = (parentId: string | null): Prompt[] => {
     return categories.filter(
       (category) => category.is_category && category.parent_id === parentId
     );
   };
 
-  // Function to count prompts in a category and its subcategories
   const getPromptCount = (categoryId: string): number => {
     const directPrompts = categories.filter(
       (prompt) => !prompt.is_category && prompt.parent_id === categoryId
@@ -70,14 +68,13 @@ export const CategoryTree = ({
     return directPrompts + subcategoryPrompts;
   };
 
-  // Recursively render categories and their subcategories
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
     const categoryItems = getSubcategories(parentId);
 
     if (categoryItems.length === 0) return null;
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 animate-fade-in">
         {categoryItems.map((category) => (
           <div key={category.id}>
             <CategoryItem
