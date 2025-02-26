@@ -1,6 +1,7 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 export interface Prompt {
   id: string;
@@ -55,6 +56,8 @@ const checkAdminRole = async () => {
 };
 
 export const usePrompts = (hubArea?: string) => {
+  const queryClient = useQueryClient();
+
   const { data: prompts = [], isLoading, error } = useQuery({
     queryKey: ["prompts", hubArea],
     queryFn: fetchPrompts,
@@ -64,6 +67,49 @@ export const usePrompts = (hubArea?: string) => {
     queryKey: ["isAdmin"],
     queryFn: checkAdminRole,
   });
+
+  // Set up real-time subscription
+  useEffect(() => {
+    console.log('[Real-time] Setting up prompts subscription');
+    
+    const channel = supabase
+      .channel('prompts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'prompts'
+        },
+        async (payload) => {
+          console.log('[Real-time] Received change:', payload);
+          
+          // Refetch data to ensure we have the latest state
+          await queryClient.invalidateQueries({ queryKey: ["prompts"] });
+          
+          // Optionally handle specific events differently
+          switch (payload.eventType) {
+            case 'INSERT':
+              console.log('[Real-time] New prompt added:', payload.new);
+              break;
+            case 'UPDATE':
+              console.log('[Real-time] Prompt updated:', payload.new);
+              break;
+            case 'DELETE':
+              console.log('[Real-time] Prompt deleted:', payload.old);
+              break;
+          }
+        }
+      )
+      .subscribe(status => {
+        console.log('[Real-time] Subscription status:', status);
+      });
+
+    return () => {
+      console.log('[Real-time] Cleaning up subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Get hub's root category
   const getHubRoot = () => {
