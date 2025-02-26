@@ -78,8 +78,8 @@ const Library = () => {
     ? prompts.find(p => p.id === currentCategoryId)
     : null;
 
-  // Get categorized prompts for the current hub
-  const categorizedPrompts = hubArea ? getPromptsByCategory() : [];
+  // Get categorized prompts only when we're at the hub level (not in a category)
+  const categorizedPrompts = hubArea && !currentCategoryId ? getPromptsByCategory() : [];
   
   // Filter prompts based on search and category
   const filteredPrompts = prompts.filter(prompt => {

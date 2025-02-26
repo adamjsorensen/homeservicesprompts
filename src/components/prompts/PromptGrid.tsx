@@ -42,7 +42,7 @@ export function PromptGrid({
   };
 
   // If we're at the root level (no hub selected)
-  if (!currentCategory && !categorizedPrompts.length) {
+  if (!currentCategory && categorizedPrompts.length === 0) {
     return (
       <div className="space-y-6">
         <CategoryTile
@@ -67,11 +67,10 @@ export function PromptGrid({
     );
   }
 
-  // If we have categorized prompts (hub view)
-  if (categorizedPrompts.length > 0) {
+  // If we have categorized prompts and no current category (hub view)
+  if (categorizedPrompts.length > 0 && !currentCategory) {
     return (
       <div className="space-y-8">
-        {/* Display categories as tiles first */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categorizedPrompts.map(({ category }) => (
             <CategoryTile
