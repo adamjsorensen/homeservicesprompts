@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit2, Plus, Trash2 } from "lucide-react";
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { PromptParameterSelector } from "@/components/admin/PromptParameterSelector";
 import { toast } from "sonner";
@@ -46,14 +46,14 @@ const AdminPrompts = () => {
       if (enabled) {
         next.add(parameterId);
         // Initialize enabled tweaks for this parameter
-        setEnabledTweaks((prev) => ({
+        setEnabledTweaks((prev: Record<string, Set<string>>) => ({
           ...prev,
-          [parameterId]: new Set(),
+          [parameterId]: new Set<string>(),
         }));
       } else {
         next.delete(parameterId);
         // Clean up enabled tweaks for this parameter
-        setEnabledTweaks((prev) => {
+        setEnabledTweaks((prev: Record<string, Set<string>>) => {
           const { [parameterId]: _, ...rest } = prev;
           return rest;
         });
@@ -67,8 +67,8 @@ const AdminPrompts = () => {
     tweakId: string,
     enabled: boolean
   ) => {
-    setEnabledTweaks((prev) => {
-      const parameterTweaks = new Set(prev[parameterId] || new Set());
+    setEnabledTweaks((prev: Record<string, Set<string>>) => {
+      const parameterTweaks = new Set(prev[parameterId] || new Set<string>());
       if (enabled) {
         parameterTweaks.add(tweakId);
       } else {
@@ -91,6 +91,11 @@ const AdminPrompts = () => {
           description: editedPrompt.description,
           prompt: editedPrompt.basePrompt,
           created_by: (await supabase.auth.getUser()).data.user?.id,
+          category: 'custom', // Required field
+          display_order: 0, // Required field with default value
+          is_category: false, // Required field with default value
+          is_default: false, // Required field with default value
+          tags: [], // Required field with default empty array
         })
         .select()
         .single();
@@ -98,8 +103,8 @@ const AdminPrompts = () => {
       if (promptError) throw promptError;
 
       // Create parameter rules and enabled tweaks
-      const parameterPromises = Array.from(selectedParameters).map(async (parameterId) => {
-        // Create parameter rule
+      const parameterPromises = Array.from(selectedParameters).map(async (parameterId, index) => {
+        // Create parameter rule with required order field
         const { error: ruleError } = await supabase
           .from('prompt_parameter_rules')
           .insert({
@@ -107,6 +112,7 @@ const AdminPrompts = () => {
             parameter_id: parameterId,
             is_required: true,
             is_active: true,
+            order: index, // Required field, using index for order
           });
 
         if (ruleError) throw ruleError;
