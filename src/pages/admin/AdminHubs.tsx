@@ -79,14 +79,25 @@ const AdminHubs = () => {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      console.log('[AdminHubs] Drag ended but no valid target:', { active, over });
+      return;
+    }
 
     const activeId = active.id.toString();
     const overId = over.id.toString();
 
+    console.log('[AdminHubs] Drag ended:', {
+      activeId,
+      overId,
+      active,
+      over
+    });
+
     // Check if we're dealing with a hub or a prompt/category
     const activeHub = orderedHubs.find(hub => hub === activeId);
     if (activeHub) {
+      console.log('[AdminHubs] Reordering hub:', activeHub);
       // Handle hub reordering
       const oldIndex = orderedHubs.indexOf(activeId as HubAreaType);
       const newIndex = orderedHubs.indexOf(overId as HubAreaType);
@@ -99,14 +110,24 @@ const AdminHubs = () => {
     const activeItem = prompts.find(p => p.id === activeId);
     const overItem = prompts.find(p => p.id === overId);
     
-    if (!activeItem || !overItem) return;
+    if (!activeItem || !overItem) {
+      console.error('[AdminHubs] Could not find active or over item:', { activeItem, overItem });
+      return;
+    }
 
     // Get the parent element's data-parent-id attribute
     const parentElement = document.querySelector(`[data-id="${activeId}"]`)?.closest('[data-parent-id]');
     const parentId = parentElement?.getAttribute('data-parent-id') || null;
 
+    console.log('[AdminHubs] Found parent element:', {
+      parentElement,
+      parentId,
+      activeElement: document.querySelector(`[data-id="${activeId}"]`),
+      closestParent: document.querySelector(`[data-id="${activeId}"]`)?.closest('[data-parent-id]')
+    });
+
     try {
-      console.log('Reordering items:', {
+      console.log('[AdminHubs] Reordering items:', {
         activeId,
         overId,
         parentId,
@@ -118,9 +139,13 @@ const AdminHubs = () => {
         .filter(p => p.parent_id === parentId)
         .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
       
+      console.log('[AdminHubs] Items at level:', itemsAtLevel);
+
       const oldIndex = itemsAtLevel.findIndex(item => item.id === activeId);
       const newIndex = itemsAtLevel.findIndex(item => item.id === overId);
       
+      console.log('[AdminHubs] Indexes:', { oldIndex, newIndex });
+
       let newOrder: number;
       if (newIndex === 0) {
         newOrder = (itemsAtLevel[0].display_order || 0) - 1;
@@ -132,7 +157,7 @@ const AdminHubs = () => {
         newOrder = (prevOrder + nextOrder) / 2;
       }
 
-      console.log('Updating order:', {
+      console.log('[AdminHubs] Updating order:', {
         itemId: activeId,
         newOrder,
         oldIndex,
@@ -144,14 +169,19 @@ const AdminHubs = () => {
         .update({ display_order: newOrder })
         .eq('id', activeId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AdminHubs] Error updating order:', error);
+        throw error;
+      }
+
+      console.log('[AdminHubs] Successfully updated order');
 
       toast({
         title: "Success",
         description: "Item order updated successfully",
       });
     } catch (error) {
-      console.error('Error updating order:', error);
+      console.error('[AdminHubs] Error updating order:', error);
       toast({
         variant: "destructive",
         title: "Error",

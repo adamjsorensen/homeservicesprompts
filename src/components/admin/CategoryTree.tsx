@@ -23,6 +23,7 @@ export const CategoryTree = ({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const toggleCategory = (categoryId: string) => {
+    console.log('[CategoryTree] Toggling category:', categoryId);
     const newExpanded = new Set(expandedCategories);
     if (newExpanded.has(categoryId)) {
       newExpanded.delete(categoryId);
@@ -33,30 +34,40 @@ export const CategoryTree = ({
   };
 
   const getRootCategory = () => {
-    return categories.find(
+    const root = categories.find(
       category => 
         category.is_category && 
         category.parent_id === null &&
         category.hub_area === hubArea
     );
+    console.log('[CategoryTree] Found root category:', root);
+    return root;
   };
 
   const getSubcategories = (parentId: string | null): Prompt[] => {
     const rootCategory = getRootCategory();
     const effectiveParentId = parentId === null ? rootCategory?.id : parentId;
+    console.log('[CategoryTree] Getting subcategories for parent:', effectiveParentId);
 
-    return categories.filter(
+    const subcategories = categories.filter(
       (category) => 
         category.is_category && 
         category.parent_id === effectiveParentId &&
         category.id !== rootCategory?.id
     ).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+
+    console.log('[CategoryTree] Found subcategories:', subcategories);
+    return subcategories;
   };
 
   const getPrompts = (categoryId: string): Prompt[] => {
-    return categories.filter(
+    console.log('[CategoryTree] Getting prompts for category:', categoryId);
+    const prompts = categories.filter(
       (prompt) => !prompt.is_category && prompt.parent_id === categoryId
     ).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+
+    console.log('[CategoryTree] Found prompts:', prompts);
+    return prompts;
   };
 
   const getPromptCount = (categoryId: string): number => {
@@ -65,15 +76,21 @@ export const CategoryTree = ({
       (count, subcategory) => count + getPromptCount(subcategory.id),
       0
     );
-    return directPrompts + subcategoryPrompts;
+    const total = directPrompts + subcategoryPrompts;
+    console.log('[CategoryTree] Prompt count for category:', categoryId, 'Total:', total);
+    return total;
   };
 
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
+    console.log('[CategoryTree] Rendering categories for parent:', parentId, 'Level:', level);
     const categoryItems = getSubcategories(parentId);
     const rootCategory = getRootCategory();
     const effectiveParentId = parentId === null ? rootCategory?.id : parentId;
     
-    if (categoryItems.length === 0 && !effectiveParentId) return null;
+    if (categoryItems.length === 0 && !effectiveParentId) {
+      console.log('[CategoryTree] No categories to render for parent:', parentId);
+      return null;
+    }
 
     return (
       <div className="space-y-2 animate-fade-in">
@@ -81,40 +98,46 @@ export const CategoryTree = ({
           items={categoryItems.map(c => c.id)}
           strategy={verticalListSortingStrategy}
         >
-          {categoryItems.map((category) => (
-            <div key={category.id} data-parent-id={effectiveParentId}>
-              <CategoryItem
-                id={category.id}
-                title={category.title}
-                level={level}
-                isExpanded={expandedCategories.has(category.id)}
-                promptCount={getPromptCount(category.id)}
-                onDelete={() => onDeleteCategory(category.id)}
-                onToggle={() => toggleCategory(category.id)}
-              />
-              {expandedCategories.has(category.id) && (
-                <>
-                  {renderCategories(category.id, level + 1)}
-                  
-                  <SortableContext
-                    items={getPrompts(category.id).map(p => p.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="ml-6 space-y-2">
-                      {getPrompts(category.id).map((prompt) => (
-                        <PromptItem
-                          key={prompt.id}
-                          id={prompt.id}
-                          title={prompt.title}
-                          description={prompt.description || ""}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </>
-              )}
-            </div>
-          ))}
+          {categoryItems.map((category) => {
+            console.log('[CategoryTree] Rendering category item:', category.id, category.title);
+            return (
+              <div key={category.id} data-parent-id={effectiveParentId}>
+                <CategoryItem
+                  id={category.id}
+                  title={category.title}
+                  level={level}
+                  isExpanded={expandedCategories.has(category.id)}
+                  promptCount={getPromptCount(category.id)}
+                  onDelete={() => onDeleteCategory(category.id)}
+                  onToggle={() => toggleCategory(category.id)}
+                />
+                {expandedCategories.has(category.id) && (
+                  <>
+                    {renderCategories(category.id, level + 1)}
+                    
+                    <SortableContext
+                      items={getPrompts(category.id).map(p => p.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="ml-6 space-y-2">
+                        {getPrompts(category.id).map((prompt) => {
+                          console.log('[CategoryTree] Rendering prompt item:', prompt.id, prompt.title);
+                          return (
+                            <PromptItem
+                              key={prompt.id}
+                              id={prompt.id}
+                              title={prompt.title}
+                              description={prompt.description || ""}
+                            />
+                          );
+                        })}
+                      </div>
+                    </SortableContext>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </SortableContext>
       </div>
     );
