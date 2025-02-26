@@ -49,13 +49,27 @@ export const CategoryTree = ({
     setExpandedCategories(newExpanded);
   };
 
+  // First, find the root category for this hub
+  const getRootCategory = () => {
+    return categories.find(
+      category => 
+        category.is_category && 
+        category.parent_id === null &&
+        category.hub_area === hubArea
+    );
+  };
+
   const getSubcategories = (parentId: string | null): Prompt[] => {
+    // If we're looking for root-level categories, use the hub's root category ID
+    const rootCategory = getRootCategory();
+    const effectiveParentId = parentId === null ? rootCategory?.id : parentId;
+
     return categories.filter(
       (category) => 
         category.is_category && 
-        category.parent_id === parentId &&
-        // Exclude the hub itself from categories
-        category.title.toLowerCase() !== `${hubArea} hub`.toLowerCase()
+        category.parent_id === effectiveParentId &&
+        // Don't include the root category itself in the list
+        category.id !== rootCategory?.id
     );
   };
 
@@ -74,6 +88,13 @@ export const CategoryTree = ({
 
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
     const categoryItems = getSubcategories(parentId);
+    
+    console.log('Rendering categories:', {
+      parentId,
+      level,
+      itemCount: categoryItems.length,
+      categoryItems: categoryItems.map(c => ({ id: c.id, title: c.title }))
+    });
 
     if (categoryItems.length === 0) return null;
 
