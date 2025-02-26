@@ -18,12 +18,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CategoryItem } from "./CategoryItem";
+import { PromptItem } from "./PromptItem";
 import { type Prompt } from "@/hooks/usePrompts";
 
 interface CategoryTreeProps {
   categories: Prompt[];
   hubArea: string;
-  onDragEnd: (event: DragEndEvent) => void;
+  onDragEnd: (event: DragEndEvent, parentId: string | null) => void;
   onDeleteCategory: (categoryId: string) => void;
 }
 
@@ -35,15 +36,13 @@ export const CategoryTree = ({
 }: CategoryTreeProps) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        // Only start dragging after moving 8px to prevent accidental drags
         distance: 8,
-        // Add a small delay to prevent accidental drags
         delay: 50,
-        // Tolerance for movement during the delay
         tolerance: 5,
       },
     }),
@@ -80,54 +79,89 @@ export const CategoryTree = ({
         category.is_category && 
         category.parent_id === effectiveParentId &&
         category.id !== rootCategory?.id
-    );
+    ).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  };
+
+  const getPrompts = (categoryId: string): Prompt[] => {
+    return categories.filter(
+      (prompt) => !prompt.is_category && prompt.parent_id === categoryId
+    ).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
   };
 
   const getPromptCount = (categoryId: string): number => {
-    const directPrompts = categories.filter(
-      (prompt) => !prompt.is_category && prompt.parent_id === categoryId
-    ).length;
-
+    const directPrompts = getPrompts(categoryId).length;
     const subcategoryPrompts = getSubcategories(categoryId).reduce(
       (count, subcategory) => count + getPromptCount(subcategory.id),
       0
     );
-
     return directPrompts + subcategoryPrompts;
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const id = event.active.id as string;
+    setActiveId(id);
+    const item = categories.find(c => c.id === id);
+    if (item) {
+      setCurrentParentId(item.parent_id);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
-    onDragEnd(event);
+    onDragEnd(event, currentParentId);
+    setCurrentParentId(null);
   };
 
   const renderCategories = (parentId: string | null = null, level: number = 0) => {
     const categoryItems = getSubcategories(parentId);
+    const rootCategory = getRootCategory();
+    const effectiveParentId = parentId === null ? rootCategory?.id : parentId;
     
-    if (categoryItems.length === 0) return null;
+    if (categoryItems.length === 0 && !effectiveParentId) return null;
 
     return (
       <div className="space-y-2 animate-fade-in">
-        {categoryItems.map((category) => (
-          <div key={category.id}>
-            <CategoryItem
-              id={category.id}
-              title={category.title}
-              level={level}
-              isExpanded={expandedCategories.has(category.id)}
-              promptCount={getPromptCount(category.id)}
-              onDelete={() => onDeleteCategory(category.id)}
-              onToggle={() => toggleCategory(category.id)}
-            />
-            {expandedCategories.has(category.id) && (
-              renderCategories(category.id, level + 1)
-            )}
-          </div>
-        ))}
+        <SortableContext
+          items={categoryItems.map(c => c.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {categoryItems.map((category) => (
+            <div key={category.id}>
+              <CategoryItem
+                id={category.id}
+                title={category.title}
+                level={level}
+                isExpanded={expandedCategories.has(category.id)}
+                promptCount={getPromptCount(category.id)}
+                onDelete={() => onDeleteCategory(category.id)}
+                onToggle={() => toggleCategory(category.id)}
+              />
+              {expandedCategories.has(category.id) && (
+                <>
+                  {/* Render subcategories */}
+                  {renderCategories(category.id, level + 1)}
+                  
+                  {/* Render prompts */}
+                  <SortableContext
+                    items={getPrompts(category.id).map(p => p.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="ml-6 space-y-2">
+                      {getPrompts(category.id).map((prompt) => (
+                        <PromptItem
+                          key={prompt.id}
+                          id={prompt.id}
+                          title={prompt.title}
+                          description={prompt.description || ""}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </>
+              )}
+            </div>
+          ))}
+        </SortableContext>
       </div>
     );
   };
@@ -144,24 +178,27 @@ export const CategoryTree = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext
-        items={categories.filter(c => c.is_category).map(c => c.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        {renderCategories()}
-      </SortableContext>
+      {renderCategories()}
       <DragOverlay dropAnimation={dropAnimation}>
         {activeId ? (
           <div className="opacity-80">
-            <CategoryItem
-              id={activeId}
-              title={categories.find(c => c.id === activeId)?.title || ''}
-              level={0}
-              isExpanded={false}
-              promptCount={getPromptCount(activeId)}
-              onDelete={() => {}}
-              onToggle={() => {}}
-            />
+            {categories.find(c => c.id === activeId)?.is_category ? (
+              <CategoryItem
+                id={activeId}
+                title={categories.find(c => c.id === activeId)?.title || ''}
+                level={0}
+                isExpanded={false}
+                promptCount={getPromptCount(activeId)}
+                onDelete={() => {}}
+                onToggle={() => {}}
+              />
+            ) : (
+              <PromptItem
+                id={activeId}
+                title={categories.find(c => c.id === activeId)?.title || ''}
+                description={categories.find(c => c.id === activeId)?.description || ''}
+              />
+            )}
           </div>
         ) : null}
       </DragOverlay>

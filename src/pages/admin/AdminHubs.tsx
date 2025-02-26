@@ -98,8 +98,54 @@ const AdminHubs = () => {
     }
   };
 
-  const handleCategoryDragEnd = async (event: DragEndEvent) => {
-    console.log("Category drag ended:", event);
+  const handleCategoryDragEnd = async (event: DragEndEvent, parentId: string | null) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const activeItem = prompts.find(p => p.id === active.id);
+    const overItem = prompts.find(p => p.id === over.id);
+    
+    if (!activeItem || !overItem) return;
+
+    try {
+      const itemsAtLevel = prompts
+        .filter(p => p.parent_id === parentId)
+        .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+      
+      const oldIndex = itemsAtLevel.findIndex(item => item.id === active.id);
+      const newIndex = itemsAtLevel.findIndex(item => item.id === over.id);
+      
+      let newOrder: number;
+      if (newIndex === 0) {
+        newOrder = (itemsAtLevel[0].display_order || 0) - 1;
+      } else if (newIndex === itemsAtLevel.length - 1) {
+        newOrder = (itemsAtLevel[itemsAtLevel.length - 1].display_order || 0) + 1;
+      } else {
+        const prevOrder = itemsAtLevel[newIndex - 1].display_order || 0;
+        const nextOrder = itemsAtLevel[newIndex].display_order || 0;
+        newOrder = (prevOrder + nextOrder) / 2;
+      }
+
+      const { error } = await supabase
+        .from('prompts')
+        .update({ display_order: newOrder })
+        .eq('id', active.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Item order updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating order:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update item order",
+      });
+    }
   };
 
   const handleDeleteHub = async () => {
