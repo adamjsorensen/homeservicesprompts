@@ -2,11 +2,12 @@
 import { useNavigate } from "react-router-dom";
 import { CategoryTile } from "./CategoryTile";
 import { PromptCard } from "./PromptCard";
-import { type Prompt } from "@/hooks/usePrompts";
+import { type Prompt, type CategoryWithPrompts } from "@/hooks/usePrompts";
 import { useToast } from "@/components/ui/use-toast";
 
 interface PromptGridProps {
   items: Prompt[];
+  categorizedPrompts?: CategoryWithPrompts[];
   isAdmin?: boolean;
   onCustomize?: (prompt: Prompt) => void;
   onDelete?: (prompt: Prompt) => void;
@@ -16,6 +17,7 @@ interface PromptGridProps {
 
 export function PromptGrid({
   items,
+  categorizedPrompts = [],
   isAdmin,
   onCustomize,
   onDelete,
@@ -24,51 +26,6 @@ export function PromptGrid({
 }: PromptGridProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const categories = [
-    {
-      id: "marketing",
-      title: "Marketing",
-      description: "Generate content for your marketing campaigns",
-      iconName: "Building"
-    },
-    {
-      id: "sales",
-      title: "Sales",
-      description: "Create compelling sales copy and proposals",
-      iconName: "Building2"
-    },
-    {
-      id: "production",
-      title: "Production",
-      description: "Streamline your content production workflow",
-      iconName: "Layers"
-    },
-    {
-      id: "team",
-      title: "Team",
-      description: "Improve team communication and collaboration",
-      iconName: "Users"
-    },
-    {
-      id: "strategy",
-      title: "Strategy & Planning",
-      description: "Develop effective business strategies and plans",
-      iconName: "Target"
-    },
-    {
-      id: "financials",
-      title: "Financials",
-      description: "Generate financial reports and analysis",
-      iconName: "LineChart"
-    },
-    {
-      id: "leadership",
-      title: "Personal Leadership",
-      description: "Enhance your leadership and management skills",
-      iconName: "Brain"
-    }
-  ];
 
   const handleCopy = async (prompt: Prompt) => {
     try {
@@ -84,7 +41,8 @@ export function PromptGrid({
     }
   };
 
-  if (!currentCategory) {
+  // If we're at the root level (no hub selected)
+  if (!currentCategory && !categorizedPrompts.length) {
     return (
       <div className="space-y-6">
         <CategoryTile
@@ -95,13 +53,13 @@ export function PromptGrid({
           className="bg-purple-50 border-purple-200 hover:bg-purple-100"
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {categories.map((category) => (
+          {["marketing", "sales", "production", "team", "strategy", "financials", "leadership"].map((hubArea) => (
             <CategoryTile
-              key={category.id}
-              title={category.title}
-              description={category.description}
-              iconName={category.iconName}
-              onClick={() => onCategorySelect?.(category.id)}
+              key={hubArea}
+              title={hubArea.charAt(0).toUpperCase() + hubArea.slice(1)}
+              description={`Explore ${hubArea} related prompts`}
+              iconName="Building"
+              onClick={() => navigate(`/library/${hubArea}`)}
             />
           ))}
         </div>
@@ -109,6 +67,32 @@ export function PromptGrid({
     );
   }
 
+  // If we have categorized prompts (hub view)
+  if (categorizedPrompts.length > 0) {
+    return (
+      <div className="space-y-8">
+        {categorizedPrompts.map(({ category, prompts }) => (
+          <div key={category.id} className="space-y-4">
+            <h3 className="text-xl font-semibold">{category.title}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {prompts.map((prompt) => (
+                <PromptCard
+                  key={prompt.id}
+                  prompt={prompt}
+                  isAdmin={isAdmin}
+                  onCustomize={() => onCustomize?.(prompt)}
+                  onDelete={() => onDelete?.(prompt)}
+                  onCopy={() => handleCopy(prompt)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Fallback to flat list of prompts
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {items.filter(item => !item.is_category).map((prompt) => (
