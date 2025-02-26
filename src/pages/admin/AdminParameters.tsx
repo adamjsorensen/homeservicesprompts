@@ -44,6 +44,14 @@ const AdminParameters = () => {
 
   const handleAddParameter = async () => {
     try {
+      // Log the parameter data before creation
+      console.log('Creating new parameter:', {
+        parameter: {
+          name: newParameter.name,
+          type: 'tone_and_style'
+        }
+      });
+
       // Insert new parameter
       const { data: param, error: paramError } = await supabase
         .from('prompt_parameters')
@@ -54,19 +62,33 @@ const AdminParameters = () => {
         .select()
         .single();
 
-      if (paramError) throw paramError;
+      if (paramError) {
+        console.error('Error creating parameter:', paramError);
+        throw paramError;
+      }
 
-      // Use the batch update function for tweaks
+      // Log the tweaks data before batch update
+      const tweaksData = newParameter.tweaks.map(t => ({
+        name: t.title,      // Match the expected column name
+        sub_prompt: t.content // Match the expected column name
+      }));
+      
+      console.log('Updating parameter tweaks:', {
+        parameterId: param.id,
+        tweaksData: tweaksData
+      });
+
+      // Use the batch update function for tweaks with correct property names
       const { error: tweaksError } = await supabase
         .rpc('batch_update_parameter_tweaks', {
           p_parameter_id: param.id,
-          p_tweaks: JSON.stringify(newParameter.tweaks.map(t => ({
-            title: t.title,
-            content: t.content
-          })))
+          p_tweaks: tweaksData
         });
 
-      if (tweaksError) throw tweaksError;
+      if (tweaksError) {
+        console.error('Error updating tweaks:', tweaksError);
+        throw tweaksError;
+      }
 
       setIsAddingParameter(false);
       setNewParameter({ name: "", tweaks: [{ title: "", content: "" }] });
@@ -76,7 +98,12 @@ const AdminParameters = () => {
         description: "The parameter has been created successfully.",
       });
     } catch (error) {
-      console.error('Error adding parameter:', error);
+      console.error('Error adding parameter:', {
+        error,
+        parameterData: newParameter,
+        tweaksData: newParameter.tweaks
+      });
+      
       toast({
         variant: "destructive",
         title: "Error",
@@ -89,6 +116,14 @@ const AdminParameters = () => {
     try {
       if (!selectedParameter) return;
 
+      // Log the parameter update data
+      console.log('Updating parameter:', {
+        parameterId: selectedParameter.id,
+        updatedData: {
+          name: editedParameter.name
+        }
+      });
+
       // Update parameter details
       const { error: paramError } = await supabase
         .from('prompt_parameters')
@@ -98,19 +133,33 @@ const AdminParameters = () => {
         })
         .eq('id', selectedParameter.id);
 
-      if (paramError) throw paramError;
+      if (paramError) {
+        console.error('Error updating parameter:', paramError);
+        throw paramError;
+      }
 
-      // Use the batch update function for tweaks
+      // Log the tweaks update data
+      const tweaksData = editedParameter.tweaks.map(t => ({
+        name: t.title,      // Match the expected column name
+        sub_prompt: t.content // Match the expected column name
+      }));
+
+      console.log('Updating parameter tweaks:', {
+        parameterId: selectedParameter.id,
+        tweaksData: tweaksData
+      });
+
+      // Use the batch update function for tweaks with correct property names
       const { error: tweaksError } = await supabase
         .rpc('batch_update_parameter_tweaks', {
           p_parameter_id: selectedParameter.id,
-          p_tweaks: JSON.stringify(editedParameter.tweaks.map(t => ({
-            title: t.title,
-            content: t.content
-          })))
+          p_tweaks: tweaksData
         });
 
-      if (tweaksError) throw tweaksError;
+      if (tweaksError) {
+        console.error('Error updating tweaks:', tweaksError);
+        throw tweaksError;
+      }
 
       setIsEditingParameter(false);
       setSelectedParameter(null);
@@ -121,7 +170,12 @@ const AdminParameters = () => {
         description: "The parameter has been updated successfully.",
       });
     } catch (error) {
-      console.error('Error updating parameter:', error);
+      console.error('Error updating parameter:', {
+        error,
+        parameterData: editedParameter,
+        tweaksData: editedParameter.tweaks
+      });
+
       toast({
         variant: "destructive",
         title: "Error",
@@ -414,4 +468,3 @@ const AdminParameters = () => {
 };
 
 export default AdminParameters;
-
