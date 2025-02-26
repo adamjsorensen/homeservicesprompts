@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -46,8 +45,8 @@ const AdminHubs = () => {
   const [deleteHubId, setDeleteHubId] = useState<HubAreaType | null>(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [orderedHubs, setOrderedHubs] = useState<HubAreaType[]>([]);
-  
-  // Initialize orderedHubs from prompts if not already set
+  const [expandedHubs, setExpandedHubs] = useState<Set<string>>(new Set());
+
   if (orderedHubs.length === 0 && prompts.length > 0) {
     const hubAreas = [...new Set(prompts.map(prompt => prompt.hub_area))]
       .filter((area): area is HubAreaType => {
@@ -130,6 +129,16 @@ const AdminHubs = () => {
     return hubArea.charAt(0).toUpperCase() + hubArea.slice(1) + " Hub";
   };
 
+  const toggleHub = (hubId: string) => {
+    const newExpanded = new Set(expandedHubs);
+    if (newExpanded.has(hubId)) {
+      newExpanded.delete(hubId);
+    } else {
+      newExpanded.add(hubId);
+    }
+    setExpandedHubs(newExpanded);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -164,6 +173,7 @@ const AdminHubs = () => {
           <div className="space-y-4">
             {orderedHubs.map((hubArea) => {
               const promptCount = prompts.filter(p => p.hub_area === hubArea).length;
+              const isExpanded = expandedHubs.has(hubArea);
               return (
                 <div key={hubArea} className="space-y-2">
                   <SortableHub
@@ -171,15 +181,19 @@ const AdminHubs = () => {
                     title={formatHubTitle(hubArea)}
                     promptCount={promptCount}
                     onDelete={() => setDeleteHubId(hubArea)}
+                    isExpanded={isExpanded}
+                    onToggle={() => toggleHub(hubArea)}
                   />
-                  <div className="ml-8">
-                    <CategoryTree
-                      categories={prompts.filter(p => p.hub_area === hubArea)}
-                      hubArea={hubArea}
-                      onDragEnd={handleCategoryDragEnd}
-                      onDeleteCategory={handleDeleteCategory}
-                    />
-                  </div>
+                  {isExpanded && (
+                    <div className="ml-8">
+                      <CategoryTree
+                        categories={prompts.filter(p => p.hub_area === hubArea)}
+                        hubArea={hubArea}
+                        onDragEnd={handleCategoryDragEnd}
+                        onDeleteCategory={handleDeleteCategory}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}

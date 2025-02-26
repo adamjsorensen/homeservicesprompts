@@ -16,9 +16,18 @@ interface SortableHubProps {
   title: string;
   promptCount: number;
   onDelete: () => void;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
-export const SortableHub = ({ id, title, promptCount, onDelete }: SortableHubProps) => {
+export const SortableHub = ({ 
+  id, 
+  title, 
+  promptCount, 
+  onDelete,
+  isExpanded = true,
+  onToggle = () => {},
+}: SortableHubProps) => {
   const {
     attributes,
     listeners,
@@ -60,7 +69,17 @@ export const SortableHub = ({ id, title, promptCount, onDelete }: SortableHubPro
           </TooltipProvider>
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold">{title}</h3>
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            <button
+              onClick={onToggle}
+              className="p-1 hover:bg-accent rounded focus:outline-none focus:ring-2 focus:ring-accent"
+            >
+              <ChevronRight 
+                className={cn(
+                  "w-4 h-4 text-muted-foreground transition-transform",
+                  isExpanded && "rotate-90"
+                )}
+              />
+            </button>
           </div>
           <span className="text-sm text-muted-foreground">
             {promptCount} {promptCount === 1 ? 'prompt' : 'prompts'}
