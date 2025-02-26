@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +144,14 @@ const AdminParameters = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-2xl font-semibold">{param.name}</h3>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleStartEditing(param)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleStartEditing(param);
+                      }}
+                    >
                       <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/90">
@@ -200,7 +208,10 @@ const AdminParameters = () => {
                     variant="ghost"
                     size="sm"
                     className="absolute right-2 top-2"
-                    onClick={() => handleRemoveTweak(index, false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleRemoveTweak(index, false);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -233,7 +244,10 @@ const AdminParameters = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleAddTweak(false)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleAddTweak(false);
+                }}
                 className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -245,7 +259,7 @@ const AdminParameters = () => {
             <Button variant="outline" onClick={() => setIsAddingParameter(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddParameter} className="bg-[#9b87f5] hover:bg-[#8b77e5]">
+            <Button onClick={() => handleAddParameter()} className="bg-[#9b87f5] hover:bg-[#8b77e5]">
               Add Parameter
             </Button>
           </DialogFooter>
@@ -282,7 +296,10 @@ const AdminParameters = () => {
                     variant="ghost"
                     size="sm"
                     className="absolute right-2 top-2"
-                    onClick={() => handleRemoveTweak(index, true)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleRemoveTweak(index, true);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -315,7 +332,10 @@ const AdminParameters = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => handleAddTweak(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleAddTweak(true);
+                }}
                 className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -327,7 +347,7 @@ const AdminParameters = () => {
             <Button variant="outline" onClick={() => setIsEditingParameter(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditParameter} className="bg-[#9b87f5] hover:bg-[#8b77e5]">
+            <Button onClick={() => handleEditParameter()} className="bg-[#9b87f5] hover:bg-[#8b77e5]">
               Update Parameter
             </Button>
           </DialogFooter>
