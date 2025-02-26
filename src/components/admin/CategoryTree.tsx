@@ -51,7 +51,11 @@ export const CategoryTree = ({
 
   const getSubcategories = (parentId: string | null): Prompt[] => {
     return categories.filter(
-      (category) => category.is_category && category.parent_id === parentId
+      (category) => 
+        category.is_category && 
+        category.parent_id === parentId &&
+        // Exclude the hub itself from categories
+        category.title.toLowerCase() !== `${hubArea} hub`.toLowerCase()
     );
   };
 
