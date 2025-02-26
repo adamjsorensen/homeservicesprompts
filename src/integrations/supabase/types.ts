@@ -43,25 +43,34 @@ export type Database = {
       }
       parameter_tweaks: {
         Row: {
+          active: boolean
           created_at: string
           id: string
           name: string
+          order: number
           parameter_id: string | null
           sub_prompt: string
+          updated_at: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           id?: string
           name: string
+          order?: number
           parameter_id?: string | null
           sub_prompt: string
+          updated_at?: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           id?: string
           name?: string
+          order?: number
           parameter_id?: string | null
           sub_prompt?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -253,25 +262,31 @@ export type Database = {
       }
       prompt_parameters: {
         Row: {
+          active: boolean
           created_at: string
           description: string | null
           id: string
           name: string
           type: Database["public"]["Enums"]["prompt_parameter_type"]
+          updated_at: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           description?: string | null
           id?: string
           name: string
           type: Database["public"]["Enums"]["prompt_parameter_type"]
+          updated_at?: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           description?: string | null
           id?: string
           name?: string
           type?: Database["public"]["Enums"]["prompt_parameter_type"]
+          updated_at?: string
         }
         Relationships: []
       }
@@ -420,6 +435,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      batch_update_parameter_tweaks: {
+        Args: {
+          p_parameter_id: string
+          p_tweaks: Json
+        }
+        Returns: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          order: number
+          parameter_id: string | null
+          sub_prompt: string
+          updated_at: string
+        }[]
+      }
       has_role: {
         Args: {
           user_id: string

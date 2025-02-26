@@ -44,13 +44,39 @@ const AdminParameters = () => {
 
   const handleAddParameter = async () => {
     try {
-      // TODO: Implement parameter addition
+      // Insert new parameter
+      const { data: param, error: paramError } = await supabase
+        .from('prompt_parameters')
+        .insert({
+          name: newParameter.name,
+          type: 'tone_and_style' // Default type
+        })
+        .select()
+        .single();
+
+      if (paramError) throw paramError;
+
+      // Use the batch update function for tweaks
+      const { error: tweaksError } = await supabase
+        .rpc('batch_update_parameter_tweaks', {
+          p_parameter_id: param.id,
+          p_tweaks: JSON.stringify(newParameter.tweaks.map(t => ({
+            title: t.title,
+            content: t.content
+          })))
+        });
+
+      if (tweaksError) throw tweaksError;
+
       setIsAddingParameter(false);
+      setNewParameter({ name: "", tweaks: [{ title: "", content: "" }] });
+      
       toast({
         title: "Parameter added",
         description: "The parameter has been created successfully.",
       });
     } catch (error) {
+      console.error('Error adding parameter:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -61,13 +87,41 @@ const AdminParameters = () => {
 
   const handleEditParameter = async () => {
     try {
-      // TODO: Implement parameter update
+      if (!selectedParameter) return;
+
+      // Update parameter details
+      const { error: paramError } = await supabase
+        .from('prompt_parameters')
+        .update({
+          name: editedParameter.name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedParameter.id);
+
+      if (paramError) throw paramError;
+
+      // Use the batch update function for tweaks
+      const { error: tweaksError } = await supabase
+        .rpc('batch_update_parameter_tweaks', {
+          p_parameter_id: selectedParameter.id,
+          p_tweaks: JSON.stringify(editedParameter.tweaks.map(t => ({
+            title: t.title,
+            content: t.content
+          })))
+        });
+
+      if (tweaksError) throw tweaksError;
+
       setIsEditingParameter(false);
+      setSelectedParameter(null);
+      setEditedParameter({ name: "", tweaks: [] });
+
       toast({
         title: "Parameter updated",
         description: "The parameter has been updated successfully.",
       });
     } catch (error) {
+      console.error('Error updating parameter:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -106,7 +160,7 @@ const AdminParameters = () => {
 
   const handleStartEditing = (param: any) => {
     const paramTweaks = tweaks
-      .filter(t => t.parameter_id === param.id)
+      .filter(t => t.parameter_id === param.id && t.active)
       .map(t => ({
         title: t.name,
         content: t.sub_prompt
@@ -136,46 +190,48 @@ const AdminParameters = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {parameters.map((param) => {
-          const paramTweaks = tweaks.filter((t) => t.parameter_id === param.id);
-          return (
-            <Card key={param.id} className="relative">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-semibold">{param.name}</h3>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleStartEditing(param);
-                      }}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/90">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+        {parameters
+          .filter(param => param.active)
+          .map((param) => {
+            const paramTweaks = tweaks.filter((t) => t.parameter_id === param.id && t.active);
+            return (
+              <Card key={param.id} className="relative">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-2xl font-semibold">{param.name}</h3>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleStartEditing(param);
+                        }}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive/90">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {paramTweaks.length} available tweaks
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {paramTweaks.map((tweak) => (
-                    <span
-                      key={tweak.id}
-                      className="bg-muted text-muted-foreground px-3 py-1 rounded-md text-sm"
-                    >
-                      {tweak.name}
-                    </span>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {paramTweaks.length} available tweaks
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {paramTweaks.map((tweak) => (
+                      <span
+                        key={tweak.id}
+                        className="bg-muted text-muted-foreground px-3 py-1 rounded-md text-sm"
+                      >
+                        {tweak.name}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
       </div>
 
       <Dialog open={isAddingParameter} onOpenChange={setIsAddingParameter}>
@@ -358,3 +414,4 @@ const AdminParameters = () => {
 };
 
 export default AdminParameters;
+
