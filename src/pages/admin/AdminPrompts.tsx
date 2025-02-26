@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit2, Plus, Trash2 } from "lucide-react";
@@ -17,11 +18,32 @@ import { useState } from "react";
 import { PromptParameterSelector } from "@/components/admin/PromptParameterSelector";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type HubArea = 'marketing' | 'sales' | 'production' | 'team' | 'strategy' | 'financials' | 'leadership';
+
+interface Category {
+  id: string;
+  title: string;
+  hub_area: HubArea | null;
+  parent_id: string | null;
+  full_path: string;
+}
 
 const AdminPrompts = () => {
   const { prompts, isAdmin } = usePrompts();
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
+  const [selectedHubArea, setSelectedHubArea] = useState<HubArea | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [editedPrompt, setEditedPrompt] = useState({
     name: "",
     description: "",
@@ -30,6 +52,19 @@ const AdminPrompts = () => {
   const [selectedParameters, setSelectedParameters] = useState<Set<string>>(new Set());
   const [enabledTweaks, setEnabledTweaks] = useState<Record<string, Set<string>>>({});
 
+  // Filter categories by hub area and structure them
+  const getCategoriesByHub = (hubArea: HubArea | ''): Category[] => {
+    return prompts
+      .filter(p => p.is_category && (!hubArea || p.hub_area === hubArea))
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        hub_area: p.hub_area as HubArea | null,
+        parent_id: p.parent_id,
+        full_path: p.title // We would compute full path here if needed
+      }));
+  };
+
   const handleEditPrompt = (prompt: any) => {
     setSelectedPrompt(prompt);
     setEditedPrompt({
@@ -37,6 +72,8 @@ const AdminPrompts = () => {
       description: prompt.description,
       basePrompt: prompt.prompt,
     });
+    setSelectedHubArea(prompt.hub_area || '');
+    setSelectedCategory(prompt.parent_id || '');
     setIsEditingPrompt(true);
   };
 
@@ -83,6 +120,11 @@ const AdminPrompts = () => {
 
   const handleCreatePrompt = async () => {
     try {
+      if (!selectedCategory) {
+        toast.error("Please select a category");
+        return;
+      }
+
       // Insert the new prompt
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
@@ -91,11 +133,13 @@ const AdminPrompts = () => {
           description: editedPrompt.description,
           prompt: editedPrompt.basePrompt,
           created_by: (await supabase.auth.getUser()).data.user?.id,
-          category: 'custom', // Required field
-          display_order: 0, // Required field with default value
-          is_category: false, // Required field with default value
-          is_default: false, // Required field with default value
-          tags: [], // Required field with default empty array
+          category: 'custom',
+          display_order: 0,
+          is_category: false,
+          is_default: false,
+          tags: [],
+          parent_id: selectedCategory,
+          hub_area: selectedHubArea || null,
         })
         .select()
         .single();
@@ -104,7 +148,6 @@ const AdminPrompts = () => {
 
       // Create parameter rules and enabled tweaks
       const parameterPromises = Array.from(selectedParameters).map(async (parameterId, index) => {
-        // Create parameter rule with required order field
         const { error: ruleError } = await supabase
           .from('prompt_parameter_rules')
           .insert({
@@ -112,12 +155,11 @@ const AdminPrompts = () => {
             parameter_id: parameterId,
             is_required: true,
             is_active: true,
-            order: index, // Required field, using index for order
+            order: index,
           });
 
         if (ruleError) throw ruleError;
 
-        // Create enabled tweaks entries
         const tweakPromises = Array.from(enabledTweaks[parameterId] || []).map(
           (tweakId) =>
             supabase.from('prompt_parameter_enabled_tweaks').insert({
@@ -142,6 +184,8 @@ const AdminPrompts = () => {
       });
       setSelectedParameters(new Set());
       setEnabledTweaks({});
+      setSelectedHubArea('');
+      setSelectedCategory('');
     } catch (error) {
       console.error("Error creating prompt:", error);
       toast.error("Failed to create prompt");
@@ -172,18 +216,19 @@ const AdminPrompts = () => {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead>Parameters</TableHead>
+              <TableHead>Hub Area</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {prompts.map((prompt) => (
+            {prompts.filter(p => !p.is_category).map((prompt) => (
               <TableRow key={prompt.id}>
                 <TableCell>{prompt.title}</TableCell>
                 <TableCell>{prompt.description}</TableCell>
-                <TableCell className="max-w-[300px]">
-                  {/* We'll implement this later */}
-                  Parameters info here
+                <TableCell>{prompt.hub_area || '-'}</TableCell>
+                <TableCell>
+                  {prompts.find(p => p.id === prompt.parent_id)?.title || '-'}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -237,6 +282,52 @@ const AdminPrompts = () => {
                   }
                   placeholder="Enter prompt description"
                 />
+              </div>
+              <div>
+                <Label>Hub Area</Label>
+                <Select
+                  value={selectedHubArea}
+                  onValueChange={(value: HubArea) => {
+                    setSelectedHubArea(value);
+                    setSelectedCategory(''); // Reset category when hub changes
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select hub area" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Hub Areas</SelectLabel>
+                      {['marketing', 'sales', 'production', 'team', 'strategy', 'financials', 'leadership'].map((hub) => (
+                        <SelectItem key={hub} value={hub}>
+                          {hub.charAt(0).toUpperCase() + hub.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Category</Label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                  disabled={!selectedHubArea}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedHubArea ? "Select category" : "Select hub area first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>{selectedHubArea ? `${selectedHubArea.charAt(0).toUpperCase() + selectedHubArea.slice(1)} Categories` : "Categories"}</SelectLabel>
+                      {getCategoriesByHub(selectedHubArea as HubArea).map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Base Prompt</Label>
