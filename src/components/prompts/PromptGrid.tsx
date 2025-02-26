@@ -71,28 +71,23 @@ export function PromptGrid({
   if (categorizedPrompts.length > 0) {
     return (
       <div className="space-y-8">
-        {categorizedPrompts.map(({ category, prompts }) => (
-          <div key={category.id} className="space-y-4">
-            <h3 className="text-xl font-semibold">{category.title}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {prompts.map((prompt) => (
-                <PromptCard
-                  key={prompt.id}
-                  prompt={prompt}
-                  isAdmin={isAdmin}
-                  onCustomize={() => onCustomize?.(prompt)}
-                  onDelete={() => onDelete?.(prompt)}
-                  onCopy={() => handleCopy(prompt)}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
+        {/* Display categories as tiles first */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {categorizedPrompts.map(({ category }) => (
+            <CategoryTile
+              key={category.id}
+              title={category.title}
+              description={category.description || ""}
+              iconName={category.icon_name || "Folder"}
+              onClick={() => onCategorySelect?.(category.id)}
+            />
+          ))}
+        </div>
       </div>
     );
   }
 
-  // Fallback to flat list of prompts
+  // If we're in a category, show its prompts
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {items.filter(item => !item.is_category).map((prompt) => (

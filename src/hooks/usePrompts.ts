@@ -65,13 +65,13 @@ export const usePrompts = (hubArea?: string) => {
     queryFn: checkAdminRole,
   });
 
-  // Get root categories for a hub area
-  const getRootCategories = () => {
-    return prompts.filter(prompt => 
+  // Get hub's root category
+  const getHubRoot = () => {
+    return prompts.find(prompt => 
       prompt.hub_area === hubArea && 
       prompt.is_category && 
       !prompt.parent_id
-    ).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+    );
   };
 
   // Get subcategories for a category
@@ -92,9 +92,13 @@ export const usePrompts = (hubArea?: string) => {
 
   // Get all prompts organized by category for a hub
   const getPromptsByCategory = (): CategoryWithPrompts[] => {
-    const rootCategories = getRootCategories();
+    const hubRoot = getHubRoot();
+    if (!hubRoot) return [];
     
-    return rootCategories.map(category => ({
+    // Get first-level categories under the hub
+    const categories = getSubcategories(hubRoot.id);
+    
+    return categories.map(category => ({
       category,
       prompts: getPromptsForCategory(category.id),
     }));
@@ -110,7 +114,7 @@ export const usePrompts = (hubArea?: string) => {
     isLoading, 
     error, 
     isAdmin,
-    getRootCategories,
+    getHubRoot,
     getSubcategories,
     getPromptsForCategory,
     getPromptsByCategory,
