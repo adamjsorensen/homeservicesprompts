@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -23,6 +22,15 @@ import {
 } from "@/components/ui/tooltip";
 import { SortableHub } from "@/components/admin/SortableHub";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
 
@@ -33,6 +41,9 @@ const AdminHubs = () => {
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [orderedHubs, setOrderedHubs] = useState<HubAreaType[]>([]);
   const [expandedHubs, setExpandedHubs] = useState<Set<string>>(new Set());
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false);
+  const [newCategoryTitle, setNewCategoryTitle] = useState("");
+  const [selectedHub, setSelectedHub] = useState<HubAreaType | null>(null);
 
   if (orderedHubs.length === 0 && prompts.length > 0) {
     const hubAreas = [...new Set(prompts.map(prompt => prompt.hub_area))]
@@ -47,6 +58,38 @@ const AdminHubs = () => {
       });
     setOrderedHubs(hubAreas);
   }
+
+  const handleCreateCategory = async () => {
+    if (!selectedHub || !newCategoryTitle.trim()) return;
+
+    try {
+      const { error } = await supabase.from('prompts').insert({
+        title: newCategoryTitle,
+        description: '', // Required field in the schema
+        category: newCategoryTitle.toLowerCase(),
+        prompt: '', // Required field in the schema
+        is_category: true,
+        hub_area: selectedHub,
+        display_order: prompts.filter(p => p.hub_area === selectedHub).length
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+      });
+      setIsCreateCategoryOpen(false);
+      setNewCategoryTitle("");
+      setSelectedHub(null);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create category",
+      });
+    }
+  };
 
   const handleDeleteHub = async () => {
     if (!deleteHubId) return;
@@ -105,12 +148,20 @@ const AdminHubs = () => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button className="bg-[#9b87f5] hover:bg-[#8b77e5]">
+              <Button 
+                className="bg-[#9b87f5] hover:bg-[#8b77e5]"
+                onClick={() => {
+                  if (orderedHubs.length > 0) {
+                    setSelectedHub(orderedHubs[0]);
+                    setIsCreateCategoryOpen(true);
+                  }
+                }}
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Hub
+                Add Category
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Create a new hub for organizing prompts</TooltipContent>
+            <TooltipContent>Create a new category in a hub</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -142,6 +193,51 @@ const AdminHubs = () => {
           );
         })}
       </div>
+
+      <Dialog open={isCreateCategoryOpen} onOpenChange={setIsCreateCategoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Category</DialogTitle>
+            <DialogDescription>
+              Add a new category to organize your prompts
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="hub" className="text-sm font-medium">Hub</label>
+              <select
+                id="hub"
+                className="w-full p-2 border rounded-md"
+                value={selectedHub || ''}
+                onChange={(e) => setSelectedHub(e.target.value as HubAreaType)}
+              >
+                {orderedHubs.map((hub) => (
+                  <option key={hub} value={hub}>
+                    {formatHubTitle(hub)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-medium">Category Title</label>
+              <Input
+                id="title"
+                value={newCategoryTitle}
+                onChange={(e) => setNewCategoryTitle(e.target.value)}
+                placeholder="Enter category title"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateCategoryOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateCategory}>
+              Create Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!deleteHubId} onOpenChange={() => setDeleteHubId(null)}>
         <AlertDialogContent>
