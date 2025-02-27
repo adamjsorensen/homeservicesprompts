@@ -1,7 +1,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronRight, Trash2, Building, Building2, Layers, Users, Target, LineChart, Brain, LucideIcon } from "lucide-react";
+import { ChevronRight, Building, Building2, Layers, Users, Target, LineChart, Brain, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,7 +10,7 @@ interface SortableHubProps {
   id: string;
   title: string;
   promptCount: number;
-  onDelete: () => void;
+  onDelete?: () => void;  // Made optional with ?
   isExpanded?: boolean;
   onToggle?: () => void;
 }
@@ -65,16 +65,18 @@ export const SortableHub = ({
             {promptCount} {promptCount === 1 ? 'prompt' : 'prompts'}
           </span>
         </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive" onClick={onDelete}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete hub</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {onDelete && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive" onClick={onDelete}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete hub</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
     </div>;
 };
