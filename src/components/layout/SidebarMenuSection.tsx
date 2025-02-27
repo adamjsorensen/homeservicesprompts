@@ -1,4 +1,3 @@
-
 import { MenuItem, MenuSection } from "@/config/menuConfig";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
@@ -16,7 +15,6 @@ import {
 type MatchType = 'exact' | 'parent';
 
 function isRouteActive(itemUrl: string, currentPath: string, matchType: MatchType): boolean {
-  // Remove trailing slashes for comparison
   const normalizedItemUrl = itemUrl.replace(/\/$/, '');
   const normalizedCurrentPath = currentPath.replace(/\/$/, '');
 
@@ -32,7 +30,6 @@ function isRouteActive(itemUrl: string, currentPath: string, matchType: MatchTyp
     return normalizedItemUrl === normalizedCurrentPath;
   }
 
-  // Parent match - check if current path starts with item URL (but prevent root '/' from matching everything)
   return normalizedCurrentPath.startsWith(normalizedItemUrl) && normalizedItemUrl !== '/';
 }
 
@@ -65,9 +62,7 @@ export function SidebarMenuSection({
                 className={cn(
                   "w-full",
                   item.subItems && state !== "collapsed" && "pr-8",
-                  // For regular menu items, use exact matching
                   isRouteActive(item.url, currentPath, 'exact') && "bg-accent/50 text-accent-foreground",
-                  // For Hub and its subitems, use parent matching
                   item.subItems && isRouteActive(item.url, currentPath, 'parent') && "bg-accent/50 text-accent-foreground"
                 )}
                 tooltip={state === "collapsed" ? item.title : undefined}
@@ -81,8 +76,8 @@ export function SidebarMenuSection({
                 <button
                   onClick={onHubToggle}
                   className={cn(
-                    "absolute right-2 top-1/2 -translate-y-1/2",
-                    "p-1.5 rounded-md hover:bg-accent/50",
+                    "absolute right-0 top-0 bottom-0 w-[50%]",
+                    "flex items-center justify-end px-2",
                     "focus:outline-none focus:ring-2 focus:ring-accent"
                   )}
                 >

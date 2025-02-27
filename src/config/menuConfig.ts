@@ -55,15 +55,10 @@ export const getMenuSections = (isAdmin: boolean): MenuSection[] => [
   {
     items: [
       {
-        title: "Hub",
+        title: "Content Hub",
         icon: Library,
         url: "/library",
         subItems: hubSubItems
-      },
-      {
-        title: "Business",
-        icon: Building2,
-        url: "/business"
       },
       {
         title: "Saved Content",
@@ -84,6 +79,11 @@ export const getMenuSections = (isAdmin: boolean): MenuSection[] => [
         title: "Profile",
         icon: User,
         url: "/profile"
+      },
+      {
+        title: "Business Profile",
+        icon: Building2,
+        url: "/business"
       },
       {
         title: "Settings",
