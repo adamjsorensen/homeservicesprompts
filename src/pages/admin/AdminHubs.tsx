@@ -22,6 +22,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SortableHub } from "@/components/admin/SortableHub";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 
 type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
 
@@ -84,8 +85,16 @@ const AdminHubs = () => {
     setExpandedHubs(newExpanded);
   };
 
+  const getPromptCount = (hubArea: string) => {
+    return prompts.filter(p => 
+      p.hub_area === hubArea && 
+      !p.is_category
+    ).length;
+  };
+
   return (
     <div className="space-y-6">
+      <AdminBreadcrumb />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Hub Management</h1>
@@ -108,7 +117,7 @@ const AdminHubs = () => {
 
       <div className="space-y-4">
         {orderedHubs.map((hubArea) => {
-          const promptCount = prompts.filter(p => p.hub_area === hubArea).length;
+          const promptCount = getPromptCount(hubArea);
           const isExpanded = expandedHubs.has(hubArea);
           return (
             <div key={hubArea} className="space-y-2">
