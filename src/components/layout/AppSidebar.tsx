@@ -1,3 +1,4 @@
+
 import { ChevronRight } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -55,10 +56,12 @@ export function AppSidebar() {
   };
 
   const handleItemClick = (item: MenuItem) => {
+    // Always navigate to the item's URL
+    navigate(item.url);
+    
+    // If it has subitems, also toggle the expansion
     if (item.subItems) {
       setIsHubExpanded(!isHubExpanded);
-    } else {
-      navigate(item.url);
     }
   };
 
