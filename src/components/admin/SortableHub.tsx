@@ -1,7 +1,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Grip, ChevronRight, Trash2, Building, Building2, Layers, Users, Target, LineChart, Brain, LucideIcon } from "lucide-react";
+import { ChevronRight, Trash2, Building, Building2, Layers, Users, Target, LineChart, Brain, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -54,20 +54,6 @@ export const SortableHub = ({
   return <div ref={setNodeRef} style={style} className={cn("p-4 rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all", isDragging && "opacity-50 shadow-lg")}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  {...attributes}
-                  {...listeners}
-                  className="p-1 hover:bg-accent rounded cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-accent"
-                >
-                  <Grip className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>Drag to reorder hub</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
           <div className="flex items-center gap-2">
             <HubIcon className="w-5 h-5 text-muted-foreground" />
             <h3 className="text-lg font-semibold">{title}</h3>
