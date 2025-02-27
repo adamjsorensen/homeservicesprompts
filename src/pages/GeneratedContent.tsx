@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -44,14 +45,24 @@ export function GeneratedContent() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   
   const { saveGeneratedContent, updateContent } = useSaveContent();
+  const autoSaveCompletedRef = useRef(false);
 
   useEffect(() => {
     const autoSave = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
+      // Only save if we haven't already saved and we have content to save
+      if (autoSaveCompletedRef.current || !initialContent || !promptTitle) {
+        return;
+      }
 
-      if (initialContent && promptTitle) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("User not authenticated");
+
         await saveGeneratedContent(initialContent, user.id, promptTitle);
+        // Mark auto-save as completed
+        autoSaveCompletedRef.current = true;
+      } catch (error) {
+        console.error("Auto-save error:", error);
       }
     };
 
