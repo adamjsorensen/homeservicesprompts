@@ -102,9 +102,9 @@ export const usePromptParameters = (promptId?: string) => {
           schema: 'public',
           table: 'prompt_parameters'
         },
-        (payload: RealtimePostgresChangesPayload<PromptParameter>) => {
+        (payload: RealtimePostgresChangesPayload<{old: PromptParameter}>) => {
           console.log('[Realtime] Parameter DELETE detected:', payload);
-          console.log('[Realtime] Deleted parameter ID:', payload.old?.id);
+          console.log('[Realtime] Deleted parameter ID:', payload.old.id);
           refetchParameters();
         }
       )
@@ -148,7 +148,7 @@ export const usePromptParameters = (promptId?: string) => {
           schema: 'public',
           table: 'parameter_tweaks'
         },
-        (payload) => {
+        (payload: RealtimePostgresChangesPayload<{old: ParameterTweak}>) => {
           console.log('[Realtime] Tweak DELETE detected:', payload);
           refetchTweaks();
         }
