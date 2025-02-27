@@ -31,8 +31,10 @@ export function AdminBreadcrumb() {
     <Breadcrumb className="mb-6">
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink as={Link} to="/admin">
-            Admin
+          <BreadcrumbLink asChild>
+            <Link to="/admin">
+              Admin
+            </Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator>
