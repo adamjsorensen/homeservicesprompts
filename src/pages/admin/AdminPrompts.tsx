@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit2, Plus, Trash2 } from "lucide-react";
@@ -11,6 +10,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -44,6 +53,7 @@ const AdminPrompts = () => {
   const [selectedPrompt, setSelectedPrompt] = useState<any>(null);
   const [selectedHubArea, setSelectedHubArea] = useState<HubArea | ''>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
   const [editedPrompt, setEditedPrompt] = useState({
     name: "",
     description: "",
@@ -52,7 +62,6 @@ const AdminPrompts = () => {
   const [selectedParameters, setSelectedParameters] = useState<Set<string>>(new Set());
   const [enabledTweaks, setEnabledTweaks] = useState<Record<string, Set<string>>>({});
 
-  // Filter categories by hub area and structure them
   const getCategoriesByHub = (hubArea: HubArea | ''): Category[] => {
     return prompts
       .filter(p => p.is_category && (!hubArea || p.hub_area === hubArea))
@@ -61,7 +70,7 @@ const AdminPrompts = () => {
         title: p.title,
         hub_area: p.hub_area as HubArea | null,
         parent_id: p.parent_id,
-        full_path: p.title // We would compute full path here if needed
+        full_path: p.title
       }));
   };
 
@@ -82,14 +91,12 @@ const AdminPrompts = () => {
       const next = new Set(prev);
       if (enabled) {
         next.add(parameterId);
-        // Initialize enabled tweaks for this parameter
         setEnabledTweaks((prev: Record<string, Set<string>>) => ({
           ...prev,
           [parameterId]: new Set<string>(),
         }));
       } else {
         next.delete(parameterId);
-        // Clean up enabled tweaks for this parameter
         setEnabledTweaks((prev: Record<string, Set<string>>) => {
           const { [parameterId]: _, ...rest } = prev;
           return rest;
@@ -125,7 +132,6 @@ const AdminPrompts = () => {
         return;
       }
 
-      // Insert the new prompt
       const { data: promptData, error: promptError } = await supabase
         .from('prompts')
         .insert({
@@ -146,7 +152,6 @@ const AdminPrompts = () => {
 
       if (promptError) throw promptError;
 
-      // Create parameter rules and enabled tweaks
       const parameterPromises = Array.from(selectedParameters).map(async (parameterId, index) => {
         const { error: ruleError } = await supabase
           .from('prompt_parameter_rules')
@@ -189,6 +194,26 @@ const AdminPrompts = () => {
     } catch (error) {
       console.error("Error creating prompt:", error);
       toast.error("Failed to create prompt");
+    }
+  };
+
+  const handleDeletePrompt = async () => {
+    if (!deletePromptId) return;
+
+    try {
+      const { error } = await supabase
+        .from('prompts')
+        .delete()
+        .eq('id', deletePromptId);
+
+      if (error) throw error;
+      
+      toast.success("Prompt deleted successfully");
+    } catch (error) {
+      console.error("Error deleting prompt:", error);
+      toast.error("Failed to delete prompt");
+    } finally {
+      setDeletePromptId(null);
     }
   };
 
@@ -243,6 +268,7 @@ const AdminPrompts = () => {
                       variant="ghost"
                       size="sm"
                       className="text-destructive hover:text-destructive/90"
+                      onClick={() => setDeletePromptId(prompt.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -363,6 +389,23 @@ const AdminPrompts = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletePromptId} onOpenChange={() => setDeletePromptId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the prompt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePrompt} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
