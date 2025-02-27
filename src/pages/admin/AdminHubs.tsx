@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -39,7 +38,6 @@ type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | 
 const AdminHubs = () => {
   const { prompts } = usePrompts();
   const { toast } = useToast();
-  const [deleteHubId, setDeleteHubId] = useState<HubAreaType | null>(null);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
   const [orderedHubs, setOrderedHubs] = useState<HubAreaType[]>([]);
   const [expandedHubs, setExpandedHubs] = useState<Set<string>>(new Set());
@@ -118,30 +116,10 @@ const AdminHubs = () => {
     }
   };
 
-  const handleDeleteHub = async () => {
-    if (!deleteHubId) return;
-
-    try {
-      toast({
-        title: "Success",
-        description: "Hub deleted successfully",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete hub",
-      });
-    } finally {
-      setDeleteHubId(null);
-    }
-  };
-
   const handleDeleteCategory = async () => {
     if (!deleteCategoryId) return;
 
     try {
-      // First check if the category exists and if it has any subcategories
       const { data: categoryToDelete, error: fetchError } = await supabase
         .from('prompts')
         .select('id')
@@ -150,7 +128,6 @@ const AdminHubs = () => {
 
       if (fetchError) throw fetchError;
 
-      // Check for subcategories
       const { data: subcategories, error: subError } = await supabase
         .from('prompts')
         .select('id')
@@ -162,7 +139,6 @@ const AdminHubs = () => {
         throw new Error("Cannot delete category with subcategories");
       }
 
-      // If all checks pass, delete the category
       const { error: deleteError } = await supabase
         .from('prompts')
         .delete()
@@ -248,7 +224,6 @@ const AdminHubs = () => {
                 id={hubArea}
                 title={formatHubTitle(hubArea)}
                 promptCount={promptCount}
-                onDelete={() => setDeleteHubId(hubArea)}
                 isExpanded={isExpanded}
                 onToggle={() => toggleHub(hubArea)}
               />
@@ -257,7 +232,7 @@ const AdminHubs = () => {
                   <CategoryTree
                     categories={prompts.filter(p => p.hub_area === hubArea)}
                     hubArea={hubArea}
-                    onDeleteCategory={handleDeleteCategory}
+                    onDeleteCategory={setDeleteCategoryId}
                   />
                 </div>
               )}
@@ -310,26 +285,6 @@ const AdminHubs = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!deleteHubId} onOpenChange={() => setDeleteHubId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Hub</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this hub? All categories will be deleted, but prompts will be preserved and can be reassigned.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteHub}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete Hub
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={!!deleteCategoryId} onOpenChange={() => setDeleteCategoryId(null)}>
         <AlertDialogContent>
