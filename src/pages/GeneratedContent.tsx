@@ -14,6 +14,8 @@ import { toast } from "@/components/ui/use-toast";
 import { Copy, ArrowLeft, Edit2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ContentEditor } from "@/components/editor/ContentEditor";
+import { QuickActions } from "@/components/editor/QuickActions";
+import { ChatInput } from "@/components/editor/ChatInput";
 import { useSaveContent } from "@/hooks/useSaveContent";
 
 interface LocationState {
@@ -25,8 +27,10 @@ export function GeneratedContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [isModifying, setIsModifying] = useState(false);
   const { generatedContent: initialContent, promptTitle } = 
     (location.state as LocationState) || { generatedContent: "", promptTitle: "" };
+  const [currentContent, setCurrentContent] = useState(initialContent);
   
   const { saveGeneratedContent, updateContent } = useSaveContent();
 
@@ -45,7 +49,7 @@ export function GeneratedContent() {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(initialContent);
+      await navigator.clipboard.writeText(currentContent);
       toast({
         description: "Content copied to clipboard",
       });
@@ -76,6 +80,35 @@ export function GeneratedContent() {
     }
   };
 
+  const handleModifyContent = async (modification: string) => {
+    setIsModifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('modify-content', {
+        body: {
+          content: currentContent,
+          modification
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.modifiedContent) {
+        setCurrentContent(data.modifiedContent);
+        toast({
+          description: "Content updated successfully",
+        });
+      }
+    } catch (error) {
+      console.error('Error modifying content:', error);
+      toast({
+        variant: "destructive",
+        description: "Failed to modify content",
+      });
+    } finally {
+      setIsModifying(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <Button
@@ -97,39 +130,52 @@ export function GeneratedContent() {
         <CardContent className="space-y-4">
           <div className={`prose max-w-none ${isEditing ? 'border rounded-md p-4' : ''}`}>
             <ContentEditor
-              content={initialContent}
+              content={currentContent}
               isEditing={isEditing}
             />
           </div>
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            onClick={handleCopy}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Copy
-          </Button>
-          {isEditing ? (
-            <Button
-              variant="default"
-              onClick={handleSave}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Save
-            </Button>
-          ) : (
-            <Button
-              variant="default"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit2 className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          )}
+        <CardFooter className="flex flex-col gap-4">
+          <div className="w-full">
+            <QuickActions 
+              onActionClick={handleModifyContent}
+              isLoading={isModifying}
+            />
+          </div>
+          <div className="w-full flex flex-col gap-4">
+            <ChatInput 
+              onSubmit={handleModifyContent}
+              isLoading={isModifying}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={handleCopy}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy
+              </Button>
+              {isEditing ? (
+                <Button
+                  variant="default"
+                  onClick={handleSave}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <Edit2 className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              )}
+            </div>
+          </div>
         </CardFooter>
       </Card>
     </div>
   );
 }
-
