@@ -1,8 +1,10 @@
+
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit2, Plus, Trash2 } from "lucide-react";
 import { usePrompts } from "@/hooks/usePrompts";
 import { Card } from "@/components/ui/card";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import {
   Dialog,
   DialogContent,
@@ -219,6 +221,7 @@ const AdminPrompts = () => {
 
   return (
     <div className="space-y-6">
+      <AdminBreadcrumb />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Prompts</h1>
