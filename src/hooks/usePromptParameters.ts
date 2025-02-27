@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -22,6 +23,7 @@ const fetchParameters = async () => {
   const { data, error } = await supabase
     .from("prompt_parameters")
     .select("*")
+    .eq('active', true)  // Only fetch active parameters
     .order("type");
 
   if (error) {
@@ -37,7 +39,8 @@ const fetchTweaks = async (promptId?: string) => {
   if (!promptId) {
     const { data, error } = await supabase
       .from("parameter_tweaks")
-      .select("*");
+      .select("*")
+      .eq('active', true);  // Only fetch active tweaks
 
     if (error) {
       console.error('[Tweaks] Error fetching:', error);
@@ -57,6 +60,7 @@ const fetchTweaks = async (promptId?: string) => {
         is_enabled
       )
     `)
+    .eq('active', true)  // Only fetch active tweaks
     .eq('prompt_parameter_enabled_tweaks.prompt_id', promptId)
     .eq('prompt_parameter_enabled_tweaks.is_enabled', true);
 
