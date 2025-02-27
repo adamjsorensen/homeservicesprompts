@@ -137,8 +137,53 @@ const AdminHubs = () => {
     }
   };
 
-  const handleDeleteCategory = async (categoryId: string) => {
-    setDeleteCategoryId(categoryId);
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryId) return;
+
+    try {
+      // First check if the category exists and if it has any subcategories
+      const { data: categoryToDelete, error: fetchError } = await supabase
+        .from('prompts')
+        .select('id')
+        .eq('id', deleteCategoryId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Check for subcategories
+      const { data: subcategories, error: subError } = await supabase
+        .from('prompts')
+        .select('id')
+        .eq('parent_id', deleteCategoryId);
+
+      if (subError) throw subError;
+
+      if (subcategories && subcategories.length > 0) {
+        throw new Error("Cannot delete category with subcategories");
+      }
+
+      // If all checks pass, delete the category
+      const { error: deleteError } = await supabase
+        .from('prompts')
+        .delete()
+        .eq('id', deleteCategoryId);
+
+      if (deleteError) throw deleteError;
+
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete category",
+      });
+    } finally {
+      setDeleteCategoryId(null);
+    }
   };
 
   const formatHubTitle = (hubArea: string) => {
@@ -297,7 +342,7 @@ const AdminHubs = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => setDeleteCategoryId(null)}
+              onClick={handleDeleteCategory}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete Category
