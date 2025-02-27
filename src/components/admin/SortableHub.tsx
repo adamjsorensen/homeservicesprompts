@@ -1,7 +1,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronRight, Building, Building2, Layers, Users, Target, LineChart, Brain, LucideIcon } from "lucide-react";
+import { ChevronRight, Trash2, Building, Building2, Layers, Users, Target, LineChart, Brain, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
