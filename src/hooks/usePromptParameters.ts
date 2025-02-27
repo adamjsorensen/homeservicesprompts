@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 export interface PromptParameter {
   id: string;
@@ -91,19 +92,43 @@ export const usePromptParameters = (promptId?: string) => {
   useEffect(() => {
     console.log('[Realtime] Setting up parameters subscription...');
     
-    // Subscribe to changes in prompt_parameters table
+    // Subscribe to changes in prompt_parameters table with specific handlers for each event type
     const parametersChannel = supabase
       .channel('prompt_parameters_changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'DELETE',
+          schema: 'public',
+          table: 'prompt_parameters'
+        },
+        (payload: RealtimePostgresChangesPayload<PromptParameter>) => {
+          console.log('[Realtime] Parameter DELETE detected:', payload);
+          console.log('[Realtime] Deleted parameter ID:', payload.old?.id);
+          refetchParameters();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
           schema: 'public',
           table: 'prompt_parameters'
         },
         (payload) => {
-          console.log('[Realtime] Parameters change detected:', payload);
-          console.log('[Realtime] Triggering parameters refetch...');
+          console.log('[Realtime] Parameter UPDATE detected:', payload);
+          refetchParameters();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'prompt_parameters'
+        },
+        (payload) => {
+          console.log('[Realtime] Parameter INSERT detected:', payload);
           refetchParameters();
         }
       )
@@ -113,19 +138,42 @@ export const usePromptParameters = (promptId?: string) => {
 
     console.log('[Realtime] Setting up tweaks subscription...');
     
-    // Subscribe to changes in parameter_tweaks table
+    // Subscribe to changes in parameter_tweaks table with specific handlers for each event type
     const tweaksChannel = supabase
       .channel('parameter_tweaks_changes')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'DELETE',
           schema: 'public',
           table: 'parameter_tweaks'
         },
         (payload) => {
-          console.log('[Realtime] Tweaks change detected:', payload);
-          console.log('[Realtime] Triggering tweaks refetch...');
+          console.log('[Realtime] Tweak DELETE detected:', payload);
+          refetchTweaks();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'parameter_tweaks'
+        },
+        (payload) => {
+          console.log('[Realtime] Tweak UPDATE detected:', payload);
+          refetchTweaks();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'parameter_tweaks'
+        },
+        (payload) => {
+          console.log('[Realtime] Tweak INSERT detected:', payload);
           refetchTweaks();
         }
       )
