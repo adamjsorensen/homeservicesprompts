@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -31,6 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 
 type HubAreaType = "marketing" | "sales" | "production" | "team" | "strategy" | "financials" | "leadership";
 
@@ -60,20 +62,44 @@ const AdminHubs = () => {
   }
 
   const handleCreateCategory = async () => {
-    if (!selectedHub || !newCategoryTitle.trim()) return;
+    if (!selectedHub || !newCategoryTitle.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all required fields",
+      });
+      return;
+    }
 
     try {
-      const { error } = await supabase.from('prompts').insert({
+      const rootHub = prompts.find(p => 
+        p.hub_area === selectedHub && 
+        p.is_category && 
+        !p.parent_id
+      );
+
+      if (!rootHub) {
+        throw new Error("Could not find root hub");
+      }
+
+      const { data, error } = await supabase.from('prompts').insert({
         title: newCategoryTitle,
-        description: '', // Required field in the schema
-        category: newCategoryTitle.toLowerCase(),
-        prompt: '', // Required field in the schema
+        description: `Category for ${newCategoryTitle}`,
+        category: selectedHub,
+        prompt: '',
         is_category: true,
         hub_area: selectedHub,
-        display_order: prompts.filter(p => p.hub_area === selectedHub).length
-      });
+        parent_id: rootHub.id,
+        display_order: prompts.filter(p => 
+          p.hub_area === selectedHub && 
+          p.parent_id === rootHub.id
+        ).length
+      }).select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating category:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -83,10 +109,11 @@ const AdminHubs = () => {
       setNewCategoryTitle("");
       setSelectedHub(null);
     } catch (error) {
+      console.error("Error creating category:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create category",
+        description: "Failed to create category. Please try again.",
       });
     }
   };
