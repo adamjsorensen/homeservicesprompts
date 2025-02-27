@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -48,7 +47,6 @@ const fetchTweaks = async (promptId?: string) => {
     return data;
   }
 
-  // Fetch only enabled tweaks for this prompt
   const { data, error } = await supabase
     .from("parameter_tweaks")
     .select(`
@@ -92,7 +90,6 @@ export const usePromptParameters = (promptId?: string) => {
   useEffect(() => {
     console.log('[Realtime] Setting up parameters subscription...');
     
-    // Subscribe to changes in prompt_parameters table with specific handlers for each event type
     const parametersChannel = supabase
       .channel('prompt_parameters_changes')
       .on(
@@ -103,8 +100,18 @@ export const usePromptParameters = (promptId?: string) => {
           table: 'prompt_parameters'
         },
         (payload: RealtimePostgresChangesPayload<{old: PromptParameter}>) => {
-          console.log('[Realtime] Parameter DELETE detected:', payload);
-          console.log('[Realtime] Deleted parameter ID:', payload.old.id);
+          console.log('[Realtime] Full DELETE payload:', payload);
+          console.log('[Realtime] Payload type:', typeof payload);
+          console.log('[Realtime] Old record:', payload.old);
+          console.log('[Realtime] Old record type:', typeof payload.old);
+          console.log('[Realtime] Is payload.old null?', payload.old === null);
+          console.log('[Realtime] Does old have id?', 'id' in (payload.old || {}));
+
+          if (payload.old && 'id' in payload.old) {
+            console.log('[Realtime] Deleted parameter ID:', payload.old.id);
+          } else {
+            console.log('[Realtime] Could not find id in payload:', payload);
+          }
           refetchParameters();
         }
       )
@@ -138,7 +145,6 @@ export const usePromptParameters = (promptId?: string) => {
 
     console.log('[Realtime] Setting up tweaks subscription...');
     
-    // Subscribe to changes in parameter_tweaks table with specific handlers for each event type
     const tweaksChannel = supabase
       .channel('parameter_tweaks_changes')
       .on(
