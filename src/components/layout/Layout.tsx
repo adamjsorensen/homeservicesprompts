@@ -3,6 +3,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useLocation, Outlet } from "react-router-dom";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const Layout = () => {
   const { user } = useAuth();
@@ -22,16 +23,21 @@ export const Layout = () => {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <main className="flex-1">
-          <div className="container py-4">
-            <Outlet />
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+    <ErrorBoundary>
+      <SidebarProvider defaultOpen={true}>
+        <div className="min-h-screen flex w-full">
+          <ErrorBoundary>
+            <AppSidebar />
+          </ErrorBoundary>
+          <main className="flex-1">
+            <div className="container py-4">
+              <ErrorBoundary>
+                <Outlet />
+              </ErrorBoundary>
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
+    </ErrorBoundary>
   );
 };
-

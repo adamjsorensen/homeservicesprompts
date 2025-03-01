@@ -17,30 +17,33 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { Layout } from "./components/layout/Layout";
 import { SavedGenerations } from "./pages/SavedGenerations";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          
-          {/* Protected routes using Layout with Outlet */}
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/" element={<Navigate to="/library" />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/library/:hubArea" element={<Library />} />
-            <Route path="/saved-generations" element={<SavedGenerations />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/business" element={<Business />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Protected routes using Layout with Outlet */}
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/" element={<Navigate to="/library" />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/library/:hubArea" element={<Library />} />
+              <Route path="/saved-generations" element={<SavedGenerations />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/business" element={<Business />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
