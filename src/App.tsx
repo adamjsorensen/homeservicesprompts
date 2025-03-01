@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,8 +14,8 @@ import Profile from "./pages/Profile";
 import Business from "./pages/Business";
 import Admin from "./pages/Admin";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import Layout from "./components/layout/Layout";
-import SavedGenerations from "./pages/SavedGenerations";
+import { Layout } from "./components/layout/Layout";
+import { SavedGenerations } from "./pages/SavedGenerations";
 import AdminUsers from "@/pages/admin/AdminUsers";
 
 function App() {
