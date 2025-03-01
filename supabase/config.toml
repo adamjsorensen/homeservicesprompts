@@ -1,1 +1,14 @@
+
 project_id = "zdspjopumyunfkkqoabx"
+
+[functions.admin-users]
+verify_jwt = true
+
+[functions.admin-users-list]
+verify_jwt = true
+
+[functions.admin-users-toggle-admin]
+verify_jwt = true
+
+[functions.admin-users-update-profile]
+verify_jwt = true

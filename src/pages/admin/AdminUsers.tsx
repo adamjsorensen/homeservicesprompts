@@ -31,14 +31,19 @@ const AdminUsers = () => {
         throw new Error("Not authenticated");
       }
 
-      // Call the admin-users/list function to get user data
-      const { data, error } = await supabase.functions.invoke("admin-users/list", {
+      console.log("Fetching user data from admin-users-list function...");
+      
+      // Call the admin-users-list function to get user data (updated function name)
+      const { data, error } = await supabase.functions.invoke("admin-users-list", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error invoking admin-users-list:", error);
+        throw error;
+      }
       
       // Process the data
       setUsers(data.users || []);
@@ -94,15 +99,18 @@ const AdminUsers = () => {
 
       console.log(`Toggling admin status for user ${userId}. Current status: ${currentStatus}`);
 
-      // Call the edge function to toggle admin status
-      const { data, error } = await supabase.functions.invoke("admin-users/toggle-admin", {
+      // Call the edge function to toggle admin status (updated function name)
+      const { data, error } = await supabase.functions.invoke("admin-users-toggle-admin", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: { userId, currentStatus },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error toggling admin status:", error);
+        throw error;
+      }
       
       toast({
         title: currentStatus ? "Admin rights removed" : "Admin rights granted",
@@ -133,15 +141,18 @@ const AdminUsers = () => {
         throw new Error("Not authenticated");
       }
 
-      // Call the edge function to update profile
-      const { data, error } = await supabase.functions.invoke("admin-users/update-profile", {
+      // Call the edge function to update profile (updated function name)
+      const { data, error } = await supabase.functions.invoke("admin-users-update-profile", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
         body: { userId, profileData },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating profile:", error);
+        throw error;
+      }
       
       toast({
         title: "Profile updated",
