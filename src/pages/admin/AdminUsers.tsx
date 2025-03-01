@@ -7,48 +7,52 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserTable } from "@/components/admin/UserTable";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const AdminUsers = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      // Get user profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('user_profiles')
-        .select('*');
+      // Get the current session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
       
-      if (profilesError) throw profilesError;
+      if (!accessToken) {
+        throw new Error("Not authenticated");
+      }
 
-      // Get user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*');
+      // Call the admin-users function to get user data
+      const { data, error } = await supabase.functions.invoke("admin-users/list", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
       
-      if (rolesError) throw rolesError;
-
-      // Get user auth data
-      const { data: userData, error: authError } = await supabase.auth.admin.listUsers();
+      if (error) throw error;
       
-      if (authError) throw authError;
-
-      // Process and combine the data
-      const users = userData?.users || [];
-      setUsers(users);
-      setUserProfiles(profiles || []);
-      setUserRoles(roles || []);
+      // Process the data
+      setUsers(data.users || []);
+      setUserProfiles(data.profiles || []);
+      setUserRoles(data.roles || []);
       
-      console.log('Fetched data:', { users, profiles, roles });
+      console.log('Fetched data:', data);
     } catch (error) {
       console.error('Error fetching user data:', error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      setError(errorMessage);
       toast({
         title: "Error fetching data",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -57,8 +61,10 @@ const AdminUsers = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   const processedUsers = users.map(user => {
     const profile = userProfiles.find(p => p.id === user.id) || {};
@@ -78,33 +84,30 @@ const AdminUsers = () => {
 
   const handleToggleAdminStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      if (currentStatus) {
-        // Remove admin role
-        const { error } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId)
-          .eq('role', 'admin');
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Admin rights removed",
-          description: "User no longer has administrator permissions",
-        });
-      } else {
-        // Add admin role
-        const { error } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role: 'admin' });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Admin rights granted",
-          description: "User now has administrator permissions",
-        });
+      // Get the current session token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("Not authenticated");
       }
+
+      // Call the edge function to toggle admin status
+      const { data, error } = await supabase.functions.invoke("admin-users/toggle-admin", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: { userId, currentStatus },
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: currentStatus ? "Admin rights removed" : "Admin rights granted",
+        description: currentStatus 
+          ? "User no longer has administrator permissions" 
+          : "User now has administrator permissions",
+      });
       
       // Refresh data
       fetchData();
@@ -120,15 +123,21 @@ const AdminUsers = () => {
 
   const handleUpdateProfile = async (userId: string, profileData: any) => {
     try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          first_name: profileData.firstName,
-          last_name: profileData.lastName,
-          company: profileData.company,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
+      // Get the current session token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("Not authenticated");
+      }
+
+      // Call the edge function to update profile
+      const { data, error } = await supabase.functions.invoke("admin-users/update-profile", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: { userId, profileData },
+      });
       
       if (error) throw error;
       
@@ -168,6 +177,16 @@ const AdminUsers = () => {
           Refresh
         </Button>
       </div>
+
+      {error && (
+        <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-md mb-4">
+          <p className="font-medium">Error loading users</p>
+          <p className="text-sm">{error}</p>
+          <p className="text-sm mt-2">
+            Make sure you have admin privileges to access this page.
+          </p>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
