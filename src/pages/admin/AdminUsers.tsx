@@ -31,7 +31,7 @@ const AdminUsers = () => {
         throw new Error("Not authenticated");
       }
 
-      // Call the admin-users function to get user data
+      // Call the admin-users/list function to get user data
       const { data, error } = await supabase.functions.invoke("admin-users/list", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -91,6 +91,8 @@ const AdminUsers = () => {
       if (!accessToken) {
         throw new Error("Not authenticated");
       }
+
+      console.log(`Toggling admin status for user ${userId}. Current status: ${currentStatus}`);
 
       // Call the edge function to toggle admin status
       const { data, error } = await supabase.functions.invoke("admin-users/toggle-admin", {
