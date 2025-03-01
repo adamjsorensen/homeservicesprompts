@@ -1,91 +1,132 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./components/auth/AuthProvider";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { PublicOnlyRoute } from "./components/auth/PublicOnlyRoute";
-import { Layout } from "./components/layout/Layout";
-import Index from "./pages/Index";
-import Library from "./pages/Library";
-import Business from "./pages/Business";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-import Admin from "./pages/Admin";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import { GeneratedContent } from "./pages/GeneratedContent";
-import { SavedGenerations } from "./pages/SavedGenerations";
-import { SavedGeneration } from "./pages/SavedGeneration";
+import Library from "./pages/Library";
 import Chat from "./pages/Chat";
-import AdminHubs from "./pages/admin/AdminHubs";
-import AdminParameters from "./pages/admin/AdminParameters";
-import AdminPrompts from "./pages/admin/AdminPrompts";
-import AdminGenerations from "./pages/admin/AdminGenerations";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
+import Business from "./pages/Business";
+import Admin from "./pages/Admin";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import Layout from "./components/layout/Layout";
+import SavedGenerations from "./pages/SavedGenerations";
+import AdminUsers from "@/pages/admin/AdminUsers";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <BrowserRouter>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            {/* Public routes */}
-            <Route 
-              path="/" 
-              element={
-                <PublicOnlyRoute>
-                  <Index />
-                </PublicOnlyRoute>
-              } 
-            />
-            <Route 
-              path="/auth" 
-              element={
-                <PublicOnlyRoute>
-                  <Auth />
-                </PublicOnlyRoute>
-              } 
-            />
-            
-            {/* Protected routes */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/library" element={<Library />} />
-              <Route path="/library/:hubArea" element={<Library />} />
-              <Route path="/business" element={<Business />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/hubs" element={<AdminHubs />} />
-              <Route path="/admin/parameters" element={<AdminParameters />} />
-              <Route path="/admin/prompts" element={<AdminPrompts />} />
-              <Route path="/admin/generations" element={<AdminGenerations />} />
-              <Route path="/admin/analytics" element={<AdminAnalytics />} />
-              <Route path="/generated-content" element={<GeneratedContent />} />
-              <Route path="/saved-generations" element={<SavedGenerations />} />
-              <Route path="/saved-generations/:slug" element={<SavedGeneration />} />
-            </Route>
-
-            {/* 404 route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </BrowserRouter>
-);
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Library />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/auth" element={<Auth />} />
+          <Route
+            path="/library"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Library />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library/:hubArea"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Library />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/saved-generations"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SavedGenerations />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Chat />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Profile />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/business"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Business />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Admin />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <AdminUsers />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;

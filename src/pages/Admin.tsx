@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { usePrompts } from "@/hooks/usePrompts";
 import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, ListPlus, Settings2, Sparkles, LayoutGrid } from "lucide-react";
+import { Database, ListPlus, Settings2, Sparkles, LayoutGrid, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const AdminCard = ({ 
@@ -86,6 +86,13 @@ const Admin = () => {
       className: "bg-orange-50 border-orange-200"
     },
     {
+      title: "User Management",
+      description: "Manage users and their permissions",
+      icon: Users,
+      path: "/admin/users",
+      className: "bg-indigo-50 border-indigo-200"
+    },
+    {
       title: "Analytics Dashboard",
       description: "Monitor prompt performance and usage",
       icon: Database,
@@ -124,6 +131,7 @@ const Admin = () => {
           <li>Batch operations and bulk editing</li>
           <li>Advanced analytics and insights</li>
           <li>Template library system</li>
+          <li>Advanced user management & organization structure</li>
         </ul>
       </div>
     </div>
