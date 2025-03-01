@@ -5,7 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
+import { AuthProvider } from "./components/auth/AuthProvider";
 import Auth from "./pages/Auth";
 import Library from "./pages/Library";
 import Chat from "./pages/Chat";
@@ -20,113 +20,27 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Library />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
           <Route path="/auth" element={<Auth />} />
-          <Route
-            path="/library"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Library />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/library/:hubArea"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Library />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/saved-generations"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SavedGenerations />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Chat />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Settings />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Profile />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/business"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Business />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Admin />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <AdminUsers />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+          
+          {/* Protected routes using Layout with Outlet */}
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="/" element={<Navigate to="/library" />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/library/:hubArea" element={<Library />} />
+            <Route path="/saved-generations" element={<SavedGenerations />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/business" element={<Business />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+          </Route>
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

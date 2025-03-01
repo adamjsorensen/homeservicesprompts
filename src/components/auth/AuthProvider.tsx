@@ -17,8 +17,8 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate ? useNavigate() : null;
+  const location = useLocation ? useLocation() : null;
   const { toast } = useToast();
 
   // Handle auth state changes
@@ -27,7 +27,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      handleAuthRedirect(currentUser);
+      if (navigate && location) {
+        handleAuthRedirect(currentUser);
+      }
       setIsLoading(false);
     });
 
@@ -37,15 +39,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user;
       setUser(currentUser ?? null);
-      handleAuthRedirect(currentUser ?? null);
+      if (navigate && location) {
+        handleAuthRedirect(currentUser ?? null);
+      }
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []); 
+  }, [navigate, location]); 
 
   // Centralized redirect logic
   const handleAuthRedirect = (currentUser: User | null) => {
+    if (!navigate || !location) return;
+    
     const path = location.pathname;
     const returnTo = new URLSearchParams(location.search).get("returnTo");
 
