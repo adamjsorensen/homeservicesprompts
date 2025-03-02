@@ -104,40 +104,86 @@ serve(async (req) => {
     console.log(`Toggling admin status for user ${userId}. Current status: ${currentStatus}`);
 
     try {
+      // Check if the user already has any role
+      const { data: existingRoles, error: checkRoleError } = await supabaseAdmin
+        .from("user_roles")
+        .select("*")
+        .eq("user_id", userId);
+      
+      if (checkRoleError) {
+        console.error(`Error checking existing roles: ${checkRoleError.message}`);
+        throw checkRoleError;
+      }
+      
+      console.log(`User ${userId} has ${existingRoles?.length || 0} existing roles`);
+      
       if (currentStatus) {
-        // Remove admin role
-        console.log(`Removing admin role from user ${userId}`);
-        const { error } = await supabaseAdmin
-          .from("user_roles")
-          .delete()
-          .eq("user_id", userId)
-          .eq("role", "admin");
-        
-        if (error) {
-          console.error(`Error removing admin role: ${error.message}`);
-          throw error;
+        // Removing admin role - set to 'user' or remove if no role existed before
+        if (existingRoles && existingRoles.length > 0) {
+          // User has existing roles, update the role to 'user'
+          const { error } = await supabaseAdmin
+            .from("user_roles")
+            .update({ role: "user" })
+            .eq("user_id", userId)
+            .eq("role", "admin");
+          
+          if (error) {
+            console.error(`Error updating to user role: ${error.message}`);
+            throw error;
+          }
+          
+          console.log(`Updated ${userId} from admin to user role`);
+        } else {
+          // Should not happen, but just in case - delete admin role
+          const { error } = await supabaseAdmin
+            .from("user_roles")
+            .delete()
+            .eq("user_id", userId)
+            .eq("role", "admin");
+          
+          if (error) {
+            console.error(`Error deleting admin role: ${error.message}`);
+            throw error;
+          }
+          
+          console.log(`Deleted admin role for user ${userId}`);
         }
         
-        console.log(`Admin rights removed for user ${userId}`);
         return new Response(
-          JSON.stringify({ success: true, message: "Admin rights removed" }),
+          JSON.stringify({ success: true, message: "Admin rights removed", newRole: "user" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       } else {
-        // Add admin role
-        console.log(`Adding admin role to user ${userId}`);
-        const { error } = await supabaseAdmin
-          .from("user_roles")
-          .insert({ user_id: userId, role: "admin" });
-        
-        if (error) {
-          console.error(`Error adding admin role: ${error.message}`);
-          throw error;
+        // Granting admin role
+        if (existingRoles && existingRoles.length > 0) {
+          // User has existing roles, update them to admin
+          const { error } = await supabaseAdmin
+            .from("user_roles")
+            .update({ role: "admin" })
+            .eq("user_id", userId);
+          
+          if (error) {
+            console.error(`Error updating to admin role: ${error.message}`);
+            throw error;
+          }
+          
+          console.log(`Updated ${userId} to admin role`);
+        } else {
+          // User has no roles, insert admin role
+          const { error } = await supabaseAdmin
+            .from("user_roles")
+            .insert({ user_id: userId, role: "admin" });
+          
+          if (error) {
+            console.error(`Error adding admin role: ${error.message}`);
+            throw error;
+          }
+          
+          console.log(`Added admin role to user ${userId}`);
         }
         
-        console.log(`Admin rights granted for user ${userId}`);
         return new Response(
-          JSON.stringify({ success: true, message: "Admin rights granted" }),
+          JSON.stringify({ success: true, message: "Admin rights granted", newRole: "admin" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

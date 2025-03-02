@@ -117,6 +117,7 @@ export const UserDataFetcher = ({ user, children }: UserDataFetcherProps) => {
       }
 
       console.log(`Toggling admin status for user ${userId}. Current status: ${currentStatus}`);
+      setLoading(true);
 
       // Call the edge function to toggle admin status
       const { data, error } = await supabase.functions.invoke("admin-users-toggle-admin", {
@@ -131,6 +132,9 @@ export const UserDataFetcher = ({ user, children }: UserDataFetcherProps) => {
         throw error;
       }
       
+      const newRole = data?.newRole || (currentStatus ? 'user' : 'admin');
+      console.log(`Role successfully updated to: ${newRole}`);
+      
       toast({
         title: currentStatus ? "Admin rights removed" : "Admin rights granted",
         description: currentStatus 
@@ -139,7 +143,7 @@ export const UserDataFetcher = ({ user, children }: UserDataFetcherProps) => {
       });
       
       // Refresh data
-      fetchData();
+      await fetchData();
     } catch (error) {
       console.error('Error updating user role:', error);
       toast({
@@ -147,6 +151,8 @@ export const UserDataFetcher = ({ user, children }: UserDataFetcherProps) => {
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
