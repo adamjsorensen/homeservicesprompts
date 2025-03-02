@@ -197,7 +197,14 @@ export const UserDataFetcher = ({ user, children }: UserDataFetcherProps) => {
   }, [user]);
 
   const processedUsers = users.map(user => {
-    const profile = userProfiles.find(p => p.id === user.id) || {};
+    // Find the matching profile or use a profile with default empty values
+    const profile = userProfiles.find(p => p.id === user.id) || {
+      id: user.id,
+      first_name: '',
+      last_name: '',
+      company: ''
+    };
+    
     const isAdmin = userRoles.some(r => r.user_id === user.id && r.role === 'admin');
     
     return {
