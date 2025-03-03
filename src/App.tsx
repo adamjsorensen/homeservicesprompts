@@ -17,6 +17,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { Layout } from "./components/layout/Layout";
 import { SavedGenerations } from "./pages/SavedGenerations";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import { PromptGenerationsAdmin } from "@/components/admin/PromptGenerationsAdmin";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
               <Route path="/business" element={<Business />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/generations" element={<PromptGenerationsAdmin />} />
             </Route>
           </Routes>
         </AuthProvider>
