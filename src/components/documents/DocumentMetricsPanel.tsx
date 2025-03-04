@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import {
@@ -30,15 +31,11 @@ export function DocumentMetricsPanel({ documentId }: DocumentMetricsPanelProps) 
     const fetchMetrics = async () => {
       setLoading(true)
       try {
-        // Note: Since the retrieval_quality_metric and performance_metrics tables don't exist yet,
-        // we'll use mock data temporarily to prevent TypeScript errors
-        
         // Get document access count from access_audit_log if it exists
         const { data: accessData, error: accessError } = await supabase
           .from('access_audit_log')
           .select('*')
           .eq('document_id', documentId)
-          .count()
         
         if (accessError) {
           console.warn('Could not fetch access metrics:', accessError)
