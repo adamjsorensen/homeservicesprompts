@@ -36,7 +36,7 @@ export default function AdminDocuments() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Document Management</h1>
         <p className="text-muted-foreground">
-          Upload and manage documents for RAG content generation with LlamaIndex
+          Upload and manage documents for RAG content generation with Graphlit
         </p>
       </div>
 

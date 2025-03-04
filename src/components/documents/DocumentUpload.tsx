@@ -1,3 +1,4 @@
+
 import { useState, useEffect, ChangeEvent } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -151,14 +152,14 @@ export function DocumentUpload() {
         }
       }
 
-      const { data, error } = await supabase.functions.invoke('process-document-llamaindex', {
+      const { data, error } = await supabase.functions.invoke('process-document-graphlit', {
         body: {
           title,
           content: documentContent,
           fileType,
           hubAreas: selectedHubAreas,
           metadata: {
-            processed_by: "llamaindex",
+            processed_by: "graphlit",
             source_type: uploadMethod === 'file' ? "file_upload" : "manual_input",
             original_filename: file?.name,
             filesize: file?.size
@@ -178,7 +179,7 @@ export function DocumentUpload() {
 
       toast({
         title: "Document Uploaded",
-        description: "Document is now being processed with LlamaIndex. You'll be notified when complete.",
+        description: "Document is now being processed with Graphlit. You'll be notified when complete.",
       });
 
       setIsProcessing(true);
@@ -462,7 +463,7 @@ export function DocumentUpload() {
       {isProcessing && (
         <div className="space-y-2">
           <div className="flex justify-between">
-            <Label>Processing document with LlamaIndex...</Label>
+            <Label>Processing document with Graphlit...</Label>
             <span className="text-sm text-muted-foreground">{Math.round(processingProgress)}%</span>
           </div>
           <Progress value={processingProgress} className="h-2" />

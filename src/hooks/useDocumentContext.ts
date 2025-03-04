@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { DocumentChunk, BatchProcessingStatus } from '@/types/database'
+import { useGraphlitOperations } from './useGraphlitOperations'
 
 // Re-export DocumentChunk from database types
 export type { DocumentChunk } from '@/types/database'
@@ -69,7 +70,7 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     hubSpecificWeighting = false,
     accessLevel = 'read',
     showDetailedResults = false,
-    useGraphlit = true
+    useGraphlit = true // Default to Graphlit
   } = options
   
   const { user } = useAuth()
@@ -78,16 +79,15 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
   const [resultSource, setResultSource] = useState<'cache' | 'live' | null>(null)
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null)
   const [selectedContexts, setSelectedContexts] = useState<DocumentChunk[]>([])
+  const { searchDocuments } = useGraphlitOperations()
 
   const retrieveContext = async (query: string, hubArea?: string) => {
     setIsLoading(true)
     const startTime = performance.now()
     
     try {
-      // Use Graphlit for retrieval by default, with fallback to legacy system
-      const endpointName = useGraphlit ? 'retrieve-document-context-graphlit' : 'retrieve-document-context';
-      
-      const { data, error } = await supabase.functions.invoke(endpointName, {
+      // Always use Graphlit for retrieval
+      const { data, error } = await supabase.functions.invoke('retrieve-document-context-graphlit', {
         body: { 
           query, 
           hubArea, 
@@ -137,7 +137,6 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
       setContextResults(standardizedResults)
       
       // Automatically select the best contexts
-      // Note: instead of user selection, the system now auto-selects based on relevance
       const autoSelectedContexts = standardizedResults
         .filter(chunk => chunk.relevance_score >= similarityThreshold)
         .sort((a, b) => b.relevance_score - a.relevance_score)

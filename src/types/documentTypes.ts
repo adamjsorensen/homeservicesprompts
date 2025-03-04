@@ -14,6 +14,7 @@ export interface Document {
   metadata?: Record<string, any>;
   chunks_count?: number;
   processor?: string;
+  graphlit_doc_id?: string;
 }
 
 export interface DocumentChunk {
@@ -28,6 +29,7 @@ export interface DocumentChunk {
   relevance_score?: number;
   parent_chunks?: string[];
   child_chunks?: string[];
+  graphlit_chunk_id?: string;
 }
 
 export interface DocumentPermission {
@@ -61,13 +63,18 @@ export interface ProcessingOptions {
   hierarchical?: boolean;
 }
 
-export interface LlamaIndexProcessingResult {
-  chunks: Array<{ text: string; metadata: Record<string, any> }>;
+export interface GraphlitProcessingResult {
+  chunks: Array<{ 
+    text: string; 
+    metadata: Record<string, any>;
+    chunk_id: string;
+  }>;
+  document_id: string;
   document_metadata: Record<string, any>;
   processing_metadata: Record<string, any>;
 }
 
-export type DocumentProcessor = 'custom' | 'llamaindex';
+export type DocumentProcessor = 'custom' | 'graphlit';
 
 export interface BatchProcessingStatus {
   id: string;
@@ -81,7 +88,7 @@ export interface BatchProcessingStatus {
   metadata?: Record<string, any>;
 }
 
-// New types for LlamaIndex Query Processing
+// Query types for Graphlit integration
 
 export interface QueryHistoryEntry {
   id: string;
