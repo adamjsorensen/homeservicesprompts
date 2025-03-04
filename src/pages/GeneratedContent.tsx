@@ -75,7 +75,7 @@ const GeneratedContent = () => {
         .insert({
           title: title,
           content: modifiedContent || content,
-          created_by: user.id,
+          user_id: user.id,
         });
 
       if (error) throw error;
