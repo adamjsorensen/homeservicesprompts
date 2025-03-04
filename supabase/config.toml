@@ -1,14 +1,98 @@
 
 project_id = "zdspjopumyunfkkqoabx"
 
-[functions.admin-users]
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+
+[realtime]
+enabled = true
+
+[[function]]
+name = "admin-users-list"
 verify_jwt = true
 
-[functions.admin-users-list]
+[[function]]
+name = "admin-users-toggle-admin"
 verify_jwt = true
 
-[functions.admin-users-toggle-admin]
+[[function]]
+name = "admin-users-update-profile"
 verify_jwt = true
 
-[functions.admin-users-update-profile]
+[[function]]
+name = "admin-users"
 verify_jwt = true
+
+[[function]]
+name = "generate-embedding"
+verify_jwt = false
+
+[[function]]
+name = "generate-prompt-content"
+verify_jwt = false
+
+[[function]]
+name = "process-document"
+verify_jwt = false
+
+[[function]]
+name = "process-document-llamaindex"
+verify_jwt = false
+
+[[function]]
+name = "retrieve-document-context"
+verify_jwt = false
+
+[[function]]
+name = "generate-response-with-context"
+verify_jwt = false
+
+[function.admin-users-list]
+path = "supabase/functions/admin-users-list"
+
+[function.admin-users-toggle-admin]
+path = "supabase/functions/admin-users-toggle-admin"
+
+[function.admin-users-update-profile]
+path = "supabase/functions/admin-users-update-profile"
+
+[function.admin-users]
+path = "supabase/functions/admin-users"
+
+[function.generate-embedding]
+path = "supabase/functions/generate-embedding"
+
+[function.generate-prompt-content]
+path = "supabase/functions/generate-prompt-content"
+
+[function.process-document]
+path = "supabase/functions/process-document"
+
+[function.process-document-llamaindex]
+path = "supabase/functions/process-document-llamaindex"
+
+[function.retrieve-document-context]
+path = "supabase/functions/retrieve-document-context"
+
+[function.generate-response-with-context]
+path = "supabase/functions/generate-response-with-context"
