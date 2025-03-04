@@ -13,6 +13,21 @@ export interface Document {
   embedding?: string | null;
   metadata?: Record<string, any>;
   chunks_count?: number;
+  processor?: string;
+}
+
+export interface DocumentChunk {
+  id: string;
+  document_id: string;
+  content: string;
+  chunk_index: number;
+  embedding?: any;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  relevance_score?: number;
+  parent_chunks?: string[];
+  child_chunks?: string[];
 }
 
 export interface DocumentPermission {
@@ -35,4 +50,31 @@ export interface DocumentMetrics {
     date: string;
     count: number;
   }>;
+}
+
+export interface ProcessingOptions {
+  chunkSize?: number;
+  chunkOverlap?: number;
+  splitByHeading?: boolean;
+  hierarchical?: boolean;
+}
+
+export interface LlamaIndexProcessingResult {
+  chunks: Array<{ text: string; metadata: Record<string, any> }>;
+  document_metadata: Record<string, any>;
+  processing_metadata: Record<string, any>;
+}
+
+export type DocumentProcessor = 'custom' | 'llamaindex';
+
+export interface BatchProcessingStatus {
+  id: string;
+  batch_id: string;
+  total_items: number;
+  processed_items: number;
+  status: string;
+  error_count: number;
+  started_at: string;
+  completed_at?: string;
+  metadata?: Record<string, any>;
 }

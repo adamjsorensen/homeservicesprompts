@@ -15,9 +15,17 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { AlertCircle, FileText, Upload } from "lucide-react"
+import { AlertCircle, FileText, Upload, Settings } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useBatchProcessing } from '@/hooks/useBatchProcessing'
+import { ProcessingOptions } from '@/types/documentTypes'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover'
+import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 
 const HUB_AREAS = [
   { value: 'marketing', label: 'Marketing' },
@@ -34,6 +42,7 @@ const FILE_TYPES = [
   { value: 'pdf', label: 'PDF Document' },
   { value: 'doc', label: 'Word Document (DOC)' },
   { value: 'docx', label: 'Word Document (DOCX)' },
+  { value: 'html', label: 'HTML Document' },
 ]
 
 export function DocumentUpload() {
@@ -48,6 +57,14 @@ export function DocumentUpload() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [batchId, setBatchId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [useAdvancedProcessing, setUseAdvancedProcessing] = useState(false)
+  const [processingOptions, setProcessingOptions] = useState<ProcessingOptions>({
+    chunkSize: 1000,
+    chunkOverlap: 200,
+    splitByHeading: true,
+    hierarchical: true
+  })
+
   const { toast } = useToast()
   const { useBatchStatusPolling } = useBatchProcessing()
   const { data: batchStatus } = useBatchStatusPolling(batchId, isProcessing)
@@ -74,6 +91,8 @@ export function DocumentUpload() {
         setFileType('doc');
       } else if (fileName.endsWith('.txt')) {
         setFileType('txt');
+      } else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) {
+        setFileType('html');
       }
       
       if (!title) {
@@ -113,7 +132,7 @@ export function DocumentUpload() {
       if (uploadMethod === 'file' && file) {
         const reader = new FileReader();
         
-        if (fileType === 'txt') {
+        if (fileType === 'txt' || fileType === 'html') {
           documentContent = await new Promise((resolve, reject) => {
             reader.onload = (e) => resolve(e.target?.result as string);
             reader.onerror = reject;
@@ -144,7 +163,8 @@ export function DocumentUpload() {
             original_filename: file?.name,
             filesize: file?.size
           },
-          isBase64
+          isBase64,
+          processingOptions: useAdvancedProcessing ? processingOptions : undefined
         },
       })
 
@@ -158,7 +178,7 @@ export function DocumentUpload() {
 
       toast({
         title: "Document Uploaded",
-        description: "Document is now being processed. You'll be notified when complete.",
+        description: "Document is now being processed with LlamaIndex. You'll be notified when complete.",
       });
 
       setIsProcessing(true);
@@ -217,6 +237,13 @@ export function DocumentUpload() {
       setProcessingProgress(0);
       setBatchId(null);
       setFile(null);
+      setUseAdvancedProcessing(false);
+      setProcessingOptions({
+        chunkSize: 1000,
+        chunkOverlap: 200,
+        splitByHeading: true,
+        hierarchical: true
+      });
     }, 2000);
   };
 
@@ -328,7 +355,85 @@ export function DocumentUpload() {
       )}
 
       <div className="space-y-2">
-        <Label>Hub Areas</Label>
+        <div className="flex items-center justify-between">
+          <Label>Hub Areas</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1">
+                <Settings className="h-3.5 w-3.5" />
+                <span className="text-xs">Processing Options</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="advanced-processing">Use Advanced Processing</Label>
+                  <Switch 
+                    id="advanced-processing" 
+                    checked={useAdvancedProcessing}
+                    onCheckedChange={setUseAdvancedProcessing}
+                  />
+                </div>
+                
+                {useAdvancedProcessing && (
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label htmlFor="chunk-size">Chunk Size: {processingOptions.chunkSize}</Label>
+                      </div>
+                      <Slider 
+                        id="chunk-size"
+                        min={200} 
+                        max={3000} 
+                        step={100} 
+                        value={[processingOptions.chunkSize || 1000]}
+                        onValueChange={(vals) => setProcessingOptions({...processingOptions, chunkSize: vals[0]})}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Larger chunks mean more context but less precise matching
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <Label htmlFor="chunk-overlap">Overlap: {processingOptions.chunkOverlap}</Label>
+                      </div>
+                      <Slider 
+                        id="chunk-overlap"
+                        min={0} 
+                        max={500} 
+                        step={50} 
+                        value={[processingOptions.chunkOverlap || 200]}
+                        onValueChange={(vals) => setProcessingOptions({...processingOptions, chunkOverlap: vals[0]})}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Overlap between consecutive chunks
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="split-heading">Split by Headings</Label>
+                      <Switch 
+                        id="split-heading" 
+                        checked={processingOptions.splitByHeading}
+                        onCheckedChange={(checked) => setProcessingOptions({...processingOptions, splitByHeading: checked})}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="hierarchical">Hierarchical Chunks</Label>
+                      <Switch 
+                        id="hierarchical" 
+                        checked={processingOptions.hierarchical}
+                        onCheckedChange={(checked) => setProcessingOptions({...processingOptions, hierarchical: checked})}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           {HUB_AREAS.map((hub) => (
             <div key={hub.value} className="flex items-center space-x-2">
@@ -357,14 +462,14 @@ export function DocumentUpload() {
       {isProcessing && (
         <div className="space-y-2">
           <div className="flex justify-between">
-            <Label>Processing document...</Label>
+            <Label>Processing document with LlamaIndex...</Label>
             <span className="text-sm text-muted-foreground">{Math.round(processingProgress)}%</span>
           </div>
           <Progress value={processingProgress} className="h-2" />
           {processingProgress >= 30 && (
             <p className="text-xs text-muted-foreground">
               {processingProgress < 90 
-                ? "Creating chunks and generating embeddings..." 
+                ? "Analyzing document and creating smart chunks..." 
                 : "Finalizing document processing..."}
             </p>
           )}
