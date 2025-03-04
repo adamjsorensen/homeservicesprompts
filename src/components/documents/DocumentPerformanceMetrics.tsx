@@ -30,9 +30,9 @@ export function DocumentPerformanceMetrics({
   
   const getBadgeVariant = () => {
     if (status === 'error') return 'destructive'
-    if (durationMs < 500) return 'success'
-    if (durationMs < 1000) return 'default'
-    return 'secondary'
+    if (durationMs < 500) return 'default'
+    if (durationMs < 1000) return 'secondary'
+    return 'outline'
   }
   
   return (

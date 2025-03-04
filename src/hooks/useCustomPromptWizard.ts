@@ -1,101 +1,75 @@
-import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { type DocumentChunk } from '@/hooks/useDocumentContext';
 
-interface CustomPromptWizardProps {
-  basePrompt?: {
-    id?: string;
-    title: string;
-    description: string;
-    content: string;
-    category_id?: string;
-    hub_area?: string;
-  };
-  isOpen: boolean;
-  onClose: () => void;
-}
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/components/ui/use-toast'
+import { useAuth } from '@/components/auth/AuthProvider'
 
-export const useCustomPromptWizard = ({ basePrompt, isOpen, onClose }: CustomPromptWizardProps) => {
-  const { toast } = useToast();
-  const [title, setTitle] = useState(basePrompt?.title || '');
-  const [description, setDescription] = useState(basePrompt?.description || '');
-  const [content, setContent] = useState(basePrompt?.content || '');
-  const [category, setCategory] = useState(basePrompt?.category_id || '');
-  const [hubArea, setHubArea] = useState(basePrompt?.hub_area || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+type HubAreaType = 'marketing' | 'sales' | 'production' | 'team' | 'strategy' | 'financials' | 'leadership'
 
-  const handleSavePrompt = async () => {
-    setIsSubmitting(true);
+export function useCustomPromptWizard() {
+  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const { user } = useAuth()
+
+  const createCustomPrompt = async (params: {
+    title: string
+    description: string
+    content: string
+    category: string
+    hubArea?: HubAreaType
+  }) => {
     try {
-      if (!title || !description || !content) {
+      setIsLoading(true)
+      
+      if (!user) {
         toast({
-          variant: 'destructive',
-          description: 'Please fill in all fields.'
-        });
-        return;
+          variant: "destructive",
+          title: "Authentication required",
+          description: "You must be logged in to create a prompt",
+        })
+        return null
+      }
+      
+      // Insert into prompts table
+      const { data: promptData, error: promptError } = await supabase
+        .from('prompts')
+        .insert({
+          title: params.title,
+          description: params.description,
+          prompt: params.content, // Map content to prompt field
+          category: params.category, // Use category instead of category_id
+          hub_area: params.hubArea // This is now properly typed
+        })
+        .select('*')
+        .single()
+
+      if (promptError) {
+        throw promptError
       }
 
-      const promptData = {
-        title,
-        description,
-        content,
-        category_id: category,
-        hub_area: hubArea
-      };
-
-      let res;
-
-      if (basePrompt?.id) {
-        res = await supabase
-          .from('prompts')
-          .update(promptData)
-          .eq('id', basePrompt.id);
-      } else {
-        res = await supabase
-          .from('prompts')
-          .insert(promptData);
-      }
-
-      if (res.error) throw res.error;
-
       toast({
-        description: basePrompt?.id ? 'Prompt updated successfully!' : 'Prompt saved successfully!'
-      });
-      onClose();
-    } catch (error: any) {
-      console.error('Error saving prompt:', error);
+        title: "Prompt created",
+        description: "Your prompt has been saved successfully",
+      })
+
+      return promptData
+    } catch (error) {
+      console.error('Error creating prompt:', error)
       toast({
-        variant: 'destructive',
-        description: error.message || 'Failed to save prompt. Please try again.'
-      });
+        variant: "destructive",
+        title: "Failed to create prompt",
+        description: "An error occurred while saving your prompt",
+      })
+      return null
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false)
     }
-  };
-
-  const handleClose = () => {
-    setTitle(basePrompt?.title || '');
-    setDescription(basePrompt?.description || '');
-    setContent(basePrompt?.content || '');
-    setCategory(basePrompt?.category_id || '');
-    setHubArea(basePrompt?.hub_area || '');
-    onClose();
-  };
+  }
 
   return {
-    title,
-    setTitle,
-    description,
-    setDescription,
-    content,
-    setContent,
-    category,
-    setCategory,
-    hubArea,
-    setHubArea,
-    isSubmitting,
-    handleSavePrompt,
-    handleClose
-  };
-};
+    isLoading,
+    createCustomPrompt
+  }
+}

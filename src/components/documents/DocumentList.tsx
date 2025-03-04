@@ -104,7 +104,19 @@ export function DocumentList() {
         .order('chunk_index', { ascending: true })
       
       if (error) throw error
-      setDocumentChunks(data as DocumentChunk[] || [])
+      
+      // Transform data to match DocumentChunk type with document property
+      const transformedChunks = (data || []).map(chunk => ({
+        ...chunk,
+        document: {
+          id: document.id,
+          title: document.title,
+          file_type: document.file_type,
+          hub_areas: document.hub_areas
+        }
+      })) as DocumentChunk[]
+      
+      setDocumentChunks(transformedChunks)
     } catch (error) {
       console.error('Error loading chunks:', error)
       toast({

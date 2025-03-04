@@ -27,79 +27,79 @@ enabled = true
 [realtime]
 enabled = true
 
-[[function]]
+[[functions]]
 name = "admin-users-list"
 verify_jwt = true
 
-[[function]]
+[[functions]]
 name = "admin-users-toggle-admin"
 verify_jwt = true
 
-[[function]]
+[[functions]]
 name = "admin-users-update-profile"
 verify_jwt = true
 
-[[function]]
+[[functions]]
 name = "admin-users"
 verify_jwt = true
 
-[[function]]
+[[functions]]
 name = "generate-embedding"
 verify_jwt = false
 
-[[function]]
+[[functions]]
 name = "generate-prompt-content"
 verify_jwt = false
 
-[[function]]
+[[functions]]
 name = "process-document"
 verify_jwt = false
 
-[[function]]
+[[functions]]
 name = "process-document-llamaindex"
 verify_jwt = false
 
-[[function]]
+[[functions]]
 name = "retrieve-document-context"
 verify_jwt = false
 
-[[function]]
+[[functions]]
 name = "generate-response-with-context"
 verify_jwt = false
 
-[[function]]
+[[functions]]
 name = "batch-process-documents"
 verify_jwt = false
 
-[function.admin-users-list]
+[functions.admin-users-list]
 path = "supabase/functions/admin-users-list"
 
-[function.admin-users-toggle-admin]
+[functions.admin-users-toggle-admin]
 path = "supabase/functions/admin-users-toggle-admin"
 
-[function.admin-users-update-profile]
+[functions.admin-users-update-profile]
 path = "supabase/functions/admin-users-update-profile"
 
-[function.admin-users]
+[functions.admin-users]
 path = "supabase/functions/admin-users"
 
-[function.generate-embedding]
+[functions.generate-embedding]
 path = "supabase/functions/generate-embedding"
 
-[function.generate-prompt-content]
+[functions.generate-prompt-content]
 path = "supabase/functions/generate-prompt-content"
 
-[function.process-document]
+[functions.process-document]
 path = "supabase/functions/process-document"
 
-[function.process-document-llamaindex]
+[functions.process-document-llamaindex]
 path = "supabase/functions/process-document-llamaindex"
 
-[function.retrieve-document-context]
+[functions.retrieve-document-context]
 path = "supabase/functions/retrieve-document-context"
 
-[function.generate-response-with-context]
+[functions.generate-response-with-context]
 path = "supabase/functions/generate-response-with-context"
 
-[function.batch-process-documents]
+[functions.batch-process-documents]
 path = "supabase/functions/batch-process-documents"

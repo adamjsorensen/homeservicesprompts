@@ -3,24 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
-
-export interface DocumentChunk {
-  id: string
-  document_id: string
-  content: string
-  chunk_index: number
-  similarity: number
-  document: {
-    id: string
-    title: string
-    file_type: string
-    hub_areas: string[]
-  }
-  chunk_id?: string // For backwards compatibility
-  document_title?: string // For backwards compatibility
-  hub_areas?: string[] // For backwards compatibility
-  relevance_score?: number // For backwards compatibility
-}
+import { DocumentChunk } from '@/types/database'
 
 export interface ContextResponse {
   content: string
@@ -109,13 +92,13 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
       setResultSource(data.fromCache ? 'cache' : 'live')
       
       // Standardize the results
-      const standardizedResults = (data as DocumentChunk[]).map(chunk => ({
+      const standardizedResults = (data.chunks || data).map((chunk: any) => ({
         ...chunk,
         chunk_id: chunk.id, // Ensure chunk_id exists for backward compatibility
         document_title: chunk.document?.title || '',
         hub_areas: chunk.document?.hub_areas || [],
         relevance_score: chunk.similarity || 0
-      }))
+      })) as DocumentChunk[]
       
       setContextResults(standardizedResults)
       return standardizedResults
