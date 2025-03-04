@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -19,6 +20,7 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import { PromptGenerationsAdmin } from "@/components/admin/PromptGenerationsAdmin";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import AdminDocuments from "@/pages/admin/AdminDocuments";
+import GeneratedContent from "./pages/GeneratedContent";
 
 function App() {
   return (
@@ -34,6 +36,7 @@ function App() {
               <Route path="/library" element={<Library />} />
               <Route path="/library/:hubArea" element={<Library />} />
               <Route path="/saved-generations" element={<SavedGenerations />} />
+              <Route path="/generated-content" element={<GeneratedContent />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/profile" element={<Profile />} />
