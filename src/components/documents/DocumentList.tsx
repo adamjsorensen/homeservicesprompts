@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface Document {
   id: string
@@ -29,26 +30,46 @@ interface Document {
   hub_areas: string[]
   created_at: string
   updated_at: string
+  chunks_count?: number
 }
 
 export function DocumentList() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
+  const [documentChunks, setDocumentChunks] = useState<any[]>([])
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [loadingChunks, setLoadingChunks] = useState(false)
   const { toast } = useToast()
 
   const fetchDocuments = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      
+      // Fetch documents
+      const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (documentsError) throw documentsError
 
-      setDocuments(data || [])
+      // Fetch chunk counts for each document
+      const documentsWithChunks = await Promise.all(
+        (documentsData || []).map(async (doc) => {
+          const { count, error } = await supabase
+            .from('document_chunks')
+            .select('*', { count: 'exact', head: true })
+            .eq('document_id', doc.id)
+
+          return {
+            ...doc,
+            chunks_count: error ? 0 : count
+          }
+        })
+      )
+
+      setDocuments(documentsWithChunks || [])
     } catch (error) {
       console.error('Error fetching documents:', error)
       toast({
@@ -65,9 +86,32 @@ export function DocumentList() {
     fetchDocuments()
   }, [])
 
-  const handlePreview = (document: Document) => {
+  const handlePreview = async (document: Document) => {
     setSelectedDocument(document)
     setPreviewOpen(true)
+    
+    // Load chunks for this document
+    try {
+      setLoadingChunks(true)
+      const { data, error } = await supabase
+        .from('document_chunks')
+        .select('*')
+        .eq('document_id', document.id)
+        .order('chunk_index', { ascending: true })
+      
+      if (error) throw error
+      setDocumentChunks(data || [])
+    } catch (error) {
+      console.error('Error loading chunks:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load document chunks",
+      })
+      setDocumentChunks([])
+    } finally {
+      setLoadingChunks(false)
+    }
   }
 
   const formatHubAreas = (hubAreas: string[]) => {
@@ -103,6 +147,7 @@ export function DocumentList() {
                 <TableHead>Title</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Hub Areas</TableHead>
+                <TableHead>Chunks</TableHead>
                 <TableHead>Uploaded</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -113,6 +158,11 @@ export function DocumentList() {
                   <TableCell className="font-medium">{doc.title}</TableCell>
                   <TableCell className="uppercase">{doc.file_type}</TableCell>
                   <TableCell>{formatHubAreas(doc.hub_areas)}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {doc.chunks_count || 0}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}</TableCell>
                   <TableCell className="text-right">
                     <Button onClick={() => handlePreview(doc)} variant="ghost" size="sm">
@@ -128,16 +178,54 @@ export function DocumentList() {
 
       {selectedDocument && (
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl">
             <DialogHeader>
               <DialogTitle>{selectedDocument.title}</DialogTitle>
               <DialogDescription>
                 {formatHubAreas(selectedDocument.hub_areas)}
               </DialogDescription>
             </DialogHeader>
-            <div className="mt-4 max-h-[400px] overflow-auto border rounded-md p-4 bg-muted/30">
-              <pre className="whitespace-pre-wrap text-sm">{selectedDocument.content}</pre>
-            </div>
+            
+            <Tabs defaultValue="content">
+              <TabsList>
+                <TabsTrigger value="content">Full Content</TabsTrigger>
+                <TabsTrigger value="chunks">
+                  Chunks ({documentChunks.length})
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="content" className="mt-4">
+                <div className="max-h-[400px] overflow-auto border rounded-md p-4 bg-muted/30">
+                  <pre className="whitespace-pre-wrap text-sm">{selectedDocument.content}</pre>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="chunks" className="mt-4">
+                {loadingChunks ? (
+                  <div className="flex justify-center py-8">
+                    <p>Loading chunks...</p>
+                  </div>
+                ) : documentChunks.length === 0 ? (
+                  <div className="text-center py-8 bg-muted/50 rounded-md">
+                    <p className="text-muted-foreground">No chunks found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[400px] overflow-auto">
+                    {documentChunks.map((chunk) => (
+                      <div key={chunk.id} className="border rounded-md p-3 bg-muted/20">
+                        <div className="flex justify-between items-center mb-2">
+                          <Badge variant="outline">Chunk {chunk.chunk_index + 1}</Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(chunk.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{chunk.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
       )}

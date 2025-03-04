@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 
 const HUB_AREAS = [
   { value: 'marketing', label: 'Marketing' },
@@ -38,6 +39,8 @@ export function DocumentUpload() {
   const [fileType, setFileType] = useState('txt')
   const [selectedHubAreas, setSelectedHubAreas] = useState<string[]>(['marketing'])
   const [isUploading, setIsUploading] = useState(false)
+  const [processingProgress, setProcessingProgress] = useState(0)
+  const [isProcessing, setIsProcessing] = useState(false)
   const { toast } = useToast()
 
   const handleHubAreaToggle = (hubArea: string) => {
@@ -60,21 +63,30 @@ export function DocumentUpload() {
 
     try {
       setIsUploading(true)
+      setIsProcessing(true)
+      setProcessingProgress(10)
 
-      const { data, error } = await supabase.functions.invoke('process-document', {
+      // Use the new LlamaIndex processor
+      const { data, error } = await supabase.functions.invoke('process-document-llamaindex', {
         body: {
           title,
           content,
           fileType,
           hubAreas: selectedHubAreas,
+          metadata: {
+            processed_by: "llamaindex",
+            source_type: "manual_upload"
+          },
         },
       })
 
       if (error) throw error
+      
+      setProcessingProgress(100)
 
       toast({
         title: "Success",
-        description: "Document uploaded and processed successfully",
+        description: `Document uploaded and processed successfully with ${data.chunks_count} chunks created`,
       })
 
       // Reset form
@@ -90,9 +102,32 @@ export function DocumentUpload() {
         description: "Failed to upload document. Please try again.",
       })
     } finally {
-      setIsUploading(false)
+      setTimeout(() => {
+        setIsUploading(false)
+        setIsProcessing(false)
+        setProcessingProgress(0)
+      }, 1000) // Keep progress bar visible briefly
     }
   }
+
+  // Simulate progress during processing
+  // In a real app, you might get actual progress from the backend
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout
+    
+    if (isProcessing && processingProgress < 90) {
+      interval = setInterval(() => {
+        setProcessingProgress(prev => {
+          const increment = Math.random() * 10
+          return Math.min(prev + increment, 90)
+        })
+      }, 1000)
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isProcessing, processingProgress])
 
   return (
     <div className="space-y-6">
@@ -150,6 +185,16 @@ export function DocumentUpload() {
           ))}
         </div>
       </div>
+
+      {isProcessing && (
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <Label>Processing document...</Label>
+            <span className="text-sm text-muted-foreground">{Math.round(processingProgress)}%</span>
+          </div>
+          <Progress value={processingProgress} className="h-2" />
+        </div>
+      )}
 
       <Button 
         onClick={handleUpload} 
