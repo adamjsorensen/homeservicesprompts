@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -24,18 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DocumentChunk } from '@/types/database'
 import { DocumentChunkPreview } from './DocumentChunkPreview'
 import { Settings, Eye, BarChart2 } from 'lucide-react'
-
-interface Document {
-  id: string;
-  title: string;
-  content: string;
-  file_type: string;
-  hub_areas: string[];
-  created_at: string;
-  updated_at: string;
-  chunks_count?: number;
-  metadata?: Record<string, any>;
-}
+import { Document } from '@/types/documentTypes'
 
 interface DocumentListProps {
   onConfigureDocument?: (document: Document) => void;
@@ -71,10 +59,13 @@ export function DocumentList({ onConfigureDocument }: DocumentListProps) {
             .select('id', { count: 'exact', head: true })
             .eq('document_id', doc.id)
 
+          // Transform the document data to match our Document type
           return {
             ...doc,
-            chunks_count: error ? 0 : count
-          }
+            chunks_count: error ? 0 : count,
+            // Ensure metadata is a Record<string, any> instead of Json type
+            metadata: doc.metadata as Record<string, any>
+          } as Document
         })
       )
 

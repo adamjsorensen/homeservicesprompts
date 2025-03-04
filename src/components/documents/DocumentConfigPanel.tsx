@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { Document } from '@/types/documentTypes'
 import {
   Select,
   SelectContent,
@@ -22,14 +23,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-
-interface Document {
-  id: string;
-  title: string;
-  hub_areas: string[];
-  file_type: string;
-  metadata: Record<string, any>;
-}
 
 interface DocumentConfigPanelProps {
   document: Document;
@@ -67,19 +60,22 @@ export function DocumentConfigPanel({ document, onUpdate }: DocumentConfigPanelP
   // Save document configuration
   const handleSave = async () => {
     try {
+      // Create a new metadata object with existing metadata plus our updates
+      const updatedMetadata = {
+        ...(document.metadata || {}),
+        priority,
+        weight,
+        active: isActive,
+        quality_threshold: qualityThreshold,
+        access_level: accessLevel,
+        updated_at: new Date().toISOString(),
+      }
+      
       // Update document with new metadata
       const { error } = await supabase
         .from('documents')
         .update({
-          metadata: {
-            ...document.metadata,
-            priority,
-            weight,
-            active: isActive,
-            quality_threshold: qualityThreshold,
-            access_level: accessLevel,
-            updated_at: new Date().toISOString(),
-          }
+          metadata: updatedMetadata
         })
         .eq('id', document.id)
       

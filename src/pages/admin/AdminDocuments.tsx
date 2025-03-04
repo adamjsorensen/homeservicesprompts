@@ -13,17 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-
-interface Document {
-  id: string;
-  title: string;
-  content: string;
-  file_type: string;
-  hub_areas: string[];
-  created_at: string;
-  updated_at: string;
-  metadata?: Record<string, any>;
-}
+import { Document } from "@/types/documentTypes"
 
 export default function AdminDocuments() {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
