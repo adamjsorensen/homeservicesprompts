@@ -48,15 +48,19 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Database } from "@/integrations/supabase/types";
+
+// Type for hub areas from database schema
+type HubAreaType = Database["public"]["Enums"]["hub_area_type"];
 
 const HUB_AREAS = [
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'sales', label: 'Sales' },
-  { value: 'production', label: 'Production' },
-  { value: 'team', label: 'Team' },
-  { value: 'strategy', label: 'Strategy' },
-  { value: 'financials', label: 'Financials' },
-  { value: 'leadership', label: 'Leadership' },
+  { value: 'marketing' as HubAreaType, label: 'Marketing' },
+  { value: 'sales' as HubAreaType, label: 'Sales' },
+  { value: 'production' as HubAreaType, label: 'Production' },
+  { value: 'team' as HubAreaType, label: 'Team' },
+  { value: 'strategy' as HubAreaType, label: 'Strategy' },
+  { value: 'financials' as HubAreaType, label: 'Financials' },
+  { value: 'leadership' as HubAreaType, label: 'Leadership' },
 ];
 
 const formSchema = z.object({
@@ -91,11 +95,14 @@ export function DocumentConfigPanel({ document, onUpdate }: DocumentConfigPanelP
     setError(null);
     
     try {
+      // Cast hub_areas to correct type for database
+      const hub_areas = values.hub_areas as HubAreaType[];
+      
       const { error } = await supabase
         .from('documents')
         .update({
           title: values.title,
-          hub_areas: values.hub_areas,
+          hub_areas: hub_areas,
           metadata: {
             ...document.metadata,
             ...values.metadata,
@@ -130,7 +137,8 @@ export function DocumentConfigPanel({ document, onUpdate }: DocumentConfigPanelP
     setError(null);
     
     try {
-      await deleteDocument.mutateAsync(document.id, document.graphlit_doc_id);
+      // Fix the mutate call to pass the correct arguments
+      await deleteDocument.mutateAsync(document.id);
       
       toast({
         title: "Document Deleted",

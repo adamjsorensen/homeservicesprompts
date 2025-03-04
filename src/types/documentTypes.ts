@@ -14,7 +14,7 @@ export interface Document {
   metadata?: Record<string, any>;
   chunks_count?: number;
   processor?: string;
-  graphlit_doc_id?: string;
+  graphlit_doc_id?: string | null;
 }
 
 export interface DocumentChunk {
@@ -29,7 +29,7 @@ export interface DocumentChunk {
   relevance_score?: number;
   parent_chunks?: string[];
   child_chunks?: string[];
-  graphlit_chunk_id?: string;
+  graphlit_chunk_id?: string | null;
 }
 
 export interface DocumentPermission {

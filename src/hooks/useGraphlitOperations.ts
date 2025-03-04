@@ -1,7 +1,8 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DocumentChunk, Document, GraphlitProcessingResult } from '@/types/documentTypes';
+import { DocumentChunk, Document, GraphlitProcessingResult, ProcessingOptions } from '@/types/documentTypes';
+import { Json } from '@/integrations/supabase/types';
 
 interface GraphlitSearchParams {
   query: string;
@@ -75,9 +76,16 @@ export function useGraphlitOperations() {
         
       if (chunksError) throw chunksError;
       
+      // Convert Json metadata to proper Record<string, any> type
+      const typedChunks: DocumentChunk[] = (chunks || []).map(chunk => ({
+        ...chunk,
+        metadata: chunk.metadata as Record<string, any> || {},
+      }));
+      
       return {
         ...document,
-        chunks: chunks || []
+        metadata: document.metadata as Record<string, any> || {},
+        chunks: typedChunks
       };
     } catch (err) {
       console.error('Error fetching document details:', err);
@@ -88,93 +96,105 @@ export function useGraphlitOperations() {
   /**
    * Reprocess an existing document with updated options
    */
-  const reprocessDocument = async (
-    documentId: string, 
-    options: { 
-      chunkSize?: number; 
-      chunkOverlap?: number; 
-      splitByHeading?: boolean; 
-      hierarchical?: boolean;
-    }
-  ): Promise<{ success: boolean; batch_id: string }> => {
-    try {
-      // First get document content
-      const { data: document, error: documentError } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
-        .single();
+  const reprocessDocument = useMutation({
+    mutationFn: async (documentId: string): Promise<{ success: boolean; batch_id: string }> => {
+      try {
+        // First get document content
+        const { data: document, error: documentError } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('id', documentId)
+          .single();
+          
+        if (documentError) throw documentError;
         
-      if (documentError) throw documentError;
-      
-      // Call the reprocessing endpoint
-      const { data, error } = await supabase.functions.invoke('process-document-graphlit', {
-        body: {
-          documentId,
-          title: document.title,
-          content: document.content,
-          fileType: document.file_type,
-          hubAreas: document.hub_areas,
-          metadata: {
-            original_doc_id: documentId,
-            reprocessed: true,
-            previous_processor: document.metadata?.processor || 'unknown'
-          },
-          processingOptions: options
-        }
-      });
-      
-      if (error) throw error;
-      
-      return {
-        success: data.success,
-        batch_id: data.batch_id
-      };
-    } catch (err) {
-      console.error('Error reprocessing document with Graphlit:', err);
-      throw err;
+        const docMetadata = document.metadata as Record<string, any> || {};
+        
+        // Call the reprocessing endpoint
+        const { data, error } = await supabase.functions.invoke('process-document-graphlit', {
+          body: {
+            documentId,
+            title: document.title,
+            content: document.content,
+            fileType: document.file_type,
+            hubAreas: document.hub_areas,
+            metadata: {
+              original_doc_id: documentId,
+              reprocessed: true,
+              previous_processor: docMetadata.processor || 'unknown'
+            },
+            processingOptions: {
+              chunkSize: 1000,
+              chunkOverlap: 200,
+              splitByHeading: true,
+              hierarchical: true
+            }
+          }
+        });
+        
+        if (error) throw error;
+        
+        return {
+          success: data.success,
+          batch_id: data.batch_id
+        };
+      } catch (err) {
+        console.error('Error reprocessing document with Graphlit:', err);
+        throw err;
+      }
     }
-  };
+  });
 
   /**
    * Delete a document and all associated chunks from Graphlit and the database
    */
-  const deleteDocument = async (documentId: string, graphlitDocId?: string): Promise<{ success: boolean }> => {
-    try {
-      // If we have a Graphlit document ID, call Graphlit API to delete it
-      if (graphlitDocId) {
-        try {
-          await supabase.functions.invoke('delete-graphlit-document', {
-            body: { graphlitDocId }
-          });
-        } catch (graphlitError) {
-          console.error('Error deleting document from Graphlit:', graphlitError);
-          // Continue with local deletion even if Graphlit deletion fails
+  const deleteDocument = useMutation({
+    mutationFn: async (documentId: string): Promise<{ success: boolean }> => {
+      try {
+        // Get document details to check for Graphlit ID
+        const { data: document, error: docError } = await supabase
+          .from('documents')
+          .select('graphlit_doc_id')
+          .eq('id', documentId)
+          .single();
+          
+        if (docError) throw docError;
+        
+        // If we have a Graphlit document ID, call Graphlit API to delete it
+        if (document.graphlit_doc_id) {
+          try {
+            await supabase.functions.invoke('delete-graphlit-document', {
+              body: { graphlitDocId: document.graphlit_doc_id }
+            });
+          } catch (graphlitError) {
+            console.error('Error deleting document from Graphlit:', graphlitError);
+            // Continue with local deletion even if Graphlit deletion fails
+          }
         }
+        
+        // Delete document chunks first (for foreign key constraints)
+        const { error: chunksError } = await supabase
+          .from('document_chunks')
+          .delete()
+          .eq('document_id', documentId);
+          
+        if (chunksError) throw chunksError;
+        
+        // Delete the document
+        const { error: documentError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('id', documentId);
+          
+        if (documentError) throw documentError;
+        
+        return { success: true };
+      } catch (err) {
+        console.error('Error deleting document:', err);
+        throw err;
       }
-      
-      // Delete document chunks first (for foreign key constraints)
-      const { error: chunksError } = await supabase
-        .from('document_chunks')
-        .delete()
-        .eq('document_id', documentId);
-        
-      if (chunksError) throw chunksError;
-      
-      // Delete the document
-      const { error: documentError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('id', documentId);
-        
-      if (documentError) throw documentError;
-      
-      return { success: true };
-    } catch (err) {
-      console.error('Error deleting document:', err);
-      throw err;
     }
-  };
+  });
 
   return {
     searchDocuments: useMutation({
@@ -183,11 +203,7 @@ export function useGraphlitOperations() {
     getDocumentDetails: useMutation({
       mutationFn: getDocumentDetails
     }),
-    reprocessDocument: useMutation({
-      mutationFn: reprocessDocument
-    }),
-    deleteDocument: useMutation({
-      mutationFn: deleteDocument
-    })
+    reprocessDocument,
+    deleteDocument
   };
 }

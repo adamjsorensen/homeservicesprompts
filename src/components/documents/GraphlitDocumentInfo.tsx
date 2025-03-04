@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Document } from "@/types/documentTypes";
+import { Document, ProcessingOptions } from "@/types/documentTypes";
 import { useToast } from "@/components/ui/use-toast";
 import { useGraphlitOperations } from "@/hooks/useGraphlitOperations";
 import { Loader2 } from "lucide-react";
@@ -23,11 +23,18 @@ export function GraphlitDocumentInfo({ document, onUpdate }: GraphlitDocumentInf
     
     setIsLoading(true);
     try {
-      await reprocessDocument.mutateAsync(document.id, {
+      // Fix the processing options to match the correct type
+      const options: ProcessingOptions = {
         chunkSize: 1000,
         chunkOverlap: 200,
         splitByHeading: true,
         hierarchical: true
+      };
+      
+      await reprocessDocument.mutateAsync(document.id, {
+        onSuccess: () => {
+          if (onUpdate) onUpdate();
+        }
       });
       
       toast({
@@ -35,7 +42,6 @@ export function GraphlitDocumentInfo({ document, onUpdate }: GraphlitDocumentInf
         description: "The document is being reprocessed with Graphlit. This may take a few minutes.",
       });
       
-      if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Error reprocessing document:", error);
       toast({
