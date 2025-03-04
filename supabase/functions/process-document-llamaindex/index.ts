@@ -28,6 +28,7 @@ serve(async (req) => {
   // Generate a unique batch ID for tracking
   const batchId = crypto.randomUUID();
   const processingStartTime = performance.now();
+  let documentId = null;
   
   try {
     // Environment variable validation
@@ -48,6 +49,14 @@ serve(async (req) => {
       url: req.url
     });
     
+    const requestPayload = await req.json();
+    
+    // Input validation with detailed logging
+    if (!requestPayload) {
+      console.error("Request payload is missing or empty");
+      throw new Error('Request payload is missing or empty');
+    }
+    
     const { 
       title, 
       content, 
@@ -56,13 +65,37 @@ serve(async (req) => {
       metadata = {}, 
       isBase64 = false,
       processingOptions = {}
-    } = await req.json() as DocumentInput;
+    } = requestPayload as DocumentInput;
     
-    // Input validation
-    if (!title) throw new Error('Document title is required');
-    if (!content) throw new Error('Document content is required');
-    if (!fileType) throw new Error('Document file type is required');
-    if (!hubAreas || !Array.isArray(hubAreas)) throw new Error('Document hub areas must be an array');
+    // Extended input validation
+    if (!title) {
+      console.error("Document title is required");
+      throw new Error('Document title is required');
+    }
+    if (!content) {
+      console.error("Document content is required");
+      throw new Error('Document content is required');
+    }
+    if (!fileType) {
+      console.error("Document file type is required");
+      throw new Error('Document file type is required');
+    }
+    if (!hubAreas || !Array.isArray(hubAreas)) {
+      console.error("Document hub areas must be an array");
+      throw new Error('Document hub areas must be an array');
+    }
+    
+    // Log document processing parameters
+    console.log("Document received for processing:", {
+      title: title,
+      fileType: fileType,
+      contentLength: content?.length,
+      contentExcerpt: typeof content === 'string' ? content.substring(0, 100) + '...' : 'Invalid content format',
+      hubAreas: hubAreas,
+      isBase64: isBase64,
+      hasMetadata: !!metadata,
+      processingOptions: processingOptions
+    });
     
     // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -70,7 +103,7 @@ serve(async (req) => {
     console.log(`Processing document: ${title} (${fileType})`);
     
     // Create batch status record
-    await supabase
+    const batchResponse = await supabase
       .from('batch_processing_status')
       .insert({
         batch_id: batchId,
@@ -84,6 +117,11 @@ serve(async (req) => {
           processing_type: 'llamaindex'
         }
       });
+      
+    if (batchResponse.error) {
+      console.error("Failed to create batch status record:", batchResponse.error);
+      throw new Error(`Failed to create batch status record: ${batchResponse.error.message}`);
+    }
     
     // Create document record first to get an ID
     const { data: document, error: documentError } = await supabase
@@ -104,13 +142,15 @@ serve(async (req) => {
       .single();
     
     if (documentError) {
+      console.error("Failed to create document:", documentError);
       throw new Error(`Failed to create document: ${documentError.message}`);
     }
     
+    documentId = document.id;
     console.log(`Document created with ID: ${document.id}`);
     
     // Update batch status with document ID
-    await supabase
+    const updateResponse = await supabase
       .from('batch_processing_status')
       .update({
         metadata: {
@@ -122,125 +162,177 @@ serve(async (req) => {
         }
       })
       .eq('batch_id', batchId);
+      
+    if (updateResponse.error) {
+      console.error("Failed to update batch status with document ID:", updateResponse.error);
+    }
     
     // Process document using LlamaIndex
     console.log("Processing document with LlamaIndex...");
     const fileName = metadata.original_filename || `${title}.${fileType}`;
-    const processedDoc = await processDocumentWithLlamaIndex(
-      content,
-      fileName,
-      fileType,
-      {
+    
+    // Detailed logging before LlamaIndex API call
+    console.log("Preparing LlamaIndex request:", {
+      fileName: fileName,
+      fileType: fileType,
+      processingOptions: {
         chunkSize: processingOptions.chunkSize || 1000,
         chunkOverlap: processingOptions.chunkOverlap || 200,
         splitByHeading: processingOptions.splitByHeading !== false,
         hierarchical: processingOptions.hierarchical !== false
-      }
-    );
+      },
+      hasApiKey: !!llamaindexApiKey,
+      contentLength: content?.length,
+      isBase64: isBase64
+    });
     
-    console.log(`Document processed with ${processedDoc.chunks.length} chunks`);
-    
-    // Update batch status with total items
-    await supabase
-      .from('batch_processing_status')
-      .update({
-        total_items: processedDoc.chunks.length,
-        status: 'processing'
-      })
-      .eq('batch_id', batchId);
-    
-    // Update document with processed content and metadata
-    await supabase
-      .from('documents')
-      .update({
-        content: processedDoc.chunks.map(chunk => chunk.text).join("\n\n"),
-        metadata: {
-          ...document.metadata,
-          ...processedDoc.document_metadata,
-          processing_metadata: processedDoc.processing_metadata,
-          chunks_count: processedDoc.chunks.length,
-          processor: 'llamaindex'
+    try {
+      const processedDoc = await processDocumentWithLlamaIndex(
+        content,
+        fileName,
+        fileType,
+        {
+          chunkSize: processingOptions.chunkSize || 1000,
+          chunkOverlap: processingOptions.chunkOverlap || 200,
+          splitByHeading: processingOptions.splitByHeading !== false,
+          hierarchical: processingOptions.hierarchical !== false
         }
-      })
-      .eq('id', document.id);
-    
-    // Store the document chunks with embeddings
-    console.log("Storing document chunks and embeddings...");
-    const enrichedChunks = processedDoc.chunks.map((chunk, index) => ({
-      text: chunk.text,
-      metadata: {
-        ...chunk.metadata,
-        document_id: document.id,
-        chunk_index: index,
-        hub_areas: hubAreas,
-        title: title,
-        file_type: fileType
-      }
-    }));
-    
-    // Store nodes using LlamaIndex
-    const storageResult = await storeDocumentNodes(
-      document.id,
-      enrichedChunks,
-      { storeRelationships: true }
-    );
-    
-    if (!storageResult.success) {
-      throw new Error(`Failed to store document nodes: ${storageResult.error}`);
-    }
-    
-    // Update batch status as completed
-    await supabase
-      .from('batch_processing_status')
-      .update({
-        processed_items: processedDoc.chunks.length,
-        status: 'completed',
-        completed_at: new Date().toISOString()
-      })
-      .eq('batch_id', batchId);
-    
-    // Calculate processing duration
-    const processingDuration = performance.now() - processingStartTime;
-    
-    // Record performance metrics
-    await supabase
-      .from('performance_metrics')
-      .insert({
-        operation_type: 'document_processing',
-        duration_ms: Math.round(processingDuration),
-        status: 'success',
-        document_count: 1,
-        cache_hit: false,
+      );
+      
+      console.log(`Document processed with ${processedDoc.chunks.length} chunks`);
+      
+      // Update batch status with total items
+      await supabase
+        .from('batch_processing_status')
+        .update({
+          total_items: processedDoc.chunks.length,
+          status: 'processing'
+        })
+        .eq('batch_id', batchId);
+      
+      // Update document with processed content and metadata
+      await supabase
+        .from('documents')
+        .update({
+          content: processedDoc.chunks.map(chunk => chunk.text).join("\n\n"),
+          metadata: {
+            ...document.metadata,
+            ...processedDoc.document_metadata,
+            processing_metadata: processedDoc.processing_metadata,
+            chunks_count: processedDoc.chunks.length,
+            processor: 'llamaindex'
+          }
+        })
+        .eq('id', document.id);
+      
+      // Store the document chunks with embeddings
+      console.log("Storing document chunks and embeddings...");
+      const enrichedChunks = processedDoc.chunks.map((chunk, index) => ({
+        text: chunk.text,
         metadata: {
+          ...chunk.metadata,
+          document_id: document.id,
+          chunk_index: index,
+          hub_areas: hubAreas,
+          title: title,
+          file_type: fileType
+        }
+      }));
+      
+      // Detailed logging before storing nodes
+      console.log("Preparing to store document nodes:", {
+        documentId: document.id,
+        chunksCount: enrichedChunks.length,
+        storeRelationships: true
+      });
+      
+      // Store nodes using LlamaIndex
+      const storageResult = await storeDocumentNodes(
+        document.id,
+        enrichedChunks,
+        { storeRelationships: true }
+      );
+      
+      if (!storageResult.success) {
+        console.error("Failed to store document nodes:", storageResult.error);
+        throw new Error(`Failed to store document nodes: ${storageResult.error}`);
+      }
+      
+      console.log("Successfully stored document nodes:", {
+        nodeCount: storageResult.node_ids?.length || 0,
+        success: storageResult.success
+      });
+      
+      // Update batch status as completed
+      await supabase
+        .from('batch_processing_status')
+        .update({
+          processed_items: processedDoc.chunks.length,
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('batch_id', batchId);
+      
+      // Calculate processing duration
+      const processingDuration = performance.now() - processingStartTime;
+      
+      // Record performance metrics
+      await supabase
+        .from('performance_metrics')
+        .insert({
+          operation_type: 'document_processing',
+          duration_ms: Math.round(processingDuration),
+          status: 'success',
+          document_count: 1,
+          cache_hit: false,
+          metadata: {
+            document_id: document.id,
+            chunks_count: processedDoc.chunks.length,
+            file_type: fileType,
+            processing_time_ms: processingDuration,
+            processing_type: 'llamaindex'
+          }
+        });
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
           document_id: document.id,
           chunks_count: processedDoc.chunks.length,
-          file_type: fileType,
-          processing_time_ms: processingDuration,
-          processing_type: 'llamaindex'
+          batch_id: batchId,
+          node_ids: storageResult.node_ids,
+          performance: {
+            duration_ms: Math.round(processingDuration)
+          }
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+          status: 200,
         }
+      );
+    } catch (processingError) {
+      console.error("Error during LlamaIndex processing:", {
+        message: processingError.message,
+        stack: processingError.stack,
+        cause: processingError.cause,
+        documentId: document.id,
+        title: title,
+        fileType: fileType
       });
-    
-    return new Response(
-      JSON.stringify({
-        success: true,
-        document_id: document.id,
-        chunks_count: processedDoc.chunks.length,
-        batch_id: batchId,
-        node_ids: storageResult.node_ids,
-        performance: {
-          duration_ms: Math.round(processingDuration)
-        }
-      }),
-      {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-        status: 200,
-      }
-    );
+      throw processingError; // rethrow to be captured by the outer try-catch
+    }
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error:', {
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause,
+      type: error.constructor.name,
+      documentId: documentId,
+      phase: 'document_processing'
+    });
     
     // Update batch status as error
     try {
@@ -256,7 +348,9 @@ serve(async (req) => {
           error_count: 1,
           metadata: {
             error: error.message,
-            error_stack: error.stack
+            error_stack: error.stack,
+            error_type: error.constructor.name,
+            error_cause: error.cause ? JSON.stringify(error.cause) : undefined
           },
           completed_at: new Date().toISOString()
         })
@@ -274,18 +368,26 @@ serve(async (req) => {
           error_message: error.message,
           metadata: {
             batch_id: batchId,
-            error_details: error.stack
+            document_id: documentId,
+            error_details: error.stack,
+            error_type: error.constructor.name
           }
         });
     } catch (loggingError) {
-      console.error('Error logging failure:', loggingError);
+      console.error('Error logging failure:', {
+        original_error: error.message,
+        logging_error: loggingError.message,
+        stack: loggingError.stack
+      });
     }
     
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
-        batch_id: batchId
+        error_type: error.constructor.name,
+        batch_id: batchId,
+        document_id: documentId
       }),
       {
         headers: {
