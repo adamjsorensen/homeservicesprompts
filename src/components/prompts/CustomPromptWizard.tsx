@@ -24,6 +24,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { LoadingCard } from "./LoadingCard";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { DocumentContextSelector } from '@/components/documents/DocumentContextSelector'
+import { DocumentChunk, useDocumentContext } from '@/hooks/useDocumentContext'
+import { DocumentPerformanceMetrics } from '@/components/documents/DocumentPerformanceMetrics'
 
 interface CustomPromptWizardProps {
   basePrompt: Prompt | null;
@@ -41,6 +44,7 @@ export function CustomPromptWizard({
   const [selectedTweaks, setSelectedTweaks] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [additionalContext, setAdditionalContext] = useState("");
+  const [selectedContextChunks, setSelectedContextChunks] = useState<DocumentChunk[]>([]);
   const { parameters, getTweaksForParameter, tweaks, isLoading } = usePromptParameters(basePrompt?.id);
   const { toast } = useToast();
   const [rules, setRules] = useState<any[]>([]);
@@ -197,6 +201,54 @@ export function CustomPromptWizard({
     }
   };
 
+  const ContextStep = ({ 
+    selectedContextChunks, 
+    setSelectedContextChunks, 
+    hubArea 
+  }: { 
+    selectedContextChunks: DocumentChunk[]
+    setSelectedContextChunks: (chunks: DocumentChunk[]) => void
+    hubArea?: string
+  }) => {
+    const { performanceMetrics } = useDocumentContext()
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">Add Relevant Context</h3>
+          {performanceMetrics && <DocumentPerformanceMetrics metrics={performanceMetrics} />}
+        </div>
+        
+        <p className="text-muted-foreground">
+          Search and select relevant context to enhance your prompt with domain-specific knowledge.
+        </p>
+        
+        <DocumentContextSelector 
+          onContextSelect={setSelectedContextChunks}
+          hubArea={hubArea}
+        />
+        
+        {selectedContextChunks.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-sm font-medium mb-2">Selected Context ({selectedContextChunks.length})</h4>
+            <div className="text-sm p-3 rounded bg-muted">
+              <ul className="list-disc pl-5 space-y-1">
+                {selectedContextChunks.map(chunk => (
+                  <li key={chunk.id} className="text-xs">
+                    <span className="font-medium">{chunk.document?.title || chunk.document_title}: </span>
+                    <span className="text-muted-foreground truncate">
+                      {chunk.content.substring(0, 100)}...
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   if (isLoading || isLoadingRules || (!showAdditionalContext && !currentRule)) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -277,6 +329,13 @@ export function CustomPromptWizard({
                 />
               </CardContent>
             </Card>
+          )}
+
+          {showAdditionalContext && !isGenerating && (
+            <ContextStep 
+              selectedContextChunks={selectedContextChunks}
+              setSelectedContextChunks={setSelectedContextChunks}
+            />
           )}
 
           {isGenerating && (

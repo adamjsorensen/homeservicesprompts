@@ -67,6 +67,10 @@ verify_jwt = false
 name = "generate-response-with-context"
 verify_jwt = false
 
+[[function]]
+name = "batch-process-documents"
+verify_jwt = false
+
 [function.admin-users-list]
 path = "supabase/functions/admin-users-list"
 
@@ -96,3 +100,6 @@ path = "supabase/functions/retrieve-document-context"
 
 [function.generate-response-with-context]
 path = "supabase/functions/generate-response-with-context"
+
+[function.batch-process-documents]
+path = "supabase/functions/batch-process-documents"

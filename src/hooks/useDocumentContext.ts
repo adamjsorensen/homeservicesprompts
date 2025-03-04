@@ -2,6 +2,7 @@
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useState } from 'react'
+import { useAuth } from '@/components/auth/AuthProvider'
 
 export interface DocumentChunk {
   id: string
@@ -28,19 +29,52 @@ export interface ContextResponse {
     context: string
     relevance: number
   }>
+  performance?: {
+    durationMs: number
+    cacheHit?: boolean
+    batches?: number
+    qualityMetrics?: {
+      avgSimilarity: number
+      maxSimilarity: number
+      minSimilarity: number
+    }
+  }
+}
+
+export interface PerformanceMetrics {
+  durationMs: number
+  cacheHit: boolean
+  status: string
+  batches?: number
+  qualityMetrics?: {
+    avgSimilarity: number
+    maxSimilarity: number
+    minSimilarity: number
+  }
 }
 
 interface UseDocumentContextOptions {
   similarityThreshold?: number
   matchCount?: number
-  useCached?: boolean
+  useCaching?: boolean
+  batchSize?: number
+  trackMetrics?: boolean
 }
 
 export function useDocumentContext(options: UseDocumentContextOptions = {}) {
-  const { similarityThreshold = 0.7, matchCount = 5, useCached = true } = options
+  const { 
+    similarityThreshold = 0.7, 
+    matchCount = 5, 
+    useCaching = true,
+    batchSize = 50,
+    trackMetrics = true
+  } = options
+  
+  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [contextResults, setContextResults] = useState<DocumentChunk[]>([])
   const [resultSource, setResultSource] = useState<'cache' | 'live' | null>(null)
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null)
 
   const retrieveContext = async (query: string, hubArea?: string) => {
     setIsLoading(true)
@@ -51,13 +85,27 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
           hubArea, 
           similarityThreshold, 
           matchLimit: matchCount,
-          useCaching: useCached 
+          useCaching,
+          batchSize,
+          trackMetrics,
+          userId: user?.id
         }
       })
 
       if (error) throw error
       
-      // Set the result source based on a cache property if available
+      // Set the performance metrics
+      if (data.performance) {
+        setPerformanceMetrics({
+          durationMs: data.performance.durationMs,
+          cacheHit: data.performance.cacheHit || false,
+          status: 'success',
+          batches: data.performance.batches,
+          qualityMetrics: data.performance.qualityMetrics
+        })
+      }
+      
+      // Set the result source based on cache property
       setResultSource(data.fromCache ? 'cache' : 'live')
       
       // Standardize the results
@@ -73,6 +121,11 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
       return standardizedResults
     } catch (err) {
       console.error('Error retrieving context:', err)
+      setPerformanceMetrics({
+        durationMs: 0,
+        cacheHit: false,
+        status: 'error'
+      })
       throw err
     } finally {
       setIsLoading(false)
@@ -84,18 +137,43 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     contextChunks: DocumentChunk[]
     hubArea?: string
   }) => {
-    const { data, error } = await supabase.functions.invoke('generate-response-with-context', {
-      body: { query, contextChunks, hubArea }
-    })
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-response-with-context', {
+        body: { 
+          query, 
+          contextChunks, 
+          hubArea,
+          userId: user?.id,
+          trackMetrics
+        }
+      })
 
-    if (error) throw error
-    return data as ContextResponse
+      if (error) throw error
+      
+      // Update performance metrics if available
+      if (data.performance) {
+        setPerformanceMetrics(prev => ({
+          ...prev,
+          generationDurationMs: data.performance.durationMs
+        }))
+      }
+      
+      return data as ContextResponse
+    } catch (err) {
+      console.error('Error generating response:', err)
+      throw err
+    }
   }
 
+  // For backwards compatibility, we expose both the mutation version and direct state
   return {
+    // State variables for traditional use
     isLoading,
     contextResults,
     resultSource,
+    performanceMetrics,
+    
+    // Mutation versions for React Query
     retrieveContext: useMutation({
       mutationFn: (params: { query: string, hubArea?: string }) => 
         retrieveContext(params.query, params.hubArea)
@@ -105,3 +183,6 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     })
   }
 }
+
+// For backwards compatibility with components importing 'DocumentContext'
+export type DocumentContext = ReturnType<typeof useDocumentContext>
