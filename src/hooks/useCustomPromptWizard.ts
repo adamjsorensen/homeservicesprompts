@@ -1,91 +1,101 @@
-
 import { useState } from 'react';
-import { Prompt } from '@/hooks/usePrompts';
-import { DocumentContext } from '@/hooks/useDocumentContext';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { type DocumentChunk } from '@/hooks/useDocumentContext';
 
-export type WizardStep = 'prompt' | 'parameters' | 'context' | 'preview';
-
-export interface UseCustomPromptWizardProps {
-  initialStep?: WizardStep;
-  basePrompt?: Prompt | null;
-  onClose?: () => void;
+interface CustomPromptWizardProps {
+  basePrompt?: {
+    id?: string;
+    title: string;
+    description: string;
+    content: string;
+    category_id?: string;
+    hub_area?: string;
+  };
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function useCustomPromptWizard(props?: UseCustomPromptWizardProps) {
-  const { initialStep = 'prompt', basePrompt = null, onClose } = props || {};
-  
-  const [step, setStep] = useState<WizardStep>(initialStep);
-  const [customPrompt, setCustomPrompt] = useState<string>(basePrompt?.prompt || '');
-  const [parametersData, setParametersData] = useState<Record<string, any>>({});
-  const [selectedContext, setSelectedContext] = useState<DocumentContext[]>([]);
+export const useCustomPromptWizard = ({ basePrompt, isOpen, onClose }: CustomPromptWizardProps) => {
+  const { toast } = useToast();
+  const [title, setTitle] = useState(basePrompt?.title || '');
+  const [description, setDescription] = useState(basePrompt?.description || '');
+  const [content, setContent] = useState(basePrompt?.content || '');
+  const [category, setCategory] = useState(basePrompt?.category_id || '');
+  const [hubArea, setHubArea] = useState(basePrompt?.hub_area || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleNext = () => {
-    switch (step) {
-      case 'prompt':
-        setStep('parameters');
-        break;
-      case 'parameters':
-        setStep('context');
-        break;
-      case 'context':
-        setStep('preview');
-        break;
-      case 'preview':
-        handleClose();
-        break;
-    }
-  };
+  const handleSavePrompt = async () => {
+    setIsSubmitting(true);
+    try {
+      if (!title || !description || !content) {
+        toast({
+          variant: 'destructive',
+          description: 'Please fill in all fields.'
+        });
+        return;
+      }
 
-  const handleBack = () => {
-    switch (step) {
-      case 'parameters':
-        setStep('prompt');
-        break;
-      case 'context':
-        setStep('parameters');
-        break;
-      case 'preview':
-        setStep('context');
-        break;
-    }
-  };
+      const promptData = {
+        title,
+        description,
+        content,
+        category_id: category,
+        hub_area: hubArea
+      };
 
-  const handleSkip = () => {
-    if (step === 'context') {
-      setStep('preview');
+      let res;
+
+      if (basePrompt?.id) {
+        res = await supabase
+          .from('prompts')
+          .update(promptData)
+          .eq('id', basePrompt.id);
+      } else {
+        res = await supabase
+          .from('prompts')
+          .insert(promptData);
+      }
+
+      if (res.error) throw res.error;
+
+      toast({
+        description: basePrompt?.id ? 'Prompt updated successfully!' : 'Prompt saved successfully!'
+      });
+      onClose();
+    } catch (error: any) {
+      console.error('Error saving prompt:', error);
+      toast({
+        variant: 'destructive',
+        description: error.message || 'Failed to save prompt. Please try again.'
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    if (onClose) {
-      onClose();
-    }
-  };
-
-  const updateCustomPrompt = (prompt: string) => {
-    setCustomPrompt(prompt);
-  };
-
-  const updateParametersData = (data: Record<string, any>) => {
-    setParametersData(data);
-  };
-
-  const updateSelectedContext = (context: DocumentContext[]) => {
-    setSelectedContext(context);
+    setTitle(basePrompt?.title || '');
+    setDescription(basePrompt?.description || '');
+    setContent(basePrompt?.content || '');
+    setCategory(basePrompt?.category_id || '');
+    setHubArea(basePrompt?.hub_area || '');
+    onClose();
   };
 
   return {
-    step,
-    customPrompt,
-    parametersData,
-    selectedContext,
-    setStep,
-    handleNext,
-    handleBack,
-    handleSkip,
-    handleClose,
-    updateCustomPrompt,
-    updateParametersData,
-    updateSelectedContext
+    title,
+    setTitle,
+    description,
+    setDescription,
+    content,
+    setContent,
+    category,
+    setCategory,
+    hubArea,
+    setHubArea,
+    isSubmitting,
+    handleSavePrompt,
+    handleClose
   };
-}
+};

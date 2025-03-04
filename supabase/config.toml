@@ -1,3 +1,4 @@
+
 project_id = "zdspjopumyunfkkqoabx"
 
 [api]
@@ -66,14 +67,6 @@ verify_jwt = false
 name = "generate-response-with-context"
 verify_jwt = false
 
-[[function]]
-name = "retrieve-document-context"
-verify_jwt = false
-
-[[function]]
-name = "generate-response-with-context"
-verify_jwt = false
-
 [function.admin-users-list]
 path = "supabase/functions/admin-users-list"
 
@@ -97,12 +90,6 @@ path = "supabase/functions/process-document"
 
 [function.process-document-llamaindex]
 path = "supabase/functions/process-document-llamaindex"
-
-[function.retrieve-document-context]
-path = "supabase/functions/retrieve-document-context"
-
-[function.generate-response-with-context]
-path = "supabase/functions/generate-response-with-context"
 
 [function.retrieve-document-context]
 path = "supabase/functions/retrieve-document-context"

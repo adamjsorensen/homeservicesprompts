@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { useDocumentContext, type DocumentContext } from '@/hooks/useDocumentContext';
+import { useDocumentContext, type DocumentChunk } from '@/hooks/useDocumentContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,7 @@ import { Progress } from '@/components/ui/progress';
 interface DocumentContextSelectorProps {
   hubArea?: string;
   promptText: string;
-  onContextChange: (context: DocumentContext[]) => void;
+  onContextChange: (context: DocumentChunk[]) => void;
 }
 
 export function DocumentContextSelector({ 
@@ -27,16 +27,18 @@ export function DocumentContextSelector({
   const [selectedContextIds, setSelectedContextIds] = useState<Set<string>>(new Set());
   const [autoSearchComplete, setAutoSearchComplete] = useState(false);
   
-  const { 
-    isLoading, 
-    contextResults, 
-    resultSource,
-    retrieveContext 
-  } = useDocumentContext({
+  const documentContext = useDocumentContext({
     similarityThreshold: 0.65,
     matchCount: 8,
     useCached: true
   });
+  
+  const { 
+    isLoading, 
+    contextResults, 
+    resultSource, 
+    retrieveContext 
+  } = documentContext;
 
   // Auto-search when promptText is provided and non-empty
   useEffect(() => {
@@ -50,11 +52,13 @@ export function DocumentContextSelector({
   // Handle search submission
   const handleSearch = async (query: string = searchQuery) => {
     if (!query.trim()) return;
-    await retrieveContext(query, hubArea);
+    await retrieveContext.mutateAsync({ query, hubArea });
     // Auto-select all results on new search
-    const newIds = new Set(contextResults.map(result => result.chunk_id));
-    setSelectedContextIds(newIds);
-    updateSelectedContext(newIds);
+    if (contextResults.length > 0) {
+      const newIds = new Set(contextResults.map(result => result.id));
+      setSelectedContextIds(newIds);
+      updateSelectedContext(newIds);
+    }
   };
 
   // Handle context selection changes
@@ -74,7 +78,7 @@ export function DocumentContextSelector({
   // Update parent component with selected context
   const updateSelectedContext = (selectedIds: Set<string>) => {
     const selectedContext = contextResults.filter(
-      result => selectedIds.has(result.chunk_id)
+      result => selectedIds.has(result.id)
     );
     onContextChange(selectedContext);
   };
@@ -82,7 +86,7 @@ export function DocumentContextSelector({
   // Compute selected context data
   const selectedContextData = useMemo(() => {
     const selected = contextResults.filter(
-      result => selectedContextIds.has(result.chunk_id)
+      result => selectedContextIds.has(result.id)
     );
     
     return {
@@ -93,7 +97,7 @@ export function DocumentContextSelector({
       ),
       documents: new Set(selected.map(ctx => ctx.document_id)).size,
       averageRelevance: selected.length > 0 
-        ? selected.reduce((sum, ctx) => sum + ctx.relevance_score, 0) / selected.length 
+        ? selected.reduce((sum, ctx) => sum + (ctx.relevance_score || ctx.similarity), 0) / selected.length 
         : 0
     };
   }, [contextResults, selectedContextIds]);
@@ -197,30 +201,30 @@ export function DocumentContextSelector({
               <div className="p-4 space-y-4">
                 {contextResults.map((context) => (
                   <Card 
-                    key={context.chunk_id} 
-                    className={`border ${selectedContextIds.has(context.chunk_id) ? 'border-primary/50' : 'border-muted'}`}
+                    key={context.id} 
+                    className={`border ${selectedContextIds.has(context.id) ? 'border-primary/50' : 'border-muted'}`}
                   >
                     <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between">
                       <div>
                         <CardTitle className="text-sm flex items-center">
                           <FileText className="h-4 w-4 mr-2" />
-                          {context.document_title}
+                          {context.document?.title || context.document_title}
                         </CardTitle>
                         <CardDescription className="text-xs flex flex-wrap gap-1 mt-1">
-                          {context.hub_areas.map(area => (
+                          {(context.document?.hub_areas || context.hub_areas || []).map(area => (
                             <Badge key={area} variant="secondary" className="text-xs capitalize">
                               {area}
                             </Badge>
                           ))}
                           <Badge variant="outline" className="text-xs">
-                            Relevance: {formatRelevanceScore(context.relevance_score)}
+                            Relevance: {formatRelevanceScore(context.relevance_score || context.similarity)}
                           </Badge>
                         </CardDescription>
                       </div>
                       <Checkbox 
-                        checked={selectedContextIds.has(context.chunk_id)}
+                        checked={selectedContextIds.has(context.id)}
                         onCheckedChange={(checked) => {
-                          handleContextSelection(context.chunk_id, !!checked);
+                          handleContextSelection(context.id, !!checked);
                         }}
                       />
                     </CardHeader>

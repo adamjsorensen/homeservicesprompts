@@ -1,101 +1,120 @@
 
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, FileText, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { DocumentContext } from '@/hooks/useDocumentContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { FileText, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { type ContextResponse } from '@/hooks/useDocumentContext';
 
 interface DocumentReferencesProps {
-  references: DocumentContext[];
-  className?: string;
+  response: ContextResponse | null;
+  isLoading?: boolean;
 }
 
-export function DocumentReferences({ references, className = '' }: DocumentReferencesProps) {
-  const [isOpen, setIsOpen] = useState(true);
-  
-  if (!references || references.length === 0) {
-    return null;
+export function DocumentReferences({ response, isLoading = false }: DocumentReferencesProps) {
+  const [openCitations, setOpenCitations] = useState<Set<string>>(new Set());
+
+  const toggleCitation = (id: string) => {
+    const newOpenCitations = new Set(openCitations);
+    if (newOpenCitations.has(id)) {
+      newOpenCitations.delete(id);
+    } else {
+      newOpenCitations.add(id);
+    }
+    setOpenCitations(newOpenCitations);
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Document References</CardTitle>
+          <CardDescription>Loading citation information...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-2">
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+            <div className="h-4 bg-muted rounded w-5/6"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
-  // Group references by document for a cleaner display
-  const documentGroups = references.reduce<Record<string, DocumentContext[]>>((acc, ref) => {
-    if (!acc[ref.document_id]) {
-      acc[ref.document_id] = [];
-    }
-    acc[ref.document_id].push(ref);
-    return acc;
-  }, {});
+  if (!response || !response.citations || response.citations.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Document References</CardTitle>
+          <CardDescription>No document references were used</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            The generated response didn't use any information from uploaded documents.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Sort citations by relevance score (highest first)
+  const sortedCitations = [...response.citations].sort((a, b) => b.relevance - a.relevance);
 
   return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      className={`border rounded-md bg-muted/10 ${className}`}
-    >
-      <div className="flex items-center justify-between px-4 py-2">
-        <div className="flex items-center">
-          <Info className="h-4 w-4 mr-2 text-muted-foreground" />
-          <h3 className="text-sm font-medium">
-            Document Sources ({references.length} references from {Object.keys(documentGroups).length} documents)
-          </h3>
-        </div>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm">
-            {isOpen ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
-        </CollapsibleTrigger>
-      </div>
-      
-      <CollapsibleContent>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Document References</CardTitle>
+        <CardDescription>
+          This response referenced {sortedCitations.length} document{sortedCitations.length !== 1 ? 's' : ''}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
         <ScrollArea className="max-h-[300px]">
-          <div className="p-4 pt-0 space-y-4">
-            {Object.entries(documentGroups).map(([docId, refs]) => (
-              <Card key={docId} className="p-3 border border-muted">
-                <div className="flex items-start gap-2">
-                  <FileText className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-2 w-full">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h4 className="text-sm font-medium">{refs[0].document_title}</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {refs[0].hub_areas.map(area => (
-                          <Badge key={area} variant="outline" className="text-xs capitalize">
-                            {area}
-                          </Badge>
-                        ))}
-                        <Badge variant="secondary" className="text-xs">
-                          {refs.length} excerpt{refs.length !== 1 ? 's' : ''}
+          <div className="p-4 space-y-3">
+            {sortedCitations.map((citation, index) => (
+              <Collapsible 
+                key={`${citation.document_id}-${index}`}
+                open={openCitations.has(citation.document_id)}
+                onOpenChange={() => toggleCitation(citation.document_id)}
+                className="border rounded-md"
+              >
+                <div className="flex items-start justify-between p-3">
+                  <div className="flex gap-2 items-center">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Document ID: {citation.document_id.substring(0, 8)}...</p>
+                      <div className="flex gap-1 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          Relevance: {Math.round(citation.relevance * 100)}%
                         </Badge>
                       </div>
                     </div>
-                    
-                    <div className="space-y-2">
-                      {refs.map((ref, index) => (
-                        <div key={`${ref.chunk_id}-${index}`} className="text-xs bg-background p-2 rounded-sm">
-                          <div className="whitespace-pre-wrap">
-                            {ref.citation_context}
-                          </div>
-                          <div className="mt-1 text-right">
-                            <Badge variant="outline" className="text-[10px]">
-                              Relevance: {(ref.relevance_score * 100).toFixed(0)}%
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                      <ExternalLink className="h-4 w-4" />
+                      <span className="sr-only">Toggle</span>
+                    </Button>
+                  </CollapsibleTrigger>
                 </div>
-              </Card>
+                <CollapsibleContent>
+                  <Separator />
+                  <div className="p-3 text-sm">
+                    <p className="font-medium mb-1">Cited Content:</p>
+                    <p className="text-muted-foreground whitespace-pre-wrap text-xs">
+                      {citation.context}
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             ))}
           </div>
         </ScrollArea>
-      </CollapsibleContent>
-    </Collapsible>
+      </CardContent>
+    </Card>
   );
 }
