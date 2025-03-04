@@ -30,6 +30,24 @@ serve(async (req) => {
   const processingStartTime = performance.now();
   
   try {
+    // Environment variable validation
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const llamaindexApiKey = Deno.env.get('LLAMAINDEX_API_KEY');
+    
+    if (!supabaseUrl) throw new Error('SUPABASE_URL environment variable is not set');
+    if (!supabaseKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
+    if (!llamaindexApiKey) throw new Error('LLAMAINDEX_API_KEY environment variable is not set');
+    
+    // Log initialization status
+    console.log("Edge function initialization:", {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      hasLlamaIndexKey: !!llamaindexApiKey,
+      method: req.method,
+      url: req.url
+    });
+    
     const { 
       title, 
       content, 
@@ -40,9 +58,13 @@ serve(async (req) => {
       processingOptions = {}
     } = await req.json() as DocumentInput;
     
+    // Input validation
+    if (!title) throw new Error('Document title is required');
+    if (!content) throw new Error('Document content is required');
+    if (!fileType) throw new Error('Document file type is required');
+    if (!hubAreas || !Array.isArray(hubAreas)) throw new Error('Document hub areas must be an array');
+    
     // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     console.log(`Processing document: ${title} (${fileType})`);

@@ -2,8 +2,19 @@
 import { withRetry } from "./retry.ts";
 
 // Configuration for LlamaIndex API
-const LLAMAINDEX_API_KEY = Deno.env.get('LLAMAINDEX_API_KEY') || '';
+const LLAMAINDEX_API_KEY = Deno.env.get('LLAMAINDEX_API_KEY');
 const LLAMAINDEX_API_URL = 'https://api.llamaindex.ai/v1';
+
+// Validate API key at initialization time
+if (!LLAMAINDEX_API_KEY) {
+  console.error('LLAMAINDEX_API_KEY environment variable is not set. The edge function will fail.');
+  throw new Error('LLAMAINDEX_API_KEY environment variable is not set');
+}
+
+console.log("LlamaIndex initialization status:", {
+  hasApiKey: !!LLAMAINDEX_API_KEY,
+  apiUrl: LLAMAINDEX_API_URL
+});
 
 // Supported document types and their MIME types
 export const SUPPORTED_DOC_TYPES = {
@@ -69,8 +80,16 @@ export async function processDocumentWithLlamaIndex(
       })
     });
 
+    // Check for authentication/authorization errors specifically
+    if (response.status === 401 || response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`LlamaIndex API authentication error: ${response.status}`, errorData);
+      throw new Error(`LlamaIndex API authentication failed: ${response.status} - Check your API key`);
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error(`LlamaIndex document processing error: ${response.status}`, errorData);
       throw new Error(`LlamaIndex document processing error: ${response.status} ${JSON.stringify(errorData)}`);
     }
 
@@ -78,6 +97,14 @@ export async function processDocumentWithLlamaIndex(
   }, {
     maxRetries: 3,
     retryCondition: (error) => {
+      // Don't retry authentication errors
+      if (error.message.includes('401') || 
+          error.message.includes('403') || 
+          error.message.includes('authentication failed') ||
+          error.message.includes('API key')) {
+        return false;
+      }
+      
       return error.message.includes('429') || 
              error.message.includes('500') || 
              error.message.includes('502') || 
@@ -97,6 +124,11 @@ export async function storeDocumentNodes(
   error?: string;
 }> {
   return withRetry(async () => {
+    // Check again for API key before making the request
+    if (!LLAMAINDEX_API_KEY) {
+      throw new Error('LLAMAINDEX_API_KEY environment variable is not set');
+    }
+    
     const response = await fetch(`${LLAMAINDEX_API_URL}/vectors/store`, {
       method: 'POST',
       headers: {
@@ -117,8 +149,16 @@ export async function storeDocumentNodes(
       })
     });
 
+    // Check for authentication/authorization errors specifically
+    if (response.status === 401 || response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`LlamaIndex API authentication error: ${response.status}`, errorData);
+      throw new Error(`LlamaIndex API authentication failed: ${response.status} - Check your API key`);
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error(`LlamaIndex vector store error: ${response.status}`, errorData);
       throw new Error(`LlamaIndex vector store error: ${response.status} ${JSON.stringify(errorData)}`);
     }
 
@@ -126,6 +166,14 @@ export async function storeDocumentNodes(
   }, {
     maxRetries: 3,
     retryCondition: (error) => {
+      // Don't retry authentication errors
+      if (error.message.includes('401') || 
+          error.message.includes('403') || 
+          error.message.includes('authentication failed') ||
+          error.message.includes('API key')) {
+        return false;
+      }
+      
       return error.message.includes('429') || 
              error.message.includes('500') || 
              error.message.includes('502') || 
@@ -149,6 +197,11 @@ export async function callLlamaIndex(
   citations: Array<{ document_id: string; context: string; relevance: number }>;
 }> {
   return withRetry(async () => {
+    // Check again for API key before making the request
+    if (!LLAMAINDEX_API_KEY) {
+      throw new Error('LLAMAINDEX_API_KEY environment variable is not set');
+    }
+    
     const response = await fetch(`${LLAMAINDEX_API_URL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -197,8 +250,16 @@ export async function callLlamaIndex(
       })
     });
   
+    // Check for authentication/authorization errors specifically
+    if (response.status === 401 || response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`LlamaIndex API authentication error: ${response.status}`, errorData);
+      throw new Error(`LlamaIndex API authentication failed: ${response.status} - Check your API key`);
+    }
+  
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error(`LlamaIndex API error: ${response.status}`, errorData);
       throw new Error(`LlamaIndex API error: ${response.status} ${JSON.stringify(errorData)}`);
     }
   
@@ -206,6 +267,14 @@ export async function callLlamaIndex(
   }, {
     maxRetries: 3,
     retryCondition: (error) => {
+      // Don't retry authentication errors
+      if (error.message.includes('401') || 
+          error.message.includes('403') || 
+          error.message.includes('authentication failed') ||
+          error.message.includes('API key')) {
+        return false;
+      }
+      
       return error.message.includes('429') || 
              error.message.includes('500') || 
              error.message.includes('502') || 
