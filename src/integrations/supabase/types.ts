@@ -712,6 +712,29 @@ export type Database = {
             }
             Returns: unknown
           }
+      count_document_chunks: {
+        Args: {
+          document_id: string
+        }
+        Returns: {
+          count: number
+        }[]
+      }
+      get_document_chunks: {
+        Args: {
+          doc_id: string
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          created_at: string
+          document_id: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          updated_at: string
+        }[]
+      }
       halfvec_avg: {
         Args: {
           "": number[]

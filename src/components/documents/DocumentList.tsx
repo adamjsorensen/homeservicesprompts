@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DocumentChunk } from '@/types/database'
+import { DocumentChunkPreview } from './DocumentChunkPreview'
 
 interface Document {
   id: string;
@@ -58,9 +59,11 @@ export function DocumentList() {
       // Fetch chunk counts for each document
       const documentsWithChunks = await Promise.all(
         (documentsData || []).map(async (doc) => {
+          // Using a direct query instead of RPC function for chunk counting
           const { count, error } = await supabase
-            .rpc('count_document_chunks', { document_id: doc.id })
-            .single()
+            .from('document_chunks')
+            .select('id', { count: 'exact', head: true })
+            .eq('document_id', doc.id)
 
           return {
             ...doc,
@@ -93,11 +96,15 @@ export function DocumentList() {
     // Load chunks for this document
     try {
       setLoadingChunks(true)
+      // Using a direct query instead of RPC function to get document chunks
       const { data, error } = await supabase
-        .rpc('get_document_chunks', { doc_id: document.id })
+        .from('document_chunks')
+        .select('*')
+        .eq('document_id', document.id)
+        .order('chunk_index', { ascending: true })
       
       if (error) throw error
-      setDocumentChunks(data || [])
+      setDocumentChunks(data as DocumentChunk[] || [])
     } catch (error) {
       console.error('Error loading chunks:', error)
       toast({
@@ -209,26 +216,7 @@ export function DocumentList() {
                 ) : (
                   <div className="space-y-4 max-h-[60vh] overflow-auto p-1">
                     {documentChunks.map((chunk) => (
-                      <div key={chunk.id} className="border rounded-md p-3 bg-muted/20">
-                        <div className="flex justify-between items-center mb-2">
-                          <Badge variant="outline">Chunk {chunk.chunk_index + 1}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(chunk.created_at).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{chunk.content}</p>
-                        {chunk.metadata && (
-                          <div className="mt-2 pt-2 border-t border-muted text-xs text-muted-foreground">
-                            <div className="flex flex-wrap gap-2">
-                              {Object.entries(chunk.metadata).map(([key, value]) => (
-                                <Badge key={key} variant="outline" className="text-xs">
-                                  {key}: {typeof value === 'object' ? JSON.stringify(value) : value}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <DocumentChunkPreview key={chunk.id} chunk={chunk} />
                     ))}
                   </div>
                 )}
