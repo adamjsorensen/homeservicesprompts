@@ -50,6 +50,8 @@ export interface DocumentMetrics {
     date: string;
     count: number;
   }>;
+  chunksCount: number;
+  metadata: Record<string, any>;
 }
 
 export interface ProcessingOptions {
@@ -77,4 +79,74 @@ export interface BatchProcessingStatus {
   started_at: string;
   completed_at?: string;
   metadata?: Record<string, any>;
+}
+
+// New types for LlamaIndex Query Processing
+
+export interface QueryHistoryEntry {
+  id: string;
+  user_id: string;
+  query_text: string;
+  context_chunks: string[];
+  hub_area?: string;
+  filters?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClarificationLogEntry {
+  id: string;
+  query_id: string;
+  clarification_type: string;
+  original_query: string;
+  suggested_questions: string[];
+  selected_question?: string;
+  created_at: string;
+}
+
+export interface ResponseQualityMetrics {
+  id: string;
+  query_id: string;
+  response_id: string;
+  relevance_score?: number;
+  completeness_score?: number;
+  citation_accuracy_score?: number;
+  source_diversity_score?: number;
+  feedback_type?: string;
+  feedback_text?: string;
+  created_at: string;
+}
+
+export interface SourceValidationResult {
+  id: string;
+  response_id: string;
+  document_id: string;
+  chunk_id: string;
+  validation_type: string;
+  is_valid: boolean;
+  confidence_score?: number;
+  validation_details?: Record<string, any>;
+  created_at: string;
+}
+
+export interface EnhancedQueryContext {
+  queryId: string;
+  relevantChunks: DocumentChunk[];
+  sourceDocuments: Document[];
+  relationships?: Record<string, string[]>;
+  filters?: Record<string, any>;
+}
+
+export interface EnhancedQueryResponse {
+  id: string;
+  content: string;
+  citations: Array<{
+    chunk_id: string;
+    document_id: string;
+    text: string;
+    confidence: number;
+  }>;
+  metadata: Record<string, any>;
+  follow_up_questions?: string[];
+  clarification_needed?: boolean;
 }

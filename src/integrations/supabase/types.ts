@@ -80,6 +80,44 @@ export type Database = {
         }
         Relationships: []
       }
+      clarification_log: {
+        Row: {
+          clarification_type: string
+          created_at: string | null
+          id: string
+          original_query: string
+          query_id: string | null
+          selected_question: string | null
+          suggested_questions: string[] | null
+        }
+        Insert: {
+          clarification_type: string
+          created_at?: string | null
+          id?: string
+          original_query: string
+          query_id?: string | null
+          selected_question?: string | null
+          suggested_questions?: string[] | null
+        }
+        Update: {
+          clarification_type?: string
+          created_at?: string | null
+          id?: string
+          original_query?: string
+          query_id?: string | null
+          selected_question?: string | null
+          suggested_questions?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clarification_log_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "query_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       context_cache: {
         Row: {
           cache_key: string
@@ -742,6 +780,86 @@ export type Database = {
           },
         ]
       }
+      query_history: {
+        Row: {
+          context_chunks: string[]
+          created_at: string | null
+          filters: Json | null
+          hub_area: Database["public"]["Enums"]["hub_area_type"] | null
+          id: string
+          query_text: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context_chunks?: string[]
+          created_at?: string | null
+          filters?: Json | null
+          hub_area?: Database["public"]["Enums"]["hub_area_type"] | null
+          id?: string
+          query_text: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context_chunks?: string[]
+          created_at?: string | null
+          filters?: Json | null
+          hub_area?: Database["public"]["Enums"]["hub_area_type"] | null
+          id?: string
+          query_text?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      response_quality_metrics: {
+        Row: {
+          citation_accuracy_score: number | null
+          completeness_score: number | null
+          created_at: string | null
+          feedback_text: string | null
+          feedback_type: string | null
+          id: string
+          query_id: string | null
+          relevance_score: number | null
+          response_id: string
+          source_diversity_score: number | null
+        }
+        Insert: {
+          citation_accuracy_score?: number | null
+          completeness_score?: number | null
+          created_at?: string | null
+          feedback_text?: string | null
+          feedback_type?: string | null
+          id?: string
+          query_id?: string | null
+          relevance_score?: number | null
+          response_id: string
+          source_diversity_score?: number | null
+        }
+        Update: {
+          citation_accuracy_score?: number | null
+          completeness_score?: number | null
+          created_at?: string | null
+          feedback_text?: string | null
+          feedback_type?: string | null
+          id?: string
+          query_id?: string | null
+          relevance_score?: number | null
+          response_id?: string
+          source_diversity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "response_quality_metrics_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "query_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_generations: {
         Row: {
           content: string
@@ -771,6 +889,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      source_validation_results: {
+        Row: {
+          chunk_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          document_id: string | null
+          id: string
+          is_valid: boolean
+          response_id: string
+          validation_details: Json | null
+          validation_type: string
+        }
+        Insert: {
+          chunk_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          is_valid: boolean
+          response_id: string
+          validation_details?: Json | null
+          validation_type: string
+        }
+        Update: {
+          chunk_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          is_valid?: boolean
+          response_id?: string
+          validation_details?: Json | null
+          validation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_validation_results_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "document_chunks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_validation_results_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_profiles: {
         Row: {

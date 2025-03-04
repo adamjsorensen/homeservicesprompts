@@ -80,3 +80,11 @@ path = "supabase/functions/get-document-permissions"
 [functions.get-batch-status]
 verify_jwt = false
 path = "supabase/functions/get-batch-status"
+
+[functions.enhanced-retrieve-context]
+verify_jwt = false
+path = "supabase/functions/enhanced-retrieve-context"
+
+[functions.enhanced-generate-response]
+verify_jwt = false
+path = "supabase/functions/enhanced-generate-response"
