@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter as Router,
   Routes,
@@ -19,6 +18,7 @@ import { SavedGenerations } from "./pages/SavedGenerations";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import { PromptGenerationsAdmin } from "@/components/admin/PromptGenerationsAdmin";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import AdminDocuments from "@/pages/admin/AdminDocuments";
 
 function App() {
   return (
@@ -41,6 +41,7 @@ function App() {
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/generations" element={<PromptGenerationsAdmin />} />
+              <Route path="/admin/documents" element={<AdminDocuments />} />
             </Route>
           </Routes>
         </AuthProvider>

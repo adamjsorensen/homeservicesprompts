@@ -41,6 +41,87 @@ export type Database = {
           },
         ]
       }
+      document_references: {
+        Row: {
+          citation_context: string | null
+          created_at: string
+          document_id: string
+          id: string
+          prompt_generation_id: string
+          relevance_score: number | null
+        }
+        Insert: {
+          citation_context?: string | null
+          created_at?: string
+          document_id: string
+          id?: string
+          prompt_generation_id: string
+          relevance_score?: number | null
+        }
+        Update: {
+          citation_context?: string | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          prompt_generation_id?: string
+          relevance_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_references_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_references_prompt_generation_id_fkey"
+            columns: ["prompt_generation_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          embedding: string | null
+          file_type: Database["public"]["Enums"]["document_file_type"]
+          hub_areas: Database["public"]["Enums"]["hub_area_type"][]
+          id: string
+          metadata: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          embedding?: string | null
+          file_type: Database["public"]["Enums"]["document_file_type"]
+          hub_areas?: Database["public"]["Enums"]["hub_area_type"][]
+          id?: string
+          metadata?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          embedding?: string | null
+          file_type?: Database["public"]["Enums"]["document_file_type"]
+          hub_areas?: Database["public"]["Enums"]["hub_area_type"][]
+          id?: string
+          metadata?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       parameter_tweaks: {
         Row: {
           active: boolean
@@ -506,6 +587,43 @@ export type Database = {
           updated_at: string
         }[]
       }
+      binary_quantize:
+        | {
+            Args: {
+              "": string
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              "": unknown
+            }
+            Returns: unknown
+          }
+      halfvec_avg: {
+        Args: {
+          "": number[]
+        }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: {
+          "": unknown
+        }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: {
+          "": unknown[]
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           user_id: string
@@ -513,8 +631,161 @@ export type Database = {
         }
         Returns: boolean
       }
+      hnsw_bit_support: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      ivfflat_bit_support: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      l2_norm:
+        | {
+            Args: {
+              "": unknown
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              "": unknown
+            }
+            Returns: number
+          }
+      l2_normalize:
+        | {
+            Args: {
+              "": string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              "": unknown
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              "": unknown
+            }
+            Returns: unknown
+          }
+      match_documents: {
+        Args: {
+          query_embedding: string
+          similarity_threshold: number
+          match_count: number
+          filter_hub_area?: string
+        }
+        Returns: {
+          id: string
+          title: string
+          content: string
+          file_type: string
+          hub_areas: string[]
+          created_at: string
+          similarity: number
+        }[]
+      }
+      sparsevec_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: {
+          "": unknown
+        }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: {
+          "": unknown[]
+        }
+        Returns: number
+      }
+      vector_avg: {
+        Args: {
+          "": number[]
+        }
+        Returns: string
+      }
+      vector_dims:
+        | {
+            Args: {
+              "": string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              "": unknown
+            }
+            Returns: number
+          }
+      vector_norm: {
+        Args: {
+          "": string
+        }
+        Returns: number
+      }
+      vector_out: {
+        Args: {
+          "": string
+        }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: {
+          "": string
+        }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: {
+          "": unknown[]
+        }
+        Returns: number
+      }
     }
     Enums: {
+      document_file_type: "pdf" | "doc" | "docx" | "txt" | "md" | "html"
       hub_area_type:
         | "marketing"
         | "sales"
