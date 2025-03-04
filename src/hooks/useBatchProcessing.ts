@@ -3,6 +3,11 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { BatchProcessingStatus } from '@/types/database';
 
+interface UpdateBatchStatusParams {
+  batchId: string;
+  updates: Partial<BatchProcessingStatus>;
+}
+
 export function useBatchProcessing() {
   // Fetch a batch by ID
   const getBatchStatus = async (batchId: string): Promise<BatchProcessingStatus | null> => {
@@ -53,11 +58,9 @@ export function useBatchProcessing() {
   };
 
   // Update batch status
-  const updateBatchStatus = async (
-    batchId: string,
-    updates: Partial<BatchProcessingStatus>
-  ): Promise<BatchProcessingStatus | null> => {
+  const updateBatchStatus = async (params: UpdateBatchStatusParams): Promise<BatchProcessingStatus | null> => {
     try {
+      const { batchId, updates } = params;
       const { data, error } = await supabase
         .from('batch_processing_status')
         .update(updates)
