@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      context_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          hub_area: string | null
+          id: string
+          query: string
+          results: Json
+          updated_at: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          hub_area?: string | null
+          id?: string
+          query: string
+          results: Json
+          updated_at?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          hub_area?: string | null
+          id?: string
+          query?: string
+          results?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       custom_prompts: {
         Row: {
           base_prompt_id: string | null
