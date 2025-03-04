@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { DocumentChunk } from '@/types/database'
+import { DocumentChunk, BatchProcessingStatus } from '@/types/database'
 
 // Re-export DocumentChunk from database types
 export type { DocumentChunk } from '@/types/database'
@@ -33,6 +33,7 @@ export interface PerformanceMetrics {
   status: string
   batches?: number
   generationDurationMs?: number
+  clientDuration?: number
   qualityMetrics?: {
     avgSimilarity: number
     maxSimilarity: number
@@ -43,6 +44,7 @@ export interface PerformanceMetrics {
     embeddingCost?: number
     generationCost?: number
   }
+  error?: string
 }
 
 interface UseDocumentContextOptions {
@@ -107,7 +109,7 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
           qualityMetrics: data.performance.qualityMetrics,
           resourceUsage: data.performance.resourceUsage,
           // Add client-side processing time
-          clientDurationMs: Math.round(clientDuration)
+          clientDuration: Math.round(clientDuration)
         })
       }
       
@@ -131,7 +133,7 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
         durationMs: 0,
         cacheHit: false,
         status: 'error',
-        error: err.message
+        error: (err as Error).message
       })
       throw err
     } finally {
@@ -178,19 +180,18 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
   }
 
   // Get document processing batches for monitoring
-  const getBatchStatus = async (batchId: string) => {
+  const getBatchStatus = async (batchId: string): Promise<BatchProcessingStatus | null> => {
     try {
-      const { data, error } = await supabase
-        .from('batch_processing_status')
-        .select('*')
-        .eq('batch_id', batchId)
-        .single()
-        
+      // Use the RPC function to get batch status
+      const { data, error } = await supabase.functions.invoke('get-batch-status', {
+        body: { batchId }
+      })
+      
       if (error) throw error
-      return data
+      return data as BatchProcessingStatus
     } catch (err) {
       console.error('Error fetching batch status:', err)
-      throw err
+      return null
     }
   }
 

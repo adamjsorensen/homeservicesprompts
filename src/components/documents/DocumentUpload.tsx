@@ -1,4 +1,3 @@
-
 import { useState, useEffect, ChangeEvent } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +17,7 @@ import { Progress } from "@/components/ui/progress"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { AlertCircle, FileText, Upload } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useBatchProcessing } from '@/hooks/useBatchProcessing'
 
 const HUB_AREAS = [
   { value: 'marketing', label: 'Marketing' },
@@ -49,6 +49,8 @@ export function DocumentUpload() {
   const [batchId, setBatchId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const { useBatchStatusPolling } = useBatchProcessing()
+  const { data: batchStatus } = useBatchStatusPolling(batchId, isProcessing)
 
   const handleHubAreaToggle = (hubArea: string) => {
     setSelectedHubAreas(current => 
@@ -63,7 +65,6 @@ export function DocumentUpload() {
     if (selectedFile) {
       setFile(selectedFile);
       
-      // Auto-detect file type
       const fileName = selectedFile.name.toLowerCase();
       if (fileName.endsWith('.pdf')) {
         setFileType('pdf');
@@ -75,7 +76,6 @@ export function DocumentUpload() {
         setFileType('txt');
       }
       
-      // Auto-set title from filename if not already set
       if (!title) {
         const fileNameWithoutExt = selectedFile.name.split('.').slice(0, -1).join('.');
         setTitle(fileNameWithoutExt || selectedFile.name);
@@ -93,7 +93,6 @@ export function DocumentUpload() {
       return;
     }
 
-    // Validate form based on upload method
     if (uploadMethod === 'text' && !content) {
       setError("Please enter document content");
       return;
@@ -111,11 +110,9 @@ export function DocumentUpload() {
       let documentContent = content;
       let isBase64 = false;
       
-      // Handle file upload if in file mode
       if (uploadMethod === 'file' && file) {
         const reader = new FileReader();
         
-        // Read file as text or base64 depending on type
         if (fileType === 'txt') {
           documentContent = await new Promise((resolve, reject) => {
             reader.onload = (e) => resolve(e.target?.result as string);
@@ -123,11 +120,9 @@ export function DocumentUpload() {
             reader.readAsText(file);
           });
         } else {
-          // For non-text files, read as base64
           documentContent = await new Promise((resolve, reject) => {
             reader.onload = (e) => {
               const result = e.target?.result as string;
-              // Remove the data URL prefix
               resolve(result.split(',')[1] || '');
             };
             reader.onerror = reject;
@@ -137,7 +132,6 @@ export function DocumentUpload() {
         }
       }
 
-      // Use the LlamaIndex processor
       const { data, error } = await supabase.functions.invoke('process-document-llamaindex', {
         body: {
           title,
@@ -156,31 +150,18 @@ export function DocumentUpload() {
 
       if (error) throw error;
       
-      // Store batch ID for progress tracking
       if (data.batch_id) {
         setBatchId(data.batch_id);
       }
       
-      setProcessingProgress(30);  // Initial jump after successful upload
+      setProcessingProgress(30);
 
       toast({
         title: "Document Uploaded",
         description: "Document is now being processed. You'll be notified when complete.",
       });
 
-      // Poll for processing status
-      if (data.batch_id) {
-        pollProcessingStatus(data.batch_id);
-      } else {
-        setProcessingProgress(100);
-        
-        toast({
-          title: "Success",
-          description: `Document processed successfully with ${data.chunks_count} chunks created`,
-        });
-        
-        resetForm();
-      }
+      setIsProcessing(true);
     } catch (error) {
       console.error('Error uploading document:', error);
       setError("Failed to upload document. Please try again.");
@@ -195,61 +176,24 @@ export function DocumentUpload() {
     }
   }
 
-  // Poll for batch processing status
-  const pollProcessingStatus = async (batchId: string) => {
-    const maxAttempts = 30; // 5 minutes max (10 seconds interval)
-    let attempts = 0;
-    
-    const poll = async () => {
-      if (attempts >= maxAttempts) {
-        setProcessingProgress(100); // Force complete
-        toast({
-          title: "Processing Timed Out",
-          description: "Document processing is taking longer than expected. It will continue in the background.",
-        });
-        resetForm();
-        return;
+  useEffect(() => {
+    if (batchStatus) {
+      let progress = 30;
+      
+      if (batchStatus.total_items > 0) {
+        progress = 30 + (batchStatus.processed_items / batchStatus.total_items) * 60;
       }
       
-      try {
-        const { data, error } = await supabase
-          .from('batch_processing_status')
-          .select('*')
-          .eq('batch_id', batchId)
-          .single();
-          
-        if (error) throw error;
-        
-        if (data) {
-          const { status, total_items, processed_items } = data;
-          
-          // Calculate progress
-          let progress = 30; // Start at 30%
-          if (total_items > 0) {
-            // Scale from 30% to 90% based on processed items
-            progress = 30 + (processed_items / total_items) * 60;
-          }
-          
-          setProcessingProgress(Math.min(90, progress));
-          
-          if (status === 'completed') {
-            setProcessingProgress(100);
-            toast({
-              title: "Success",
-              description: `Document processed successfully with ${processed_items} chunks created`,
-            });
-            resetForm();
-            return;
-          } else if (status === 'error') {
-            throw new Error("Processing failed");
-          }
-        }
-        
-        // Continue polling
-        attempts++;
-        setTimeout(poll, 10000); // Poll every 10 seconds
-      } catch (error) {
-        console.error('Error polling status:', error);
+      setProcessingProgress(Math.min(90, progress));
+      
+      if (batchStatus.status === 'completed') {
+        setProcessingProgress(100);
+        toast({
+          title: "Success",
+          description: `Document processed successfully with ${batchStatus.processed_items} chunks created`,
+        });
+        resetForm();
+      } else if (batchStatus.status === 'error') {
         setError("Document processing encountered an error.");
         toast({
           variant: "destructive",
@@ -259,13 +203,9 @@ export function DocumentUpload() {
         setIsUploading(false);
         setIsProcessing(false);
       }
-    };
-    
-    // Start polling
-    setTimeout(poll, 5000); // First poll after 5 seconds
-  };
+    }
+  }, [batchStatus]);
 
-  // Reset form after successful upload
   const resetForm = () => {
     setTimeout(() => {
       setTitle('');
@@ -277,10 +217,9 @@ export function DocumentUpload() {
       setProcessingProgress(0);
       setBatchId(null);
       setFile(null);
-    }, 2000); // Keep progress bar visible briefly
+    }, 2000);
   };
 
-  // Simulate progress during initial processing
   useEffect(() => {
     let interval: NodeJS.Timeout;
     

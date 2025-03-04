@@ -9,6 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      access_audit_log: {
+        Row: {
+          action_type: string
+          document_id: string | null
+          id: string
+          metadata: Json | null
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          document_id?: string | null
+          id?: string
+          metadata?: Json | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          document_id?: string | null
+          id?: string
+          metadata?: Json | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_audit_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batch_processing_status: {
+        Row: {
+          batch_id: string | null
+          completed_at: string | null
+          error_count: number | null
+          id: string
+          metadata: Json | null
+          processed_items: number | null
+          started_at: string | null
+          status: string | null
+          total_items: number | null
+        }
+        Insert: {
+          batch_id?: string | null
+          completed_at?: string | null
+          error_count?: number | null
+          id?: string
+          metadata?: Json | null
+          processed_items?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_items?: number | null
+        }
+        Update: {
+          batch_id?: string | null
+          completed_at?: string | null
+          error_count?: number | null
+          id?: string
+          metadata?: Json | null
+          processed_items?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_items?: number | null
+        }
+        Relationships: []
+      }
       context_cache: {
         Row: {
           cache_key: string
@@ -105,6 +176,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_permissions: {
+        Row: {
+          created_at: string | null
+          document_id: string | null
+          expires_at: string | null
+          id: string
+          permission_level: string
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_id?: string | null
+          expires_at?: string | null
+          id?: string
+          permission_level: string
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_id?: string | null
+          expires_at?: string | null
+          id?: string
+          permission_level?: string
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_permissions_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"

@@ -45,6 +45,9 @@ export interface PerformanceMetric {
   cache_hit: boolean;
   hub_area?: string;
   metadata?: Record<string, any>;
+  resource_usage?: Record<string, any>;
+  timing_breakdown?: Record<string, any>;
+  system_metrics?: Record<string, any>;
   created_at: string;
 }
 
@@ -59,4 +62,36 @@ export interface RetrievalQualityMetric {
   hub_area?: string;
   metadata?: Record<string, any>;
   created_at: string;
+}
+
+export interface BatchProcessingStatus {
+  id: string;
+  batch_id: string;
+  total_items: number;
+  processed_items: number;
+  status: string;
+  error_count: number;
+  started_at: string;
+  completed_at?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface DocumentPermission {
+  id: string;
+  document_id: string;
+  user_id?: string;
+  role?: string;
+  permission_level: string;
+  expires_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccessAuditLog {
+  id: string;
+  document_id: string;
+  user_id?: string;
+  action_type: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
 }
