@@ -1,5 +1,5 @@
 
-import { DocumentChunk } from '@/hooks/useDocumentContext'
+import { DocumentChunk } from '@/types/database'
 import { 
   Card, 
   CardContent,

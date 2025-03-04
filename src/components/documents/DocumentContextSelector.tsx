@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react'
-import { useDocumentContext, type DocumentChunk } from '@/hooks/useDocumentContext'
+import { useDocumentContext } from '@/hooks/useDocumentContext'
+import { DocumentChunk } from '@/types/database'
 import { DocumentChunkPreview } from './DocumentChunkPreview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

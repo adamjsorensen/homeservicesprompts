@@ -5,6 +5,9 @@ import { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { DocumentChunk } from '@/types/database'
 
+// Re-export DocumentChunk from database types
+export type { DocumentChunk } from '@/types/database'
+
 export interface ContextResponse {
   content: string
   citations: Array<{

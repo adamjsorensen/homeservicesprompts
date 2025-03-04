@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,8 @@ import { LoadingCard } from "./LoadingCard";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { DocumentContextSelector } from '@/components/documents/DocumentContextSelector'
-import { DocumentChunk, useDocumentContext } from '@/hooks/useDocumentContext'
+import { useDocumentContext } from '@/hooks/useDocumentContext'
+import { DocumentChunk } from '@/types/database'
 import { DocumentPerformanceMetrics } from '@/components/documents/DocumentPerformanceMetrics'
 
 interface CustomPromptWizardProps {
