@@ -38,6 +38,12 @@ verify_jwt = true
 [functions.admin-users-update-profile]
 verify_jwt = true
 
+[functions.admin-users-add]
+verify_jwt = true
+
+[functions.admin-users-delete]
+verify_jwt = true
+
 [functions.admin-users]
 verify_jwt = true
 

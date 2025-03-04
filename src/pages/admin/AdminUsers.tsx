@@ -20,6 +20,7 @@ const AdminUsers = () => {
               loading={loading}
               onToggleAdmin={handleToggleAdminStatus}
               onUpdateProfile={handleUpdateProfile}
+              onRefreshUsers={fetchData}
             />
           </>
         )}

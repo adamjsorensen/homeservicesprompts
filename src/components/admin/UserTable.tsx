@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Check, X } from "lucide-react";
+import { Edit, Check, X, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { DeleteUserDialog } from "./users/DeleteUserDialog";
 
 interface User {
   id: string;
@@ -26,14 +27,24 @@ interface UserTableProps {
   loading: boolean;
   onToggleAdmin: (userId: string, currentStatus: boolean) => void;
   onUpdateProfile: (userId: string, profileData: any) => void;
+  onDeleteUser: () => void;
 }
 
-export function UserTable({ users, loading, onToggleAdmin, onUpdateProfile }: UserTableProps) {
+export function UserTable({ users, loading, onToggleAdmin, onUpdateProfile, onDeleteUser }: UserTableProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editFormData, setEditFormData] = useState({
     firstName: "",
     lastName: "",
     company: "",
+  });
+  const [deleteUserDialog, setDeleteUserDialog] = useState<{
+    open: boolean;
+    userId: string;
+    userEmail: string;
+  }>({
+    open: false,
+    userId: "",
+    userEmail: "",
   });
 
   const handleEditClick = (user: User) => {
@@ -57,6 +68,14 @@ export function UserTable({ users, loading, onToggleAdmin, onUpdateProfile }: Us
       onUpdateProfile(editingUser.id, editFormData);
       setEditingUser(null);
     }
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setDeleteUserDialog({
+      open: true,
+      userId: user.id,
+      userEmail: user.email,
+    });
   };
 
   return (
@@ -134,14 +153,25 @@ export function UserTable({ users, loading, onToggleAdmin, onUpdateProfile }: Us
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditClick(user)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditClick(user)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDeleteClick(user)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -205,6 +235,14 @@ export function UserTable({ users, loading, onToggleAdmin, onUpdateProfile }: Us
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DeleteUserDialog
+        open={deleteUserDialog.open}
+        onOpenChange={(open) => setDeleteUserDialog({ ...deleteUserDialog, open })}
+        userId={deleteUserDialog.userId}
+        userEmail={deleteUserDialog.userEmail}
+        onUserDeleted={onDeleteUser}
+      />
     </div>
   );
 }
