@@ -71,6 +71,10 @@ verify_jwt = false
 name = "batch-process-documents"
 verify_jwt = false
 
+[[functions]]
+name = "get-document-permissions"
+verify_jwt = false
+
 [functions.admin-users-list]
 path = "supabase/functions/admin-users-list"
 
@@ -103,3 +107,6 @@ path = "supabase/functions/generate-response-with-context"
 
 [functions.batch-process-documents]
 path = "supabase/functions/batch-process-documents"
+
+[functions.get-document-permissions]
+path = "supabase/functions/get-document-permissions"

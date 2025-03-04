@@ -32,10 +32,16 @@ export interface PerformanceMetrics {
   cacheHit: boolean
   status: string
   batches?: number
+  generationDurationMs?: number
   qualityMetrics?: {
     avgSimilarity: number
     maxSimilarity: number
     minSimilarity: number
+  }
+  resourceUsage?: {
+    tokens?: number
+    embeddingCost?: number
+    generationCost?: number
   }
 }
 
@@ -45,6 +51,8 @@ interface UseDocumentContextOptions {
   useCaching?: boolean
   batchSize?: number
   trackMetrics?: boolean
+  hubSpecificWeighting?: boolean
+  accessLevel?: string
 }
 
 export function useDocumentContext(options: UseDocumentContextOptions = {}) {
@@ -53,7 +61,9 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     matchCount = 5, 
     useCaching = true,
     batchSize = 50,
-    trackMetrics = true
+    trackMetrics = true,
+    hubSpecificWeighting = false,
+    accessLevel = 'read'
   } = options
   
   const { user } = useAuth()
@@ -64,6 +74,8 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
 
   const retrieveContext = async (query: string, hubArea?: string) => {
     setIsLoading(true)
+    const startTime = performance.now()
+    
     try {
       const { data, error } = await supabase.functions.invoke('retrieve-document-context', {
         body: { 
@@ -74,11 +86,16 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
           useCaching,
           batchSize,
           trackMetrics,
+          hubSpecificWeighting,
+          accessLevel,
           userId: user?.id
         }
       })
 
       if (error) throw error
+      
+      // Calculate client-side processing time
+      const clientDuration = performance.now() - startTime
       
       // Set the performance metrics
       if (data.performance) {
@@ -87,7 +104,10 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
           cacheHit: data.performance.cacheHit || false,
           status: 'success',
           batches: data.performance.batches,
-          qualityMetrics: data.performance.qualityMetrics
+          qualityMetrics: data.performance.qualityMetrics,
+          resourceUsage: data.performance.resourceUsage,
+          // Add client-side processing time
+          clientDurationMs: Math.round(clientDuration)
         })
       }
       
@@ -110,7 +130,8 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
       setPerformanceMetrics({
         durationMs: 0,
         cacheHit: false,
-        status: 'error'
+        status: 'error',
+        error: err.message
       })
       throw err
     } finally {
@@ -130,7 +151,8 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
           contextChunks, 
           hubArea,
           userId: user?.id,
-          trackMetrics
+          trackMetrics,
+          hubSpecificWeighting
         }
       })
 
@@ -140,13 +162,34 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
       if (data.performance) {
         setPerformanceMetrics(prev => ({
           ...prev,
-          generationDurationMs: data.performance.durationMs
+          generationDurationMs: data.performance.durationMs,
+          resourceUsage: {
+            ...prev?.resourceUsage,
+            ...data.performance.resourceUsage
+          }
         }))
       }
       
       return data as ContextResponse
     } catch (err) {
       console.error('Error generating response:', err)
+      throw err
+    }
+  }
+
+  // Get document processing batches for monitoring
+  const getBatchStatus = async (batchId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('batch_processing_status')
+        .select('*')
+        .eq('batch_id', batchId)
+        .single()
+        
+      if (error) throw error
+      return data
+    } catch (err) {
+      console.error('Error fetching batch status:', err)
       throw err
     }
   }
@@ -166,6 +209,9 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     }),
     generateResponse: useMutation({
       mutationFn: generateResponse
+    }),
+    getBatchStatus: useMutation({
+      mutationFn: getBatchStatus
     })
   }
 }
