@@ -8,6 +8,20 @@ interface UpdateBatchStatusParams {
   updates: Partial<BatchProcessingStatus>;
 }
 
+interface ProcessDocumentParams {
+  title: string;
+  content: string;
+  fileType: string;
+  hubAreas: string[];
+  metadata?: Record<string, any>;
+  processingOptions?: {
+    chunkSize?: number;
+    chunkOverlap?: number;
+    splitByHeading?: boolean;
+    hierarchical?: boolean;
+  };
+}
+
 export function useBatchProcessing() {
   // Fetch a batch by ID
   const getBatchStatus = async (batchId: string): Promise<BatchProcessingStatus | null> => {
@@ -76,6 +90,32 @@ export function useBatchProcessing() {
     }
   };
 
+  // Process a document using Graphlit
+  const processDocument = async (params: ProcessDocumentParams): Promise<{ 
+    document_id: string; 
+    graphlit_doc_id: string;
+    batch_id: string; 
+    success: boolean;
+  }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('process-document-graphlit', {
+        body: params
+      });
+      
+      if (error) throw error;
+      
+      return {
+        document_id: data.document_id,
+        graphlit_doc_id: data.graphlit_doc_id,
+        batch_id: data.batch_id,
+        success: data.success
+      };
+    } catch (err) {
+      console.error('Error processing document:', err);
+      throw err;
+    }
+  };
+
   return {
     getBatchStatus: useMutation({
       mutationFn: getBatchStatus,
@@ -86,6 +126,9 @@ export function useBatchProcessing() {
     }),
     updateBatchStatus: useMutation({
       mutationFn: updateBatchStatus,
+    }),
+    processDocument: useMutation({
+      mutationFn: processDocument,
     }),
   };
 }

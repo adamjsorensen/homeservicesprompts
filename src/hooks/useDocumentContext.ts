@@ -56,6 +56,7 @@ interface UseDocumentContextOptions {
   hubSpecificWeighting?: boolean
   accessLevel?: string
   showDetailedResults?: boolean
+  useGraphlit?: boolean
 }
 
 export function useDocumentContext(options: UseDocumentContextOptions = {}) {
@@ -67,7 +68,8 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     trackMetrics = true,
     hubSpecificWeighting = false,
     accessLevel = 'read',
-    showDetailedResults = false
+    showDetailedResults = false,
+    useGraphlit = true
   } = options
   
   const { user } = useAuth()
@@ -82,7 +84,10 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     const startTime = performance.now()
     
     try {
-      const { data, error } = await supabase.functions.invoke('retrieve-document-context', {
+      // Use Graphlit for retrieval by default, with fallback to legacy system
+      const endpointName = useGraphlit ? 'retrieve-document-context-graphlit' : 'retrieve-document-context';
+      
+      const { data, error } = await supabase.functions.invoke(endpointName, {
         body: { 
           query, 
           hubArea, 

@@ -187,6 +187,7 @@ export type Database = {
           created_at: string
           document_id: string
           embedding: string | null
+          graphlit_chunk_id: string | null
           id: string
           metadata: Json | null
           updated_at: string
@@ -197,6 +198,7 @@ export type Database = {
           created_at?: string
           document_id: string
           embedding?: string | null
+          graphlit_chunk_id?: string | null
           id?: string
           metadata?: Json | null
           updated_at?: string
@@ -207,6 +209,7 @@ export type Database = {
           created_at?: string
           document_id?: string
           embedding?: string | null
+          graphlit_chunk_id?: string | null
           id?: string
           metadata?: Json | null
           updated_at?: string
@@ -343,6 +346,7 @@ export type Database = {
           created_by: string | null
           embedding: string | null
           file_type: Database["public"]["Enums"]["document_file_type"]
+          graphlit_doc_id: string | null
           hub_areas: Database["public"]["Enums"]["hub_area_type"][]
           id: string
           metadata: Json | null
@@ -355,6 +359,7 @@ export type Database = {
           created_by?: string | null
           embedding?: string | null
           file_type: Database["public"]["Enums"]["document_file_type"]
+          graphlit_doc_id?: string | null
           hub_areas?: Database["public"]["Enums"]["hub_area_type"][]
           id?: string
           metadata?: Json | null
@@ -367,6 +372,7 @@ export type Database = {
           created_by?: string | null
           embedding?: string | null
           file_type?: Database["public"]["Enums"]["document_file_type"]
+          graphlit_doc_id?: string | null
           hub_areas?: Database["public"]["Enums"]["hub_area_type"][]
           id?: string
           metadata?: Json | null
@@ -1041,6 +1047,7 @@ export type Database = {
           created_at: string
           document_id: string
           embedding: string | null
+          graphlit_chunk_id: string | null
           id: string
           metadata: Json | null
           updated_at: string
@@ -1151,23 +1158,43 @@ export type Database = {
             }
             Returns: unknown
           }
-      match_document_chunks: {
-        Args: {
-          query_embedding: string
-          similarity_threshold: number
-          match_count: number
-          filter_document_id?: string
-          filter_hub_area?: string
-        }
-        Returns: {
-          id: string
-          document_id: string
-          content: string
-          metadata: Json
-          chunk_index: number
-          similarity: number
-        }[]
-      }
+      match_document_chunks:
+        | {
+            Args: {
+              query_embedding: string
+              similarity_threshold: number
+              match_count: number
+              filter_document_id?: string
+              filter_hub_area?: string
+            }
+            Returns: {
+              id: string
+              document_id: string
+              content: string
+              metadata: Json
+              chunk_index: number
+              similarity: number
+            }[]
+          }
+        | {
+            Args: {
+              query_embedding: string
+              similarity_threshold: number
+              match_count: number
+              filter_document_id?: string
+              filter_hub_area?: string
+              filter_graphlit_ids?: string[]
+            }
+            Returns: {
+              id: string
+              document_id: string
+              content: string
+              metadata: Json
+              chunk_index: number
+              similarity: number
+              graphlit_chunk_id: string
+            }[]
+          }
       match_documents: {
         Args: {
           query_embedding: string
