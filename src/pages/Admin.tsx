@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { usePrompts } from "@/hooks/usePrompts";
 import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, ListPlus, Settings2, Sparkles, LayoutGrid, Users } from "lucide-react";
+import { Database, ListPlus, Settings2, Sparkles, LayoutGrid, Users, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const AdminCard = ({ 
@@ -77,6 +77,13 @@ const Admin = () => {
       icon: ListPlus,
       path: "/admin/prompts",
       className: "bg-green-50 border-green-200"
+    },
+    {
+      title: "Document Management",
+      description: "Manage documents for context retrieval",
+      icon: FileText,
+      path: "/admin/documents",
+      className: "bg-yellow-50 border-yellow-200"
     },
     {
       title: "Generated Content",

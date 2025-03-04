@@ -23,6 +23,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DocumentChunk } from '@/types/database'
 import { DocumentChunkPreview } from './DocumentChunkPreview'
+import { Settings, Eye, BarChart2 } from 'lucide-react'
 
 interface Document {
   id: string;
@@ -33,9 +34,14 @@ interface Document {
   created_at: string;
   updated_at: string;
   chunks_count?: number;
+  metadata?: Record<string, any>;
 }
 
-export function DocumentList() {
+interface DocumentListProps {
+  onConfigureDocument?: (document: Document) => void;
+}
+
+export function DocumentList({ onConfigureDocument }: DocumentListProps) {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
@@ -138,6 +144,29 @@ export function DocumentList() {
     )
   }
 
+  const getPriorityBadge = (document: Document) => {
+    const priority = document.metadata?.priority || 'medium'
+    
+    switch(priority) {
+      case 'high':
+        return <Badge variant="default">High Priority</Badge>
+      case 'medium':
+        return <Badge variant="secondary">Medium Priority</Badge>
+      case 'low':
+        return <Badge variant="outline">Low Priority</Badge>
+      default:
+        return <Badge variant="outline">Medium Priority</Badge>
+    }
+  }
+
+  const getStatusBadge = (document: Document) => {
+    const isActive = document.metadata?.active !== false // Default to true
+    
+    return isActive 
+      ? <Badge variant="default" className="bg-green-500">Active</Badge>
+      : <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -163,6 +192,8 @@ export function DocumentList() {
                 <TableHead>Title</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Hub Areas</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Chunks</TableHead>
                 <TableHead>Uploaded</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -174,6 +205,8 @@ export function DocumentList() {
                   <TableCell className="font-medium">{doc.title}</TableCell>
                   <TableCell className="uppercase">{doc.file_type}</TableCell>
                   <TableCell>{formatHubAreas(doc.hub_areas)}</TableCell>
+                  <TableCell>{getPriorityBadge(doc)}</TableCell>
+                  <TableCell>{getStatusBadge(doc)}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">
                       {doc.chunks_count || 0}
@@ -181,9 +214,20 @@ export function DocumentList() {
                   </TableCell>
                   <TableCell>{formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}</TableCell>
                   <TableCell className="text-right">
-                    <Button onClick={() => handlePreview(doc)} variant="ghost" size="sm">
-                      Preview
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button onClick={() => handlePreview(doc)} variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {onConfigureDocument && (
+                        <Button 
+                          onClick={() => onConfigureDocument(doc)} 
+                          variant="ghost" 
+                          size="sm"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

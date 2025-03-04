@@ -55,6 +55,7 @@ interface UseDocumentContextOptions {
   trackMetrics?: boolean
   hubSpecificWeighting?: boolean
   accessLevel?: string
+  showDetailedResults?: boolean
 }
 
 export function useDocumentContext(options: UseDocumentContextOptions = {}) {
@@ -65,7 +66,8 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     batchSize = 50,
     trackMetrics = true,
     hubSpecificWeighting = false,
-    accessLevel = 'read'
+    accessLevel = 'read',
+    showDetailedResults = false
   } = options
   
   const { user } = useAuth()
@@ -73,6 +75,7 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
   const [contextResults, setContextResults] = useState<DocumentChunk[]>([])
   const [resultSource, setResultSource] = useState<'cache' | 'live' | null>(null)
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null)
+  const [selectedContexts, setSelectedContexts] = useState<DocumentChunk[]>([])
 
   const retrieveContext = async (query: string, hubArea?: string) => {
     setIsLoading(true)
@@ -125,7 +128,18 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
         relevance_score: chunk.similarity || 0
       })) as DocumentChunk[]
       
+      // Store results
       setContextResults(standardizedResults)
+      
+      // Automatically select the best contexts
+      // Note: instead of user selection, the system now auto-selects based on relevance
+      const autoSelectedContexts = standardizedResults
+        .filter(chunk => chunk.relevance_score >= similarityThreshold)
+        .sort((a, b) => b.relevance_score - a.relevance_score)
+        .slice(0, matchCount);
+      
+      setSelectedContexts(autoSelectedContexts);
+      
       return standardizedResults
     } catch (err) {
       console.error('Error retrieving context:', err)
@@ -141,16 +155,17 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
     }
   }
 
-  const generateResponse = async ({ query, contextChunks, hubArea }: {
+  const generateResponse = async ({ query, hubArea }: {
     query: string
-    contextChunks: DocumentChunk[]
+    contextChunks?: DocumentChunk[] // Now optional as we use auto-selected contexts
     hubArea?: string
   }) => {
     try {
+      // Always use the auto-selected contexts
       const { data, error } = await supabase.functions.invoke('generate-response-with-context', {
         body: { 
           query, 
-          contextChunks, 
+          contextChunks: selectedContexts, // Use auto-selected contexts
           hubArea,
           userId: user?.id,
           trackMetrics,
@@ -199,9 +214,10 @@ export function useDocumentContext(options: UseDocumentContextOptions = {}) {
   return {
     // State variables for traditional use
     isLoading,
-    contextResults,
+    contextResults: showDetailedResults ? contextResults : [], // Only expose full results when needed
     resultSource,
     performanceMetrics,
+    selectedContexts, // Expose auto-selected contexts
     
     // Mutation versions for React Query
     retrieveContext: useMutation({
