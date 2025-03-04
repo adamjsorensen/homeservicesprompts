@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import { DocumentMetrics } from '@/types/documentTypes';
+import { Json } from '@/integrations/supabase/types';
 
 interface DocumentMetricsPanelProps {
   documentId: string;
@@ -51,6 +52,16 @@ export default function DocumentMetricsPanel({ documentId }: DocumentMetricsPane
         // Since the table was just created, we'll provide default metrics for now
         // Later we can query the response_quality_metrics table
 
+        const documentMetadata = document?.metadata || {};
+        // Ensure metadata is converted to a proper Record<string, any> type
+        const typedMetadata: Record<string, any> = {};
+        
+        if (documentMetadata && typeof documentMetadata === 'object') {
+          Object.entries(documentMetadata as Record<string, Json>).forEach(([key, value]) => {
+            typedMetadata[key] = value;
+          });
+        }
+
         const metrics: DocumentMetrics = {
           retrievalCount: retrievalStats.retrievalCount,
           avgSimilarity: retrievalStats.avgSimilarity,
@@ -58,7 +69,7 @@ export default function DocumentMetricsPanel({ documentId }: DocumentMetricsPane
           minSimilarity: retrievalStats.minSimilarity,
           usageByDay: retrievalStats.usageByDay,
           chunksCount: chunksCount || 0,
-          metadata: document?.metadata || {}
+          metadata: typedMetadata
         };
 
         setMetrics(metrics);

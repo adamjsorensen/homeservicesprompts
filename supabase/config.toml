@@ -31,60 +31,45 @@ enabled = true
 
 [functions.admin-users-list]
 verify_jwt = true
-path = "supabase/functions/admin-users-list"
 
 [functions.admin-users-toggle-admin]
 verify_jwt = true
-path = "supabase/functions/admin-users-toggle-admin"
 
 [functions.admin-users-update-profile]
 verify_jwt = true
-path = "supabase/functions/admin-users-update-profile"
 
 [functions.admin-users]
 verify_jwt = true
-path = "supabase/functions/admin-users"
 
 [functions.generate-embedding]
 verify_jwt = false
-path = "supabase/functions/generate-embedding"
 
 [functions.generate-prompt-content]
 verify_jwt = false
-path = "supabase/functions/generate-prompt-content"
 
 [functions.process-document]
 verify_jwt = false
-path = "supabase/functions/process-document"
 
 [functions.process-document-llamaindex]
 verify_jwt = false
-path = "supabase/functions/process-document-llamaindex"
 
 [functions.retrieve-document-context]
 verify_jwt = false
-path = "supabase/functions/retrieve-document-context"
 
 [functions.generate-response-with-context]
 verify_jwt = false
-path = "supabase/functions/generate-response-with-context"
 
 [functions.batch-process-documents]
 verify_jwt = false
-path = "supabase/functions/batch-process-documents"
 
 [functions.get-document-permissions]
 verify_jwt = false
-path = "supabase/functions/get-document-permissions"
 
 [functions.get-batch-status]
 verify_jwt = false
-path = "supabase/functions/get-batch-status"
 
 [functions.enhanced-retrieve-context]
 verify_jwt = false
-path = "supabase/functions/enhanced-retrieve-context"
 
 [functions.enhanced-generate-response]
 verify_jwt = false
-path = "supabase/functions/enhanced-generate-response"

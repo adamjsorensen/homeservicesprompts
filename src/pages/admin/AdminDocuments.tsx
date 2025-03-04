@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DocumentUpload } from "@/components/documents/DocumentUpload"
 import { DocumentList } from "@/components/documents/DocumentList"
 import { DocumentConfigPanel } from "@/components/documents/DocumentConfigPanel"
-import { DocumentMetricsPanel } from "@/components/documents/DocumentMetricsPanel"
+import DocumentMetricsPanel from "@/components/documents/DocumentMetricsPanel"
 import { DocumentAccessControl } from "@/components/documents/DocumentAccessControl"
 import {
   Dialog,
