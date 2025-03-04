@@ -41,6 +41,47 @@ export type Database = {
           },
         ]
       }
+      document_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          document_id: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          created_at?: string
+          document_id: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_references: {
         Row: {
           citation_context: string | null
@@ -83,6 +124,38 @@ export type Database = {
           },
         ]
       }
+      document_versions: {
+        Row: {
+          changes: Json | null
+          created_at: string
+          document_id: string
+          id: string
+          version: number
+        }
+        Insert: {
+          changes?: Json | null
+          created_at?: string
+          document_id: string
+          id?: string
+          version: number
+        }
+        Update: {
+          changes?: Json | null
+          created_at?: string
+          document_id?: string
+          id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           content: string
@@ -121,6 +194,45 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      node_relationships: {
+        Row: {
+          child_chunk_id: string
+          created_at: string
+          id: string
+          parent_chunk_id: string
+          relationship_type: string
+        }
+        Insert: {
+          child_chunk_id: string
+          created_at?: string
+          id?: string
+          parent_chunk_id: string
+          relationship_type: string
+        }
+        Update: {
+          child_chunk_id?: string
+          created_at?: string
+          id?: string
+          parent_chunk_id?: string
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_relationships_child_chunk_id_fkey"
+            columns: ["child_chunk_id"]
+            isOneToOne: false
+            referencedRelation: "document_chunks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_relationships_parent_chunk_id_fkey"
+            columns: ["parent_chunk_id"]
+            isOneToOne: false
+            referencedRelation: "document_chunks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       parameter_tweaks: {
         Row: {
@@ -705,6 +817,23 @@ export type Database = {
             }
             Returns: unknown
           }
+      match_document_chunks: {
+        Args: {
+          query_embedding: string
+          similarity_threshold: number
+          match_count: number
+          filter_document_id?: string
+          filter_hub_area?: string
+        }
+        Returns: {
+          id: string
+          document_id: string
+          content: string
+          metadata: Json
+          chunk_index: number
+          similarity: number
+        }[]
+      }
       match_documents: {
         Args: {
           query_embedding: string

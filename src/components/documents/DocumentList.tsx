@@ -21,23 +21,24 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { formatDistanceToNow } from 'date-fns'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DocumentChunk } from '@/types/database'
 
 interface Document {
-  id: string
-  title: string
-  content: string
-  file_type: string
-  hub_areas: string[]
-  created_at: string
-  updated_at: string
-  chunks_count?: number
+  id: string;
+  title: string;
+  content: string;
+  file_type: string;
+  hub_areas: string[];
+  created_at: string;
+  updated_at: string;
+  chunks_count?: number;
 }
 
 export function DocumentList() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
-  const [documentChunks, setDocumentChunks] = useState<any[]>([])
+  const [documentChunks, setDocumentChunks] = useState<DocumentChunk[]>([])
   const [previewOpen, setPreviewOpen] = useState(false)
   const [loadingChunks, setLoadingChunks] = useState(false)
   const { toast } = useToast()
@@ -58,9 +59,8 @@ export function DocumentList() {
       const documentsWithChunks = await Promise.all(
         (documentsData || []).map(async (doc) => {
           const { count, error } = await supabase
-            .from('document_chunks')
-            .select('*', { count: 'exact', head: true })
-            .eq('document_id', doc.id)
+            .rpc('count_document_chunks', { document_id: doc.id })
+            .single()
 
           return {
             ...doc,
@@ -94,10 +94,7 @@ export function DocumentList() {
     try {
       setLoadingChunks(true)
       const { data, error } = await supabase
-        .from('document_chunks')
-        .select('*')
-        .eq('document_id', document.id)
-        .order('chunk_index', { ascending: true })
+        .rpc('get_document_chunks', { doc_id: document.id })
       
       if (error) throw error
       setDocumentChunks(data || [])
@@ -178,7 +175,7 @@ export function DocumentList() {
 
       {selectedDocument && (
         <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>{selectedDocument.title}</DialogTitle>
               <DialogDescription>
@@ -186,7 +183,7 @@ export function DocumentList() {
               </DialogDescription>
             </DialogHeader>
             
-            <Tabs defaultValue="content">
+            <Tabs defaultValue="content" className="flex-1 overflow-hidden flex flex-col">
               <TabsList>
                 <TabsTrigger value="content">Full Content</TabsTrigger>
                 <TabsTrigger value="chunks">
@@ -194,13 +191,13 @@ export function DocumentList() {
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="content" className="mt-4">
-                <div className="max-h-[400px] overflow-auto border rounded-md p-4 bg-muted/30">
+              <TabsContent value="content" className="mt-4 flex-1 overflow-hidden">
+                <div className="max-h-[60vh] overflow-auto border rounded-md p-4 bg-muted/30">
                   <pre className="whitespace-pre-wrap text-sm">{selectedDocument.content}</pre>
                 </div>
               </TabsContent>
               
-              <TabsContent value="chunks" className="mt-4">
+              <TabsContent value="chunks" className="mt-4 flex-1 overflow-hidden">
                 {loadingChunks ? (
                   <div className="flex justify-center py-8">
                     <p>Loading chunks...</p>
@@ -210,7 +207,7 @@ export function DocumentList() {
                     <p className="text-muted-foreground">No chunks found</p>
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-[400px] overflow-auto">
+                  <div className="space-y-4 max-h-[60vh] overflow-auto p-1">
                     {documentChunks.map((chunk) => (
                       <div key={chunk.id} className="border rounded-md p-3 bg-muted/20">
                         <div className="flex justify-between items-center mb-2">
@@ -220,6 +217,17 @@ export function DocumentList() {
                           </span>
                         </div>
                         <p className="text-sm whitespace-pre-wrap">{chunk.content}</p>
+                        {chunk.metadata && (
+                          <div className="mt-2 pt-2 border-t border-muted text-xs text-muted-foreground">
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(chunk.metadata).map(([key, value]) => (
+                                <Badge key={key} variant="outline" className="text-xs">
+                                  {key}: {typeof value === 'object' ? JSON.stringify(value) : value}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

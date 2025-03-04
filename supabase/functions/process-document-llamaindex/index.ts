@@ -1,225 +1,232 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.3.0"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Embedding generation from OpenAI
+async function generateEmbedding(content: string): Promise<number[]> {
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || '';
+  const response = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      input: content,
+      model: 'text-embedding-3-small',
+    }),
+  });
+
+  const result = await response.json();
+  return result.data[0].embedding;
 }
 
-interface DocumentInput {
-  title: string;
-  content: string;
-  fileType: string;
-  hubAreas: string[];
-  metadata?: Record<string, unknown>;
+// Text chunking logic
+function chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {
+  const chunks: string[] = [];
+  let startIndex = 0;
+
+  while (startIndex < text.length) {
+    let endIndex = Math.min(startIndex + chunkSize, text.length);
+    
+    // If we're not at the end and not at the first chunk, try to find a good break point
+    if (endIndex < text.length && startIndex > 0) {
+      // Look for a period, question mark, or exclamation followed by a space or newline
+      const breakPointRegex = /[.?!]\s+/g;
+      let matches;
+      let lastMatch = null;
+      
+      // Find the last sentence break within our window
+      while ((matches = breakPointRegex.exec(text.substring(startIndex, endIndex))) !== null) {
+        lastMatch = matches;
+      }
+      
+      if (lastMatch) {
+        endIndex = startIndex + lastMatch.index + 2; // +2 to include the punctuation and space
+      }
+    }
+    
+    chunks.push(text.substring(startIndex, endIndex));
+    
+    // Move the start index for the next chunk, accounting for overlap
+    startIndex = endIndex - overlap;
+    if (startIndex < 0) startIndex = 0;
+  }
+  
+  return chunks;
 }
 
-interface DocumentChunk {
-  content: string;
-  metadata: Record<string, unknown>;
-  chunkIndex: number;
+// Process document and generate chunks
+async function processDocument(
+  supabaseClient: any, 
+  documentId: string, 
+  content: string, 
+  chunkSize: number = 1000, 
+  overlap: number = 200
+): Promise<{ success: boolean; chunks_count: number; error?: string }> {
+  try {
+    // Split text into chunks
+    const chunks = chunkText(content, chunkSize, overlap);
+    console.log(`Document split into ${chunks.length} chunks`);
+    
+    // Process each chunk and generate embeddings
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      
+      // Generate embedding for chunk
+      console.log(`Generating embedding for chunk ${i+1}/${chunks.length}`);
+      const embedding = await generateEmbedding(chunk);
+      
+      // Store chunk in database
+      const { error } = await supabaseClient
+        .from('document_chunks')
+        .insert({
+          document_id: documentId,
+          content: chunk,
+          chunk_index: i,
+          embedding,
+          metadata: { 
+            chunk_size: chunkSize,
+            overlap,
+            position: i,
+            total_chunks: chunks.length
+          }
+        });
+      
+      if (error) {
+        console.error(`Error storing chunk ${i}:`, error);
+        throw new Error(`Failed to store chunk ${i}: ${error.message}`);
+      }
+    }
+    
+    // Create relationships between adjacent chunks
+    for (let i = 0; i < chunks.length - 1; i++) {
+      // First get the IDs of the current and next chunks
+      const { data: currentChunk, error: currentError } = await supabaseClient
+        .from('document_chunks')
+        .select('id')
+        .eq('document_id', documentId)
+        .eq('chunk_index', i)
+        .single();
+      
+      const { data: nextChunk, error: nextError } = await supabaseClient
+        .from('document_chunks')
+        .select('id')
+        .eq('document_id', documentId)
+        .eq('chunk_index', i + 1)
+        .single();
+      
+      if (currentError || nextError) {
+        console.error('Error retrieving chunk IDs:', currentError || nextError);
+        continue;
+      }
+      
+      // Create the relationship
+      const { error } = await supabaseClient
+        .from('node_relationships')
+        .insert({
+          parent_chunk_id: currentChunk.id,
+          child_chunk_id: nextChunk.id,
+          relationship_type: 'sequential'
+        });
+      
+      if (error) {
+        console.error(`Error creating relationship between chunks ${i} and ${i+1}:`, error);
+      }
+    }
+    
+    // Create initial document version record
+    await supabaseClient
+      .from('document_versions')
+      .insert({
+        document_id: documentId,
+        version: 1,
+        changes: { action: 'created', chunks_count: chunks.length }
+      });
+    
+    return { success: true, chunks_count: chunks.length };
+  } catch (error) {
+    console.error('Document processing error:', error);
+    return { success: false, chunks_count: 0, error: error.message };
+  }
 }
-
-// Settings for document chunking
-const CHUNK_SIZE = 1000;
-const CHUNK_OVERLAP = 200;
 
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  // Handle CORS preflight request
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
-
+  
   try {
-    // Initialize OpenAI client
-    const openai = new OpenAIApi(new Configuration({
-      apiKey: Deno.env.get('OPENAI_API_KEY'),
-    }))
-
+    const { title, content, fileType, hubAreas, metadata } = await req.json();
+    
     // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const { title, content, fileType, hubAreas, metadata = {} } = await req.json() as DocumentInput
-
-    console.log('Processing document with LlamaIndex:', { title, fileType, hubAreas })
-
-    // Step 1: Store the document first
-    const { data: document, error: insertError } = await supabaseClient
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    console.log(`Processing document: ${title}`);
+    
+    // Create document record first
+    const { data: document, error: documentError } = await supabase
       .from('documents')
       .insert({
         title,
         content,
         file_type: fileType,
         hub_areas: hubAreas,
-        metadata,
+        metadata: {
+          ...metadata,
+          processor: 'llamaindex',
+          processed_at: new Date().toISOString()
+        }
       })
       .select()
-      .single()
-
-    if (insertError) {
-      console.error('Error storing document:', insertError)
-      throw insertError
-    }
-
-    const documentId = document.id
-    console.log('Successfully stored document with ID:', documentId)
-
-    // Step 2: Split the document into chunks
-    const chunks = await splitDocument(content, metadata, documentId)
-    console.log(`Document split into ${chunks.length} chunks`)
-
-    // Step 3: Process each chunk in parallel with rate limiting
-    const processedChunks = await processChunksWithRateLimit(chunks, openai, 3) // Process 3 at a time
-    console.log('Generated embeddings for all chunks')
-
-    // Step 4: Store all chunks in database
-    for (const [index, chunk] of processedChunks.entries()) {
-      const { content, metadata, embedding } = chunk
-      
-      const { error: chunkError } = await supabaseClient
-        .from('document_chunks')
-        .insert({
-          document_id: documentId,
-          content,
-          metadata,
-          embedding,
-          chunk_index: index,
-        })
-
-      if (chunkError) {
-        console.error(`Error storing chunk ${index}:`, chunkError)
-        // Continue processing other chunks even if one fails
-      }
-    }
-
-    console.log('Successfully processed and stored all chunks')
-
-    // Step 5: Create a document version record
-    await supabaseClient
-      .from('document_versions')
-      .insert({
-        document_id: documentId,
-        version: 1, // Initial version
-        changes: { action: 'created' },
-      })
-
-    // Step 6: Generate a document-level embedding for faster retrieval of entire documents
-    const docEmbeddingResponse = await openai.createEmbedding({
-      model: "text-embedding-ada-002",
-      input: content.slice(0, 8000), // OpenAI has a token limit
-    })
+      .single();
     
-    const [{ embedding: docEmbedding }] = docEmbeddingResponse.data.data
-
-    // Update the document with the embedding
-    await supabaseClient
-      .from('documents')
-      .update({ embedding: docEmbedding })
-      .eq('id', documentId)
-
+    if (documentError) {
+      throw new Error(`Failed to create document: ${documentError.message}`);
+    }
+    
+    console.log(`Document created with ID: ${document.id}`);
+    
+    // Process document and create chunks
+    const processingResult = await processDocument(supabase, document.id, content);
+    
+    if (!processingResult.success) {
+      throw new Error(`Document processing failed: ${processingResult.error}`);
+    }
+    
     return new Response(
       JSON.stringify({
-        document_id: documentId,
-        chunks_count: processedChunks.length,
-        status: 'success'
+        success: true,
+        document_id: document.id,
+        chunks_count: processingResult.chunks_count
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 200,
+      }
+    );
   } catch (error) {
-    console.error('Error processing document with LlamaIndex:', error)
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      JSON.stringify({ success: false, error: error.message }),
+      {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
+        status: 400,
       }
-    )
+    );
   }
-})
-
-// Function to split document into chunks with overlap
-async function splitDocument(
-  content: string, 
-  metadata: Record<string, unknown>,
-  documentId: string
-): Promise<DocumentChunk[]> {
-  const chunks: DocumentChunk[] = []
-  const words = content.split(/\s+/)
-  
-  // Simple sliding window for now, can be upgraded to LlamaIndex splitters later
-  for (let i = 0; i < words.length; i += (CHUNK_SIZE - CHUNK_OVERLAP)) {
-    // Don't create empty chunks at the end
-    if (i >= words.length) break
-
-    const chunkWords = words.slice(i, i + CHUNK_SIZE)
-    const chunkContent = chunkWords.join(' ')
-    
-    const chunkMetadata = {
-      ...metadata,
-      document_id: documentId,
-      chunk_start_idx: i,
-      chunk_end_idx: i + chunkWords.length - 1,
-      chunk_size: chunkWords.length
-    }
-    
-    chunks.push({
-      content: chunkContent,
-      metadata: chunkMetadata,
-      chunkIndex: Math.floor(i / (CHUNK_SIZE - CHUNK_OVERLAP))
-    })
-  }
-  
-  return chunks
-}
-
-// Process chunks with rate limiting to avoid hitting API limits
-async function processChunksWithRateLimit(
-  chunks: DocumentChunk[],
-  openai: OpenAIApi,
-  batchSize: number
-) {
-  const processedChunks = []
-  const batches = Math.ceil(chunks.length / batchSize)
-  
-  for (let i = 0; i < batches; i++) {
-    const start = i * batchSize
-    const end = Math.min(start + batchSize, chunks.length)
-    const batchChunks = chunks.slice(start, end)
-    
-    // Process this batch in parallel
-    const batchPromises = batchChunks.map(async (chunk) => {
-      try {
-        const embeddingResponse = await openai.createEmbedding({
-          model: "text-embedding-ada-002",
-          input: chunk.content,
-        })
-        
-        const [{ embedding }] = embeddingResponse.data.data
-        
-        return {
-          ...chunk,
-          embedding
-        }
-      } catch (error) {
-        console.error(`Error processing chunk ${chunk.chunkIndex}:`, error)
-        // Return the chunk without embedding so we can handle it later
-        return { ...chunk, error: error.message }
-      }
-    })
-    
-    const batchResults = await Promise.all(batchPromises)
-    processedChunks.push(...batchResults)
-    
-    // Add a small delay between batches to respect rate limits
-    if (i < batches - 1) {
-      await new Promise(resolve => setTimeout(resolve, 200))
-    }
-  }
-  
-  return processedChunks
-}
+});
