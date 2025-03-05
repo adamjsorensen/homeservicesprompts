@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,16 +142,22 @@ export default function Chat() {
         lastUserMessage: userMessage.content.substring(0, 50)
       });
       
+      // Get the Supabase functions URL without using the protected url property
       const { data: functionData } = await supabase.functions.invoke("chat-completion", { 
-        body: { method: "GET" },
-        responseType: "json" 
+        body: { method: "GET" }
       });
       
-      const response = await fetch(`${supabase.functions.url}/chat-completion`, {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token || '';
+      
+      // Use direct fetch with the Edge Function URL
+      const functionsUrl = supabase.functions.url;
+      const response = await fetch(`${functionsUrl}/chat-completion`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           messages: apiMessages,
