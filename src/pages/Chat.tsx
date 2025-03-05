@@ -148,12 +148,16 @@ export default function Chat() {
           model,
           userId: user?.id,
           streaming: true
-        },
-        signal: abortControllerRef.current.signal
+        }
       });
       
       if (response.error) {
         throw new Error(response.error.message);
+      }
+
+      // Check if the request was aborted before processing
+      if (abortControllerRef.current?.signal.aborted) {
+        return;
       }
 
       const reader = response.data.getReader();
@@ -162,6 +166,11 @@ export default function Chat() {
       
       // Process the stream
       while (true) {
+        // Check if the request was aborted during processing
+        if (abortControllerRef.current?.signal.aborted) {
+          break;
+        }
+        
         const { done, value } = await reader.read();
         if (done) break;
         
