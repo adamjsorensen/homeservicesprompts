@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,7 +149,7 @@ export default function Chat() {
       });
       
       // Call Supabase edge function
-      const { data: stream, error } = await supabase.functions.invoke("chat-completion", {
+      const response = await supabase.functions.invoke("chat-completion", {
         body: {
           messages: apiMessages,
           model,
@@ -157,9 +158,9 @@ export default function Chat() {
         }
       });
       
-      if (error) {
-        console.error("Supabase function error:", error);
-        throw new Error(error.message);
+      if (response.error) {
+        console.error("Supabase function error:", response.error);
+        throw new Error(response.error.message);
       }
 
       // Check if the request was aborted before processing
@@ -168,15 +169,15 @@ export default function Chat() {
         return;
       }
 
-      if (!stream) {
+      if (!response.data) {
         console.error("Response data is null or undefined");
         throw new Error("No data received from function");
       }
       
-      console.log("Response stream inspection:", typeof stream);
+      console.log("Response stream inspection:", typeof response.data);
       
-      // Process the stream as a series of Server-Sent Events
-      const reader = new ReadableStreamDefaultReader(stream as ReadableStream<Uint8Array>);
+      // Process the stream as text/event-stream
+      const reader = response.data.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       
@@ -184,6 +185,7 @@ export default function Chat() {
         // Check if the request was aborted during processing
         if (abortControllerRef.current?.signal.aborted) {
           console.log("Request was aborted during stream processing");
+          reader.cancel();
           break;
         }
         
@@ -197,7 +199,7 @@ export default function Chat() {
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
         
-        console.log(`Received chunk (buffer now ${buffer.length} bytes)`);
+        console.log(`Received chunk (buffer now ${buffer.length} bytes)`, { chunk: chunk.substring(0, 50) + '...' });
         
         // Process complete lines/events from buffer
         let lineEnd;
@@ -223,7 +225,7 @@ export default function Chat() {
                 deltaContent: parsedData.choices?.[0]?.delta?.content
               });
               
-              if (parsedData.choices && parsedData.choices[0].delta && parsedData.choices[0].delta.content) {
+              if (parsedData.choices && parsedData.choices[0]?.delta?.content) {
                 // Update the assistant message with new content
                 setMessages(prev => 
                   prev.map(msg => 
@@ -253,13 +255,11 @@ export default function Chat() {
         }
       }
     } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error("Error sending message:", error);
-        toast.error("Failed to send message: " + (error.message || "Unknown error"));
-        
-        // Remove the assistant message placeholder if there was an error
-        setMessages(prev => prev.filter(msg => msg.role !== "assistant" || msg.content !== ""));
-      }
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message: " + (error.message || "Unknown error"));
+      
+      // Remove the assistant message placeholder if there was an error
+      setMessages(prev => prev.filter(msg => msg.role !== "assistant" || msg.content !== ""));
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;

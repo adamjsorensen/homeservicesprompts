@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         throw new Error(`OpenRouter API error: ${openRouterResponse.status} - ${errorText}`);
       }
       
-      // Create a new transform stream to process the SSE data
+      // Create a TransformStream to forward the SSE data
       const { readable, writable } = new TransformStream();
       const writer = writable.getWriter();
       
