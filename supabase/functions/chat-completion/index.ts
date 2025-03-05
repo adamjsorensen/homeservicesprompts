@@ -37,6 +37,8 @@ Deno.serve(async (req) => {
     
     if (streaming) {
       // Handle streaming response directly
+      console.log('Initiating streaming request to OpenRouter');
+      
       const openRouterResponse = await fetch(url, {
         method: 'POST',
         headers: {
@@ -52,22 +54,53 @@ Deno.serve(async (req) => {
         })
       });
       
+      console.log('OpenRouter response received:', {
+        status: openRouterResponse.status,
+        statusText: openRouterResponse.statusText,
+        headers: Object.fromEntries([...openRouterResponse.headers.entries()]),
+        bodyType: openRouterResponse.body ? 'ReadableStream' : 'null',
+        bodyHasGetReader: openRouterResponse.body && typeof openRouterResponse.body.getReader === 'function'
+      });
+      
+      if (!openRouterResponse.ok) {
+        const errorText = await openRouterResponse.text();
+        console.error('OpenRouter error response:', {
+          status: openRouterResponse.status,
+          statusText: openRouterResponse.statusText,
+          error: errorText
+        });
+        throw new Error(`OpenRouter API error: ${openRouterResponse.status} - ${errorText}`);
+      }
+      
+      // Check if we have a readable stream
+      if (!openRouterResponse.body) {
+        throw new Error('OpenRouter response body is null or undefined');
+      }
+      
       // Pass through the streaming response
       const stream = new ReadableStream({
         async start(controller) {
           // Process the response body as a stream
           const reader = openRouterResponse.body?.getReader();
           if (!reader) {
+            console.error('Failed to get reader from response body');
             controller.close();
             return;
           }
+          
+          console.log('Successfully obtained reader from OpenRouter response');
           
           try {
             while (true) {
               const { done, value } = await reader.read();
               if (done) {
+                console.log('Stream complete');
                 break;
               }
+              
+              // Log a sample of the chunk (first 100 bytes)
+              const sampleChunk = new TextDecoder().decode(value.slice(0, Math.min(100, value.length)));
+              console.log(`Received chunk (${value.length} bytes): ${sampleChunk}${value.length > 100 ? '...' : ''}`);
               
               // Forward the chunks
               controller.enqueue(value);
@@ -101,9 +134,12 @@ Deno.serve(async (req) => {
         }
       }
       
+      console.log('Returning stream to client');
       return new Response(stream, { headers });
     } else {
       // Non-streaming mode
+      console.log('Initiating non-streaming request to OpenRouter');
+      
       const openRouterResponse = await fetch(url, {
         method: 'POST',
         headers: {
@@ -120,6 +156,11 @@ Deno.serve(async (req) => {
       });
       
       const data = await openRouterResponse.json();
+      console.log('OpenRouter non-streaming response:', {
+        status: openRouterResponse.status,
+        hasChoices: !!data.choices,
+        firstChoice: data.choices?.[0] ? 'present' : 'missing'
+      });
       
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -141,6 +141,13 @@ export default function Chat() {
         timestamp: new Date()
       }]);
       
+      console.log("Calling Supabase function with parameters:", {
+        model,
+        messageCount: apiMessages.length,
+        streaming: true,
+        userAuthenticated: !!user?.id
+      });
+      
       // Call Supabase edge function
       const response = await supabase.functions.invoke("chat-completion", {
         body: {
@@ -151,16 +158,38 @@ export default function Chat() {
         }
       });
       
+      console.log("Supabase function response:", {
+        hasError: !!response.error,
+        dataType: typeof response.data,
+        hasData: !!response.data,
+        dataProperties: response.data ? Object.keys(response.data) : []
+      });
+      
       if (response.error) {
+        console.error("Supabase function error:", response.error);
         throw new Error(response.error.message);
       }
 
       // Check if the request was aborted before processing
       if (abortControllerRef.current?.signal.aborted) {
+        console.log("Request was aborted before processing response");
         return;
       }
 
+      if (!response.data) {
+        console.error("Response data is null or undefined");
+        throw new Error("No data received from function");
+      }
+      
+      console.log("Response data inspection:", {
+        constructor: response.data.constructor?.name,
+        hasGetReader: typeof response.data.getReader === 'function',
+        isReadableStream: response.data instanceof ReadableStream
+      });
+
       const reader = response.data.getReader();
+      console.log("Reader obtained:", !!reader);
+      
       const decoder = new TextDecoder();
       let partialResponse = "";
       
@@ -168,22 +197,43 @@ export default function Chat() {
       while (true) {
         // Check if the request was aborted during processing
         if (abortControllerRef.current?.signal.aborted) {
+          console.log("Request was aborted during stream processing");
           break;
         }
         
+        console.log("Reading from stream...");
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          console.log("Stream is done");
+          break;
+        }
+        
+        // Log the raw value
+        console.log(`Received chunk (${value.length} bytes)`);
         
         // Decode the stream chunks
         const chunk = decoder.decode(value, { stream: true });
+        console.log("Decoded chunk:", chunk.substring(0, 50) + (chunk.length > 50 ? "..." : ""));
+        
         const lines = (partialResponse + chunk).split("\n");
         partialResponse = lines.pop() || "";
         
+        console.log(`Processing ${lines.length} lines`);
+        
         // Process each line
         for (const line of lines) {
+          if (line.trim() === "") continue;
+          
+          console.log("Processing line:", line.substring(0, 50) + (line.length > 50 ? "..." : ""));
+          
           if (line.startsWith("data: ") && line !== "data: [DONE]") {
             try {
               const data = JSON.parse(line.substring(6));
+              console.log("Parsed data:", {
+                hasChoices: !!data.choices,
+                deltaContent: data.choices?.[0]?.delta?.content
+              });
+              
               if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
                 // Update the assistant message with new content
                 setMessages(prev => 
@@ -197,6 +247,8 @@ export default function Chat() {
             } catch (e) {
               console.error("Error parsing stream:", e, line);
             }
+          } else {
+            console.log("Line does not match expected format:", line.substring(0, 20));
           }
         }
       }
