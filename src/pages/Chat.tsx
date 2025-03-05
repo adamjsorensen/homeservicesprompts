@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,7 +148,7 @@ export default function Chat() {
       });
       
       // Call Supabase edge function
-      const response = await supabase.functions.invoke("chat-completion", {
+      const { data: stream, error } = await supabase.functions.invoke("chat-completion", {
         body: {
           messages: apiMessages,
           model,
@@ -158,16 +157,9 @@ export default function Chat() {
         }
       });
       
-      console.log("Supabase function response:", {
-        hasError: !!response.error,
-        dataType: typeof response.data,
-        hasData: !!response.data,
-        dataProperties: response.data ? Object.keys(response.data) : []
-      });
-      
-      if (response.error) {
-        console.error("Supabase function error:", response.error);
-        throw new Error(response.error.message);
+      if (error) {
+        console.error("Supabase function error:", error);
+        throw new Error(error.message);
       }
 
       // Check if the request was aborted before processing
@@ -176,24 +168,18 @@ export default function Chat() {
         return;
       }
 
-      if (!response.data) {
+      if (!stream) {
         console.error("Response data is null or undefined");
         throw new Error("No data received from function");
       }
       
-      console.log("Response data inspection:", {
-        constructor: response.data.constructor?.name,
-        hasGetReader: typeof response.data.getReader === 'function',
-        isReadableStream: response.data instanceof ReadableStream
-      });
-
-      const reader = response.data.getReader();
-      console.log("Reader obtained:", !!reader);
+      console.log("Response stream inspection:", typeof stream);
       
+      // Process the stream as a series of Server-Sent Events
+      const reader = new ReadableStreamDefaultReader(stream as ReadableStream<Uint8Array>);
       const decoder = new TextDecoder();
-      let partialResponse = "";
+      let buffer = '';
       
-      // Process the stream
       while (true) {
         // Check if the request was aborted during processing
         if (abortControllerRef.current?.signal.aborted) {
@@ -201,54 +187,68 @@ export default function Chat() {
           break;
         }
         
-        console.log("Reading from stream...");
         const { done, value } = await reader.read();
         if (done) {
           console.log("Stream is done");
           break;
         }
         
-        // Log the raw value
-        console.log(`Received chunk (${value.length} bytes)`);
-        
-        // Decode the stream chunks
+        // Decode the chunk and append to buffer
         const chunk = decoder.decode(value, { stream: true });
-        console.log("Decoded chunk:", chunk.substring(0, 50) + (chunk.length > 50 ? "..." : ""));
+        buffer += chunk;
         
-        const lines = (partialResponse + chunk).split("\n");
-        partialResponse = lines.pop() || "";
+        console.log(`Received chunk (buffer now ${buffer.length} bytes)`);
         
-        console.log(`Processing ${lines.length} lines`);
-        
-        // Process each line
-        for (const line of lines) {
-          if (line.trim() === "") continue;
+        // Process complete lines/events from buffer
+        let lineEnd;
+        while ((lineEnd = buffer.indexOf('\n\n')) !== -1) {
+          const event = buffer.slice(0, lineEnd);
+          buffer = buffer.slice(lineEnd + 2);
           
-          console.log("Processing line:", line.substring(0, 50) + (line.length > 50 ? "..." : ""));
-          
-          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+          // Handle SSE data events
+          if (event.startsWith('data: ')) {
+            const data = event.slice(6);
+            
+            // Handle the "[DONE]" message
+            if (data === '[DONE]') {
+              console.log('Received [DONE] event');
+              continue;
+            }
+            
             try {
-              const data = JSON.parse(line.substring(6));
-              console.log("Parsed data:", {
-                hasChoices: !!data.choices,
-                deltaContent: data.choices?.[0]?.delta?.content
+              const parsedData = JSON.parse(data);
+              console.log("Parsed SSE data:", { 
+                id: parsedData.id?.substring(0, 8) + '...',
+                hasChoices: !!parsedData.choices,
+                deltaContent: parsedData.choices?.[0]?.delta?.content
               });
               
-              if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
+              if (parsedData.choices && parsedData.choices[0].delta && parsedData.choices[0].delta.content) {
                 // Update the assistant message with new content
                 setMessages(prev => 
                   prev.map(msg => 
                     msg.id === assistantMessageId
-                      ? { ...msg, content: msg.content + data.choices[0].delta.content }
+                      ? { ...msg, content: msg.content + parsedData.choices[0].delta.content }
                       : msg
                   )
                 );
               }
             } catch (e) {
-              console.error("Error parsing stream:", e, line);
+              console.error("Error parsing SSE data:", e, "Data:", data);
             }
-          } else {
-            console.log("Line does not match expected format:", line.substring(0, 20));
+          } else if (event.startsWith(':')) {
+            // Handle OpenRouter processing comments
+            console.log('OpenRouter processing comment:', event);
+            // No need to update UI for these, they're just keep-alive messages
+          } else if (event.includes('error')) {
+            // Handle error events
+            console.error('Error in stream:', event);
+            try {
+              const errorData = JSON.parse(event);
+              toast.error(`Error: ${errorData.error || 'Unknown error'}`);
+            } catch (e) {
+              console.error('Error parsing error event:', e);
+            }
           }
         }
       }

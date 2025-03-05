@@ -1,6 +1,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 import { corsHeaders } from '../_shared/cors.ts';
+import { withRetry } from '../_shared/retry.ts';
 
 // Get API key from environment variables
 const OPENROUTER_API_KEY = Deno.env.get('OpenAI (OpenRouter)') || '';
@@ -26,18 +27,19 @@ Deno.serve(async (req) => {
     // OpenRouter API endpoint
     const url = 'https://openrouter.ai/api/v1/chat/completions';
     
-    // Create response headers
+    // Create response headers for streaming
     const headers = {
       ...corsHeaders,
-      'Content-Type': streaming ? 'text/event-stream' : 'application/json',
+      'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
     };
     
     if (streaming) {
-      // Handle streaming response directly
       console.log('Initiating streaming request to OpenRouter');
+      
+      // Create a new abort controller for the request
+      const controller = new AbortController();
       
       const openRouterResponse = await fetch(url, {
         method: 'POST',
@@ -51,15 +53,14 @@ Deno.serve(async (req) => {
           messages,
           model: model || 'openai/gpt-4o-mini', // Default model
           stream: true
-        })
+        }),
+        signal: controller.signal
       });
       
       console.log('OpenRouter response received:', {
         status: openRouterResponse.status,
         statusText: openRouterResponse.statusText,
         headers: Object.fromEntries([...openRouterResponse.headers.entries()]),
-        bodyType: openRouterResponse.body ? 'ReadableStream' : 'null',
-        bodyHasGetReader: openRouterResponse.body && typeof openRouterResponse.body.getReader === 'function'
       });
       
       if (!openRouterResponse.ok) {
@@ -72,48 +73,91 @@ Deno.serve(async (req) => {
         throw new Error(`OpenRouter API error: ${openRouterResponse.status} - ${errorText}`);
       }
       
-      // Check if we have a readable stream
-      if (!openRouterResponse.body) {
-        throw new Error('OpenRouter response body is null or undefined');
-      }
+      // Create a new transform stream to process the SSE data
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
       
-      // Pass through the streaming response
-      const stream = new ReadableStream({
-        async start(controller) {
-          // Process the response body as a stream
+      // Process the response body as a stream in the background
+      (async () => {
+        try {
           const reader = openRouterResponse.body?.getReader();
           if (!reader) {
             console.error('Failed to get reader from response body');
-            controller.close();
+            writer.close();
             return;
           }
           
           console.log('Successfully obtained reader from OpenRouter response');
           
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) {
-                console.log('Stream complete');
-                break;
-              }
-              
-              // Log a sample of the chunk (first 100 bytes)
-              const sampleChunk = new TextDecoder().decode(value.slice(0, Math.min(100, value.length)));
-              console.log(`Received chunk (${value.length} bytes): ${sampleChunk}${value.length > 100 ? '...' : ''}`);
-              
-              // Forward the chunks
-              controller.enqueue(value);
+          const encoder = new TextEncoder();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              console.log('Stream complete');
+              break;
             }
-          } catch (error) {
-            console.error('Error in stream processing:', error);
-            controller.error(error);
-          } finally {
-            reader.releaseLock();
-            controller.close();
+            
+            // Decode the chunk and append to buffer
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            
+            // Process complete lines from buffer
+            let lineEnd;
+            while ((lineEnd = buffer.indexOf('\n')) !== -1) {
+              const line = buffer.slice(0, lineEnd).trim();
+              buffer = buffer.slice(lineEnd + 1);
+              
+              if (line === '') continue;
+              
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                
+                // Handle the "[DONE]" message
+                if (data === '[DONE]') {
+                  console.log('Received [DONE] message');
+                  await writer.write(encoder.encode(`data: [DONE]\n\n`));
+                  continue;
+                }
+                
+                try {
+                  // Parse the JSON data
+                  const parsed = JSON.parse(data);
+                  console.log('Parsed SSE data:', { 
+                    id: parsed.id?.slice(0, 8) + '...',
+                    hasChoices: !!parsed.choices,
+                    firstChoice: parsed.choices?.[0] ? 'present' : 'missing',
+                    deltaContent: parsed.choices?.[0]?.delta?.content ? 'present' : 'missing'
+                  });
+                  
+                  // Forward the parsed data
+                  await writer.write(encoder.encode(`data: ${data}\n\n`));
+                } catch (e) {
+                  console.error('Error parsing SSE data:', e, 'Line:', line);
+                }
+              } else if (line.startsWith(':')) {
+                // Handle comment lines (OpenRouter processing messages)
+                console.log('OpenRouter comment:', line);
+                // Forward comments as well
+                await writer.write(encoder.encode(`${line}\n\n`));
+              } else {
+                console.log('Unknown line format:', line);
+              }
+            }
           }
+        } catch (error) {
+          console.error('Error in stream processing:', error);
+          if (error.name !== 'AbortError') {
+            const errorMessage = JSON.stringify({ error: error.message });
+            await writer.write(new TextEncoder().encode(`data: ${errorMessage}\n\n`));
+          }
+        } finally {
+          console.log('Closing stream writer');
+          writer.close();
         }
-      });
+      })();
       
       // Record usage metrics if user is authenticated
       if (userId) {
@@ -135,34 +179,51 @@ Deno.serve(async (req) => {
       }
       
       console.log('Returning stream to client');
-      return new Response(stream, { headers });
+      return new Response(readable, { headers });
     } else {
       // Non-streaming mode
       console.log('Initiating non-streaming request to OpenRouter');
       
-      const openRouterResponse = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'https://yourapplication.com', // Replace with your actual domain
-          'X-Title': 'Your Application Name' // Replace with your app name
-        },
-        body: JSON.stringify({
-          messages,
-          model: model || 'openai/gpt-4o-mini', // Default model
-          stream: false
-        })
+      const response = await withRetry(async () => {
+        const openRouterResponse = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+            'HTTP-Referer': 'https://yourapplication.com', // Replace with your actual domain
+            'X-Title': 'Your Application Name' // Replace with your app name
+          },
+          body: JSON.stringify({
+            messages,
+            model: model || 'openai/gpt-4o-mini', // Default model
+            stream: false
+          })
+        });
+        
+        if (!openRouterResponse.ok) {
+          const errorText = await openRouterResponse.text();
+          throw new Error(`OpenRouter API error: ${openRouterResponse.status} - ${errorText}`);
+        }
+        
+        return await openRouterResponse.json();
+      }, {
+        maxRetries: 3,
+        retryCondition: (error) => {
+          // Only retry on network errors or 5xx server errors
+          return error.message.includes('network') || 
+                 error.message.includes('500') ||
+                 error.message.includes('502') ||
+                 error.message.includes('503') ||
+                 error.message.includes('504');
+        }
       });
       
-      const data = await openRouterResponse.json();
       console.log('OpenRouter non-streaming response:', {
-        status: openRouterResponse.status,
-        hasChoices: !!data.choices,
-        firstChoice: data.choices?.[0] ? 'present' : 'missing'
+        hasChoices: !!response.choices,
+        firstChoice: response.choices?.[0] ? 'present' : 'missing'
       });
       
-      return new Response(JSON.stringify(data), {
+      return new Response(JSON.stringify(response), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
