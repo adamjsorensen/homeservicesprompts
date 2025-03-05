@@ -141,26 +141,37 @@ export default function Chat() {
         lastUserMessage: userMessage.content.substring(0, 50)
       });
       
-      const response = await supabase.functions.invoke("chat-completion", {
-        body: {
+      const { data: functionData } = await supabase.functions.invoke("chat-completion", { 
+        body: { method: "GET" },
+        responseType: "json" 
+      });
+      
+      const response = await fetch(`${supabase.functions.url}/chat-completion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.auth.session()?.access_token}`
+        },
+        body: JSON.stringify({
           messages: apiMessages,
           model,
           userId: user?.id,
           streaming: true
-        }
+        }),
+        signal: abortControllerRef.current.signal
       });
       
-      console.log("Supabase function response received:", {
-        hasError: !!response.error,
-        errorMessage: response.error?.message,
-        hasData: !!response.data,
-        dataType: typeof response.data,
-        dataProperties: response.data ? Object.keys(response.data) : []
+      console.log("Fetch response received:", {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries([...response.headers.entries()]),
+        isBodyReadable: !!response.body
       });
       
-      if (response.error) {
-        console.error("Supabase function error:", response.error);
-        throw new Error(response.error.message);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`Error: ${response.status} - ${errorText}`);
       }
 
       if (abortControllerRef.current?.signal.aborted) {
@@ -168,18 +179,7 @@ export default function Chat() {
         return;
       }
 
-      if (!response.data) {
-        console.error("Response data is null or undefined");
-        throw new Error("No data received from function");
-      }
-      
-      console.log("Response stream inspection:", {
-        type: typeof response.data,
-        isReadableStream: response.data instanceof ReadableStream,
-        hasGetReader: typeof response.data.getReader === 'function'
-      });
-      
-      const reader = response.data.getReader();
+      const reader = response.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       
@@ -212,8 +212,7 @@ export default function Chat() {
           
           console.log("Processing event:", { 
             eventLength: event.length, 
-            eventPreview: event.substring(0, 50) + '...',
-            remainingBuffer: buffer.length
+            eventPreview: event.substring(0, 50) + '...'
           });
           
           if (event.startsWith('data: ')) {
@@ -229,8 +228,7 @@ export default function Chat() {
               console.log("Parsed SSE data:", { 
                 id: parsedData.id?.substring(0, 8) + '...',
                 hasChoices: !!parsedData.choices,
-                firstChoice: parsedData.choices?.[0] ? 'present' : 'missing',
-                deltaContent: parsedData.choices?.[0]?.delta?.content 
+                deltaContent: parsedData.choices?.[0]?.delta?.content
                   ? parsedData.choices[0].delta.content.substring(0, 30) + '...' 
                   : 'missing'
               });
@@ -242,15 +240,6 @@ export default function Chat() {
                       ? { ...msg, content: msg.content + parsedData.choices[0].delta.content }
                       : msg
                   );
-                  
-                  console.log("Updated message state:", {
-                    messageCount: newMessages.length,
-                    lastMessageId: newMessages[newMessages.length - 1].id,
-                    lastMessagePreview: newMessages[newMessages.length - 1].content.substring(
-                      Math.max(0, newMessages[newMessages.length - 1].content.length - 50)
-                    )
-                  });
-                  
                   return newMessages;
                 });
               }
