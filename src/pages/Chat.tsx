@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +48,6 @@ interface Message {
   timestamp: Date;
 }
 
-// Available models for OpenRouter
 const AVAILABLE_MODELS = [
   { id: "openai/gpt-4o-mini", name: "GPT-4o Mini", description: "Efficient, cost-effective model" },
   { id: "openai/gpt-4o", name: "GPT-4o", description: "Latest OpenAI model with enhanced capabilities" },
@@ -67,7 +65,6 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Check if user is admin
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) return;
@@ -89,7 +86,6 @@ export default function Chat() {
     checkAdminStatus();
   }, [user]);
 
-  // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -116,23 +112,19 @@ export default function Chat() {
     setInput("");
     setIsLoading(true);
     
-    // Cancel any in-progress stream
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     
-    // Create new abort controller for this request
     abortControllerRef.current = new AbortController();
     
     try {
-      // Format messages for API
       const apiMessages = [
         { role: "system", content: "You are a helpful assistant." },
         ...messages.map(msg => ({ role: msg.role, content: msg.content })),
         { role: userMessage.role, content: userMessage.content }
       ];
       
-      // Add placeholder message for streaming
       const assistantMessageId = Date.now().toString() + "-assistant";
       setMessages(prev => [...prev, {
         id: assistantMessageId,
@@ -141,14 +133,14 @@ export default function Chat() {
         timestamp: new Date()
       }]);
       
-      console.log("Calling Supabase function with parameters:", {
+      console.log("Sending chat request:", {
         model,
         messageCount: apiMessages.length,
         streaming: true,
-        userAuthenticated: !!user?.id
+        userAuthenticated: !!user?.id,
+        lastUserMessage: userMessage.content.substring(0, 50)
       });
       
-      // Call Supabase edge function
       const response = await supabase.functions.invoke("chat-completion", {
         body: {
           messages: apiMessages,
@@ -158,12 +150,19 @@ export default function Chat() {
         }
       });
       
+      console.log("Supabase function response received:", {
+        hasError: !!response.error,
+        errorMessage: response.error?.message,
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        dataProperties: response.data ? Object.keys(response.data) : []
+      });
+      
       if (response.error) {
         console.error("Supabase function error:", response.error);
         throw new Error(response.error.message);
       }
 
-      // Check if the request was aborted before processing
       if (abortControllerRef.current?.signal.aborted) {
         console.log("Request was aborted before processing response");
         return;
@@ -174,15 +173,17 @@ export default function Chat() {
         throw new Error("No data received from function");
       }
       
-      console.log("Response stream inspection:", typeof response.data);
+      console.log("Response stream inspection:", {
+        type: typeof response.data,
+        isReadableStream: response.data instanceof ReadableStream,
+        hasGetReader: typeof response.data.getReader === 'function'
+      });
       
-      // Process the stream as text/event-stream
       const reader = response.data.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
       
       while (true) {
-        // Check if the request was aborted during processing
         if (abortControllerRef.current?.signal.aborted) {
           console.log("Request was aborted during stream processing");
           reader.cancel();
@@ -191,27 +192,33 @@ export default function Chat() {
         
         const { done, value } = await reader.read();
         if (done) {
-          console.log("Stream is done");
+          console.log("Stream reading complete");
           break;
         }
         
-        // Decode the chunk and append to buffer
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
         
-        console.log(`Received chunk (buffer now ${buffer.length} bytes)`, { chunk: chunk.substring(0, 50) + '...' });
+        console.log("Received chunk:", { 
+          chunkSize: value?.length, 
+          bufferSize: buffer.length,
+          chunkPreview: chunk.substring(0, 50) + '...'
+        });
         
-        // Process complete lines/events from buffer
         let lineEnd;
         while ((lineEnd = buffer.indexOf('\n\n')) !== -1) {
           const event = buffer.slice(0, lineEnd);
           buffer = buffer.slice(lineEnd + 2);
           
-          // Handle SSE data events
+          console.log("Processing event:", { 
+            eventLength: event.length, 
+            eventPreview: event.substring(0, 50) + '...',
+            remainingBuffer: buffer.length
+          });
+          
           if (event.startsWith('data: ')) {
             const data = event.slice(6);
             
-            // Handle the "[DONE]" message
             if (data === '[DONE]') {
               console.log('Received [DONE] event');
               continue;
@@ -222,28 +229,37 @@ export default function Chat() {
               console.log("Parsed SSE data:", { 
                 id: parsedData.id?.substring(0, 8) + '...',
                 hasChoices: !!parsedData.choices,
-                deltaContent: parsedData.choices?.[0]?.delta?.content
+                firstChoice: parsedData.choices?.[0] ? 'present' : 'missing',
+                deltaContent: parsedData.choices?.[0]?.delta?.content 
+                  ? parsedData.choices[0].delta.content.substring(0, 30) + '...' 
+                  : 'missing'
               });
               
               if (parsedData.choices && parsedData.choices[0]?.delta?.content) {
-                // Update the assistant message with new content
-                setMessages(prev => 
-                  prev.map(msg => 
+                setMessages(prev => {
+                  const newMessages = prev.map(msg => 
                     msg.id === assistantMessageId
                       ? { ...msg, content: msg.content + parsedData.choices[0].delta.content }
                       : msg
-                  )
-                );
+                  );
+                  
+                  console.log("Updated message state:", {
+                    messageCount: newMessages.length,
+                    lastMessageId: newMessages[newMessages.length - 1].id,
+                    lastMessagePreview: newMessages[newMessages.length - 1].content.substring(
+                      Math.max(0, newMessages[newMessages.length - 1].content.length - 50)
+                    )
+                  });
+                  
+                  return newMessages;
+                });
               }
             } catch (e) {
               console.error("Error parsing SSE data:", e, "Data:", data);
             }
           } else if (event.startsWith(':')) {
-            // Handle OpenRouter processing comments
             console.log('OpenRouter processing comment:', event);
-            // No need to update UI for these, they're just keep-alive messages
           } else if (event.includes('error')) {
-            // Handle error events
             console.error('Error in stream:', event);
             try {
               const errorData = JSON.parse(event);
@@ -255,10 +271,9 @@ export default function Chat() {
         }
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error sending message:", error, "Stack:", error.stack);
       toast.error("Failed to send message: " + (error.message || "Unknown error"));
       
-      // Remove the assistant message placeholder if there was an error
       setMessages(prev => prev.filter(msg => msg.role !== "assistant" || msg.content !== ""));
     } finally {
       setIsLoading(false);
@@ -277,7 +292,6 @@ export default function Chat() {
 
   return (
     <div className="space-y-8 h-[calc(100vh-8rem)] flex flex-col">
-      {/* Breadcrumb Navigation */}
       <div className="flex items-center justify-between">
         <Breadcrumb>
           <BreadcrumbList>
@@ -346,7 +360,6 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Welcome Header or Messages */}
       {messages.length === 0 ? (
         <div className="text-center space-y-4 flex-grow flex flex-col justify-center">
           <h1 className="text-4xl font-bold tracking-tight">
@@ -356,7 +369,6 @@ export default function Chat() {
             How can I help you today?
           </p>
           
-          {/* Action Buttons */}
           <div className="flex flex-wrap justify-center gap-4 mt-8">
             {actions.map((action) => (
               <Button
@@ -422,7 +434,6 @@ export default function Chat() {
         </ScrollArea>
       )}
 
-      {/* Chat Input */}
       <div className="sticky bottom-0 p-4 bg-background/80 backdrop-blur-sm border-t">
         <div className="max-w-4xl mx-auto relative flex items-center">
           <Input
@@ -471,7 +482,6 @@ export default function Chat() {
   );
 }
 
-// Helper function to get the time of day greeting
 function getTimeOfDay() {
   const hour = new Date().getHours();
   if (hour < 12) return "morning";

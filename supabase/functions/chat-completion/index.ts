@@ -41,6 +41,23 @@ Deno.serve(async (req) => {
       // Create a new abort controller for the request
       const controller = new AbortController();
       
+      // Log the request details
+      console.log('OpenRouter request:', {
+        url,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer <redacted>',
+          'HTTP-Referer': 'https://yourapplication.com',
+          'X-Title': 'Your Application Name'
+        },
+        body: {
+          messages: messages.length,
+          model: model || 'openai/gpt-4o-mini',
+          stream: true
+        }
+      });
+      
       const openRouterResponse = await fetch(url, {
         method: 'POST',
         headers: {
@@ -61,6 +78,7 @@ Deno.serve(async (req) => {
         status: openRouterResponse.status,
         statusText: openRouterResponse.statusText,
         headers: Object.fromEntries([...openRouterResponse.headers.entries()]),
+        isReadable: !!openRouterResponse.body?.getReader
       });
       
       if (!openRouterResponse.ok) {
@@ -104,11 +122,22 @@ Deno.serve(async (req) => {
             const chunk = decoder.decode(value, { stream: true });
             buffer += chunk;
             
+            console.log('Processing chunk:', {
+              chunkSize: value?.length,
+              bufferContent: buffer.slice(0, 50) + '...',
+              bufferLength: buffer.length
+            });
+            
             // Process complete lines from buffer
             let lineEnd;
             while ((lineEnd = buffer.indexOf('\n')) !== -1) {
               const line = buffer.slice(0, lineEnd).trim();
               buffer = buffer.slice(lineEnd + 1);
+              
+              console.log('Processing line:', {
+                line: line.slice(0, 50) + (line.length > 50 ? '...' : ''),
+                lineLength: line.length
+              });
               
               if (line === '') continue;
               
@@ -129,11 +158,14 @@ Deno.serve(async (req) => {
                     id: parsed.id?.slice(0, 8) + '...',
                     hasChoices: !!parsed.choices,
                     firstChoice: parsed.choices?.[0] ? 'present' : 'missing',
-                    deltaContent: parsed.choices?.[0]?.delta?.content ? 'present' : 'missing'
+                    deltaContent: parsed.choices?.[0]?.delta?.content ? 'present' : 'missing',
+                    deltaContentValue: parsed.choices?.[0]?.delta?.content?.slice(0, 20) + '...'
                   });
                   
                   // Forward the parsed data
+                  console.log('Forwarding data to client');
                   await writer.write(encoder.encode(`data: ${data}\n\n`));
+                  console.log('Data forwarded successfully');
                 } catch (e) {
                   console.error('Error parsing SSE data:', e, 'Line:', line);
                 }
