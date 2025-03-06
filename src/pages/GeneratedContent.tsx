@@ -109,12 +109,41 @@ const GeneratedContent = () => {
 
     setIsModifying(true);
     try {
-      const { data, error } = await supabase.functions
-        .invoke('modify-content', {
-          body: { content, modification }
-        });
+      // Get the Supabase functions URL
+      const functionsUrl = supabase.functions.url;
+      
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token || '';
+      
+      console.log('Invoking modify-content edge function', { 
+        modificationLength: modification.length,
+        contentLength: content.length,
+        hasAccessToken: !!accessToken
+      });
 
-      if (error) throw error;
+      // Direct fetch with proper authentication
+      const response = await fetch(`${functionsUrl}/modify-content`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ content, modification })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response from modify-content:', { 
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+        throw new Error(`API error: ${response.status} - ${errorData}`);
+      }
+
+      const data = await response.json();
+      console.log('Received response:', { success: !!data.modifiedContent });
       
       if (data.modifiedContent) {
         setModifiedContent(data.modifiedContent);
@@ -122,13 +151,17 @@ const GeneratedContent = () => {
           title: "Content modified",
           description: "The content has been modified according to your instructions."
         });
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('Unknown error occurred');
       }
     } catch (error) {
       console.error("Error modifying content:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to modify content. Please try again."
+        description: `Failed to modify content: ${error.message || 'Unknown error'}`
       });
     } finally {
       setIsModifying(false);
